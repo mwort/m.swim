@@ -287,7 +287,7 @@ class main:
         kwargs = {'elevation'   : self.elevation,
                   'threshold'   : int(grass.region()['cells']*10**-4),
                   # Output
-                  'accumulation': self.accumulation,
+                  'accumulation': self.accumulation+'__float',
                   'drainage'    : self.drainage,
                   'stream'      : self.streams,
                   'slope_steepness': self.slopesteepness,
@@ -304,7 +304,7 @@ class main:
         #environ['GRASS_MESSAGE_FORMAT'] = 'gui'
         g_run('r.watershed',overwrite=True, **kwargs) # the other keyword arguments
         # postprocess accumulation map
-        grass.mapcalc("{0}=int(if({0}<=0,null(),{0}))".format(self.accumulation),
+        grass.mapcalc("{0}=int(if({0}__float<=0,null(),{0}__float))".format(self.accumulation),
                       overwrite=True)
         # make river network to vector
         grass.message('Making vector river network...')
