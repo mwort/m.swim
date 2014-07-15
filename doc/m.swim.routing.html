@@ -1,0 +1,165 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>GRASS GIS manual: m.swim.routing</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<link rel="stylesheet" href="grassdocs.css" type="text/css">
+</head>
+<body bgcolor="white">
+
+<img src="grass_logo.png" alt="GRASS logo"><hr align=center size=6 noshade>
+
+<h2>NAME</h2>
+<em><b>m.swim.routing</b></em>  - Soil and Water Integrated Model (SWIM) preprocessor: routing
+<h2>KEYWORDS</h2>
+<h2>SYNOPSIS</h2>
+<div id="name"><b>m.swim.routing</b><br></div>
+<b>m.swim.routing help</b><br>
+<div id="synopsis"><b>m.swim.routing</b> [-<b>rck</b>] <b>subbasins</b>=<em>name</em> <b>accumulation</b>=<em>name</em>  [<b>routingnet</b>=<em>name</em>]   [<b>mainstreams</b>=<em>name</em>]   [<b>outlets</b>=<em>name</em>]   [<b>inlets</b>=<em>name</em>]   [<b>figpath</b>=<em>path/myproj.fig</em>]   [<b>fromto</b>=<em>from,to</em>[,<i>from,to</i>,...]]   [<b>streams</b>=<em>vect</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>] 
+</div>
+
+<div id="flags">
+<h3>Flags:</h3>
+<dl>
+<dt><b>-r</b></dt>
+<dd>Only remake routing network and .fig file (eg. after manual editing, outlets and inlets needed!)</dd>
+
+<dt><b>-c</b></dt>
+<dd>Include centroids in routing network vector (will look messy)</dd>
+
+<dt><b>-k</b></dt>
+<dd>Keep intermediate files (those named *__*)</dd>
+
+<dt><b>--overwrite</b></dt>
+<dd>Allow output files to overwrite existing files</dd>
+<dt><b>--help</b></dt>
+<dd>Print usage summary</dd>
+<dt><b>--verbose</b></dt>
+<dd>Verbose module output</dd>
+<dt><b>--quiet</b></dt>
+<dd>Quiet module output</dd>
+</dl>
+</div>
+
+<div id="parameters">
+<h3>Parameters:</h3>
+<dl>
+<dt><b>subbasins</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Subbasin vector, nextID and inletID will be uploaded to table</dd>
+
+<dt><b>accumulation</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>CELL/integer accumulation raster, e.g. m.swim.subbasins</dd>
+<dd>Default: <em>accumulation</em></dd>
+
+<dt><b>routingnet</b>=<em>name</em></dt>
+<dd>Vector of routing network to be created</dd>
+<dd>Default: <em>routingnetwork</em></dd>
+
+<dt><b>mainstreams</b>=<em>name</em></dt>
+<dd>Main streams vector and raster to be created (routingnet needed)</dd>
+<dd>Default: <em>mainstreams</em></dd>
+
+<dt><b>outlets</b>=<em>name</em></dt>
+<dd>Outlets point vector</dd>
+<dd>Default: <em>subbasinoutlets</em></dd>
+
+<dt><b>inlets</b>=<em>name</em></dt>
+<dd>Inlets point vector</dd>
+<dd>Default: <em>subbasininlets</em></dd>
+
+<dt><b>figpath</b>=<em>path/myproj.fig</em></dt>
+<dd>path to the .fig file</dd>
+
+<dt><b>fromto</b>=<em>from,to[,<i>from,to</i>,...]</em></dt>
+<dd>Force routing manually (pairs of subbasinID,nextID, is slow)</dd>
+
+<dt><b>streams</b>=<em>vect</em></dt>
+<dd>Predefined streams to include in mainstreams output</dd>
+
+</dl>
+</div>
+</body>
+</html>
+<h2>DESCRIPTION<span style="font-style: italic;"></span></h2>
+The <span style="font-weight: bold;">m.swim.routing</span> module
+computes the routing structure for a given subbasin vector and
+accumulation raster map that are produced by <span style="font-weight: bold;">m.swim.subbasins</span> or <span style="font-weight: bold;">r.watershed</span>. A column named 'nextID'
+denoting the next downstream subbasin IDs is uploaded to the subbasin
+table which is then used to produce the SWIM routing (.fig) file. In
+addition, the module produces a routing network vector map, a
+mainstream vector and raster map, subbasin outlet and inlet point
+vector maps (all map have default output names or can be set) and it
+uploads an additional column to the subbasin table named 'inletID'
+mapping the subbasin to an appropriate inlet. The additional output is
+mainly useful for visualising the routing structure, while the
+mainstream raster map is needed for the subsequent <span style="font-weight: bold;">m.swim.substats</span> module.<br>
+<br>
+<h3>Verifying the routing structure</h3>
+Although the module can produce both the 'nextID' column and the SWIM
+routing file in one execution, the recommended work flow is to first
+produce the routing structure (from-to subbasin IDs) and the additional
+maps, then (visually) examine the results using the created <span style="font-weight: bold;">routingnetwork</span> and possibly make manual
+adjustments, and only then write the SWIM routing file with the <span style="font-weight: bold;">-r</span> flag set (see examples). If the
+subbasin map was produced with the same accumulation map and in the
+same resolution/region, then the routing structure is expected to be
+exact and reflecting the river network as shown in the <span style="font-weight: bold;">mainstreams</span> map. The routing network
+vector visualises the routing and either just shows the connections
+between the outlets and inlets (default) or the lines from centroids to
+the outlet and inlet using the <span style="font-weight: bold;">-c</span>
+flag. Although the routing can be manually changed by either changing
+the subbasin IDs in the nextID column of the subbasin vector or by
+using the <span style="font-weight: bold;">fromto</span> argument, it
+is recommended to make sure the same accumulation map was used to
+produce the subbasins or to 'burn' a more accurate river network into
+the DEM and then remake the accumulation map using r.watershed (!with
+the -s flag!).<br>
+<em></em>
+<h2>NOTES</h2>
+It is highly recommended to use <span style="font-weight: bold;">the
+same accumulation map as was used to produce the subbasin map</span>
+(in the same resolution and grass region)!!! If this condition is not
+met, inexact routing and multiple outlet subbasins are highly likely.<br>
+<br>
+Although this module has been tested, it is still in beta mode and
+hasn't been extensively error coded. Please report unexplained errors
+to the author (see below).<br>
+<h2>EXAMPLE</h2>
+Setting up a SWIM project in the North Carolina (basic) testing
+location:<br>
+<br>
+Create a new mapset and set region:
+<pre>g.mapset -c mapset=subbasins<br>g.region rast=elevation@PERMANENT<br></pre>
+<h3>Stations</h3>
+Create a stations point vector map:<br>
+<pre>echo "x|y|name|subbsize<br>640579|215607|outlet|0.1<br>640388|216617|headwater|0.05" &gt; stations.dat<br>v.in.ascii input=stations.dat out=stations x=1 y=2 columns='x int, y int, name varchar(20), subbsize double' skip=1</pre>
+<h3>Subbasins</h3>
+Make subbasins (default output arguments):
+<pre>m.swim.subbasins elevation=elevation@PERMANENT stations=stations upthresh=0.1 subbasins=subbasins</pre>
+In addition to the subbasins vector and raster map, this also produces
+catchment raster and vector maps, accumulation, drainage, streams,
+slopesteepness and slopelength rasters (as needed by the subsequent
+m.swim.* modules) by default.<br>
+<h3>Routing</h3>
+Calculate the routing structure, routing network and mainstreams (the
+output defaults are: mainstreams=mainstreams,
+routingnet=routingnetwork, outlets=subbasinoutlets,
+inlets=subbasininlets; which can also be set explicitly):<br>
+<pre><span style="font-family: monospace;"></span>m.swim.routing subbasins=subbasins accumulation=accumulation<br></pre>
+Or set the -c flag to include the centroids in the routing network:<br>
+<pre><span style="font-family: monospace;"></span>m.swim.routing -c subbasins=subbasins accumulation=accumulation<br></pre>
+
+Check routing structure and write SWIM routing file (the --o overwrite
+is necessary as the mainstreams are recreated):<br>
+<pre>m.swim.routing -r subbasins=subbasins figpath=mypro.fig --o<br></pre>
+Both these steps can also be executed at once (but may result in an
+error if the there are too many outlets):<br>
+<pre>m.swim.routing subbasins=subbasins accumulation=accumulation figpath=mypro.fig</pre>
+<em></em>
+<h2>SEE ALSO</h2>
+<a href="m.swim.subbasins.html">m.swim.subbasins</a>, <a href="r.watershed.html">r.watershed</a>, <a href="m.swim.substats.html">m.swim.substats</a>
+<h2>AUTHORS</h2>
+Michel Wortmann, Potsdam Institute for Climate Impact Research
+(wortmann@pik-potsdam.de)<br>
+<p><i>Last changed: $Date: 2013-07-31 10:45:15 -0700 (Wed, 31 Jul 2013)
+$</i>
+</p>

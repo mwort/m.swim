@@ -1,0 +1,278 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>GRASS GIS manual: m.swim.substats</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<link rel="stylesheet" href="grassdocs.css" type="text/css">
+</head>
+<body bgcolor="white">
+
+<img src="grass_logo.png" alt="GRASS logo"><hr align=center size=6 noshade>
+
+<h2>NAME</h2>
+<em><b>m.swim.substats</b></em>  - Soil and Water Integrated Model (SWIM) preprocessor: subbasin statistics
+<h2>KEYWORDS</h2>
+<h2>SYNOPSIS</h2>
+<div id="name"><b>m.swim.substats</b><br></div>
+<b>m.swim.substats help</b><br>
+<div id="synopsis"><b>m.swim.substats</b> [-<b>k</b>] <b>subbasins</b>=<em>name</em> <b>projectname</b>=<em>name</em> <b>projectpath</b>=<em>path</em>  [<b>sl</b>=<em>raster or value</em>]   [<b>stp</b>=<em>raster or value</em>]   [<b>salb</b>=<em>raster or value</em>]   [<b>sno</b>=<em>raster or value</em>]   [<b>ovn</b>=<em>raster or value</em>]   [<b>rt</b>=<em>raster or value</em>]   [<b>css</b>=<em>raster or value</em>]   [<b>ecp</b>=<em>raster or value</em>]   [<b>suborder</b>=<em>order</em>]   [<b>mainstreams</b>=<em>name</em>]   [<b>elevation</b>=<em>name</em>]   [<b>drainage</b>=<em>name</em>]   [<b>accumulation</b>=<em>name</em>]   [<b>chl</b>=<em>raster or value</em>]   [<b>chs</b>=<em>raster or value</em>]   [<b>chw</b>=<em>raster or value</em>]   [<b>chd</b>=<em>raster or value</em>]   [<b>chk</b>=<em>raster or value</em>]   [<b>chn</b>=<em>raster or value</em>]   [<b>chxk</b>=<em>raster or value</em>]   [<b>chc</b>=<em>raster or value</em>]   [<b>rteorder</b>=<em>order</em>]   [<b>gwht</b>=<em>raster or value</em>]   [<b>gwq</b>=<em>raster or value</em>]   [<b>abf</b>=<em>raster or value</em>]   [<b>syld</b>=<em>raster or value</em>]   [<b>delay</b>=<em>raster or value</em>]   [<b>revapc</b>=<em>raster or value</em>]   [<b>rchrgc</b>=<em>raster or value</em>]   [<b>revapmn</b>=<em>raster or value</em>]   [<b>gworder</b>=<em>order</em>]   [<b>dummy</b>=<em>raster or value</em>]   [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>] 
+</div>
+
+<div id="flags">
+<h3>Flags:</h3>
+<dl>
+<dt><b>-k</b></dt>
+<dd>Keep intermediate files (those named *__*)</dd>
+
+<dt><b>--help</b></dt>
+<dd>Print usage summary</dd>
+<dt><b>--verbose</b></dt>
+<dd>Verbose module output</dd>
+<dt><b>--quiet</b></dt>
+<dd>Quiet module output</dd>
+</dl>
+</div>
+
+<div id="parameters">
+<h3>Parameters:</h3>
+<dl>
+<dt><b>subbasins</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Subbasin vector map, statistics will be updated in table</dd>
+
+<dt><b>projectname</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Name of project</dd>
+
+<dt><b>projectpath</b>=<em>path</em>&nbsp;<b>[required]</b></dt>
+<dd>Path to project folder</dd>
+
+<dt><b>sl</b>=<em>raster or value</em></dt>
+<dd>USLE slope length raster from r.watershed</dd>
+<dd>Default: <em>slopelength</em></dd>
+
+<dt><b>stp</b>=<em>raster or value</em></dt>
+<dd>USLE slope steepness raster from r.watershed</dd>
+<dd>Default: <em>slopesteepness</em></dd>
+
+<dt><b>salb</b>=<em>raster or value</em></dt>
+<dd>Soil albedo (default value or raster)</dd>
+<dd>Default: <em>0.15</em></dd>
+
+<dt><b>sno</b>=<em>raster or value</em></dt>
+<dd>Initial snow water content, mm (default value or raster)</dd>
+<dd>Default: <em>0</em></dd>
+
+<dt><b>ovn</b>=<em>raster or value</em></dt>
+<dd>Overland flow N value (default value or raster)</dd>
+<dd>Default: <em>0.15</em></dd>
+
+<dt><b>rt</b>=<em>raster or value</em></dt>
+<dd>Return flow travel time, days (0=SWIM estimates, default value or raster)</dd>
+<dd>Default: <em>0</em></dd>
+
+<dt><b>css</b>=<em>raster or value</em></dt>
+<dd>Channel slope, m/m (default value or raster)</dd>
+<dd>Default: <em>0.5</em></dd>
+
+<dt><b>ecp</b>=<em>raster or value</em></dt>
+<dd>USLE erosion control practice factor P (default value or raster)</dd>
+<dd>Default: <em>0.5</em></dd>
+
+<dt><b>suborder</b>=<em>order</em></dt>
+<dd>Order of values in .sub file (; for linebreak, variables as given as arguments, flu=subbasin area fraction)</dd>
+<dd>Default: <em>flu,dummy,salb,sno,chl,chs,chw,chk,chn,ovn;rt,css,ecp,sl,stp</em></dd>
+
+<dt><b>mainstreams</b>=<em>name</em></dt>
+<dd>Main streams for each vector, made with m.swim.routing</dd>
+<dd>Default: <em>mainstreams</em></dd>
+
+<dt><b>elevation</b>=<em>name</em></dt>
+<dd>Elevation raster for slopes</dd>
+
+<dt><b>drainage</b>=<em>name</em></dt>
+<dd>drainage raster from m.swim.subbasins/r.watershed</dd>
+<dd>Default: <em>drainage</em></dd>
+
+<dt><b>accumulation</b>=<em>name</em></dt>
+<dd>accumulation raster from m.swim.subbasins/r.watershed</dd>
+<dd>Default: <em>accumulation</em></dd>
+
+<dt><b>chl</b>=<em>raster or value</em></dt>
+<dd>Main channel length, km (blank to calculate, otherwise value or raster)</dd>
+<dd>Default: <em></em></dd>
+
+<dt><b>chs</b>=<em>raster or value</em></dt>
+<dd>Main channel slope, m/m (blank to calculate, value or raster)</dd>
+<dd>Default: <em></em></dd>
+
+<dt><b>chw</b>=<em>raster or value</em></dt>
+<dd>Main channel width, m (blank to calculate, value or raster)</dd>
+<dd>Default: <em></em></dd>
+
+<dt><b>chd</b>=<em>raster or value</em></dt>
+<dd>Main channel depth, m (blank to calculate, value or raster)</dd>
+<dd>Default: <em></em></dd>
+
+<dt><b>chk</b>=<em>raster or value</em></dt>
+<dd>Effective hydraulic conductivity of main channel (default value or raster)</dd>
+<dd>Default: <em>0.37</em></dd>
+
+<dt><b>chn</b>=<em>raster or value</em></dt>
+<dd>Channel N value (default value or raster)</dd>
+<dd>Default: <em>0.075</em></dd>
+
+<dt><b>chxk</b>=<em>raster or value</em></dt>
+<dd>channel USLE K factor (default value or raster)</dd>
+<dd>Default: <em>0.28</em></dd>
+
+<dt><b>chc</b>=<em>raster or value</em></dt>
+<dd>channel USLE C factor (default value or raster)</dd>
+<dd>Default: <em>1</em></dd>
+
+<dt><b>rteorder</b>=<em>order</em></dt>
+<dd>Order of values in .rte file (; for linebreak, see help for values)</dd>
+<dd>Default: <em>chw,chd,chs,chl,chn,chk,chxk,chc</em></dd>
+
+<dt><b>gwht</b>=<em>raster or value</em></dt>
+<dd>Initial groundwater height, m (default value or raster)</dd>
+<dd>Default: <em>1</em></dd>
+
+<dt><b>gwq</b>=<em>raster or value</em></dt>
+<dd>Initial groundwater flow contribution to streamflow, mm (default value or raster)</dd>
+<dd>Default: <em>0.5</em></dd>
+
+<dt><b>abf</b>=<em>raster or value</em></dt>
+<dd>Groundwater alpha factor (default value or raster)</dd>
+<dd>Default: <em>0.048</em></dd>
+
+<dt><b>syld</b>=<em>raster or value</em></dt>
+<dd>Specific yield of aquifer (default value or raster)</dd>
+<dd>Default: <em>0.003</em></dd>
+
+<dt><b>delay</b>=<em>raster or value</em></dt>
+<dd>Groundwater delay, days (default value or raster)</dd>
+<dd>Default: <em>200</em></dd>
+
+<dt><b>revapc</b>=<em>raster or value</em></dt>
+<dd>Fraction of root zone percolation to revap (0-1 or raster)</dd>
+<dd>Default: <em>0.2</em></dd>
+
+<dt><b>rchrgc</b>=<em>raster or value</em></dt>
+<dd>Fraction of root zone percolation into deep aquifer (0-1 or raster)</dd>
+<dd>Default: <em>0.05</em></dd>
+
+<dt><b>revapmn</b>=<em>raster or value</em></dt>
+<dd>Initial revap storage, mm (default value or raster)</dd>
+<dd>Default: <em>0</em></dd>
+
+<dt><b>gworder</b>=<em>order</em></dt>
+<dd>Order of values in .gw file (; for linebreak, see help for values)</dd>
+<dd>Default: <em>gwht,gwq,abf,syld,delay,revapc,rchrgc,revapmn</em></dd>
+
+<dt><b>dummy</b>=<em>raster or value</em></dt>
+<dd>Dummy value as fill value and example</dd>
+<dd>Default: <em>0</em></dd>
+
+</dl>
+</div>
+</body>
+</html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html><head>
+
+
+
+<meta content="text/html; charset=ISO-8859-1" http-equiv="content-type"><title>m.swim.substats</title><meta name="qrichtext" content="1"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><style type="text/css">
+p, li { white-space: pre-wrap; }</style><meta name="qrichtext" content="1"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><style type="text/css">
+p, li { white-space: pre-wrap;</style></head><body>
+<h2>DESCRIPTION<span style="font-style: italic;"></span></h2>The<span style="font-weight: bold;"> m.swim.substats</span>
+module creates the SWIM subbasin statistics input files (.sub, .rte,
+.gw) and the file.cio file. All parameters maybe given as either
+default value for all subbasins or as a raster map for which subbasin
+average values are found and written to the files. By using the
+drainage, accumulation and mainstreams maps produced by the
+m.swim.subbasins and m.swim.routing modules, it can also compute the
+main channel length, slope, depth and width. These four parameters are
+computed as follows:<br>
+<ul>
+  <li><span style="font-weight: bold;">Channel length</span>: The
+length is approximated from the mainstreams and drainage map and
+constrained to be at least one cell size long and not greater as the
+subbasins perimeter (this constraint allows for uncertainties in the
+mainstreams map).</li>
+  <li><span style="font-weight: bold;">Channel slope</span>: The slope is calculated from the elevation raster and then averaged over the mainstreams cells and reported for each subbasin.</li>
+  <li><span style="font-weight: bold;">Channel width</span>:
+Approximated using the drainage area calculated from the accumulation
+map through this empirical relationship (with an upper limit of 3000m):<span style="font-style: italic;"></span></li>
+  <ul>
+    <li><span style="font-style: italic;"></span><em>width[m] = 1.29 * darea[km2] ^ 0.6</em></li>
+  </ul>
+  <li><span style="font-weight: bold;">Channel depth</span>: Approximated using the drainage area calculated from the accumulation
+map through this empirical relationship (with an upper limit of 50m):<span style="font-style: italic;"></span></li>
+  <ul>
+    <li><span style="font-style: italic;"></span><em>depth[m] = 0.13 * darea[km2] ^ 0.4</em></li>
+  </ul>
+</ul>
+Raster maps with subbasin mean values are created implicitly and the
+values are uploaded to the subbasin table with the following names: <em>mainChannelLength, mainChannelSlope, channelDepth, channelWidth</em> This allows a faster recalculation by setting the arguments <span style="font-weight: bold;">chl, chs, chd, chw</span> to these names.<br>
+<br>
+For <span style="font-weight: bold;">all other parameters</span> default values are given that apply to all subbasins, except for the <span style="font-weight: bold;">USLE slope length and steepness</span>, for which the output of the <span style="font-weight: bold;">m.swim.subbasins</span> or r.watershed is used to calculate average values for each subbasin.<br>
+<em></em>
+<h2>NOTES</h2>All parameter arguments are the same as their variable names in the SWIM code.<br>
+<br>
+Although
+this module has been tested, it is still in beta mode and hasn't been
+extensively error coded. Please report unexplained errors to the author
+(see below).<br>
+<h2>EXAMPLE</h2>
+Setting up a SWIM project in the North Carolina (basic) testing location:<br>
+<br>
+Create a new mapset and set region:
+<pre>g.mapset -c mapset=subbasins<br>g.region rast=elevation@PERMANENT<br></pre>
+<h3>Stations</h3>
+Create a stations point vector map:<br>
+<pre>echo "640579|215607|outlet|0.1<br>640388|216617|headwater|0.05" &gt; stations.dat<br>v.in.ascii input=stations.dat out=stations x=1 y=2 columns='x int, y int, name varchar(20), subbsize double'</pre>
+<h3>Subbasins</h3>
+Make subbasins (default output arguments):
+<pre>m.swim.subbasins elevation=elevation@PERMANENT stations=stations upthresh=0.1 subbasins=subbasins slopesteepness=slopesteepness slopelength=slopelength</pre>
+<br>
+In
+addition to the subbasins vector and raster map, this also produces
+catchment raster and vector maps, accumulation, drainage, streams,
+slopesteepness and slopelength rasters (as needed by the subsequent
+m.swim.* modules) by default.<br>
+<h3>Routing</h3>
+Calculate the routing
+structure, routing network and mainstreams (the output defaults are:
+mainstreams=mainstreams, routingnet=routingnetwork,
+outlets=subbasinoutlets, inlets=subbasininlets; which can also be set
+explicitly):<br>
+<pre>m.swim.routing subbasins=subbasins accumulation=accumulation mainstreams=mainstreams</pre>
+<h3>Subbasin statistics</h3>Create the subbasin statistics files in a Sub folder and the file.cio in the <span style="font-weight: bold;">projectpath</span>
+with all default input (mainstreams, drainage, accumulation,&nbsp; stp
+and sl also have default values but included here to emphasise that
+they are needed as input):<br>
+<pre>m.swim.substats subbasins=subbasins projectname=mypro projectpath=. elevation=elevation@PERMANENT \<br>                mainstreams=mainstreams drainage=drainage accumulation=accumulation stp=slopesteepness sl=slopelength</pre>
+
+When recalculating or changing parameters, the calculation can be accelerated by setting <span style="font-weight: bold;">chl, chs, chd, chw </span>explicitly:<br>
+<pre>m.swim.substats subbasins=subbasins projectname=mypro projectpath=. elevation=elevation@PERMANENT \<br>                delay=geology@PERMANENT chl=mainChannelLength chs=mainChannelSlope chd=channelDepth chw=channelWidth<br></pre>
+
+
+<em></em>
+<h2>SEE ALSO</h2>
+
+
+<a href="m.swim.subbasins.html">m.swim.subbasins</a>, 
+<a href="r.watershed.html">r.watershed</a>, <a href="m.swim.hydrotopes.html">m.swim.hydrotopes</a>, <a href="m.swim.routing.html">m.swim.routing</a><a href="m.swim.routing.html"><br>
+
+</a><a href="file:///home/michel/Desktop/grass.m.swim/m.swim.substats.html"></a> 
+
+<h2>AUTHORS</h2>
+Michel Wortmann, Potsdam Institute for Climate Impact Research (wortmann@pik-potsdam.de)<br>
+ 
+<p><i>Last changed: $Date: 2013-07-31 10:45:15 -0700 (Wed, 31 Jul 2013) $</i>
+
+</p>
+
+  
+
+</body></html>

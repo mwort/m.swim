@@ -1,0 +1,193 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>GRASS GIS manual: m.swim.subbasins</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<link rel="stylesheet" href="grassdocs.css" type="text/css">
+</head>
+<body bgcolor="white">
+
+<img src="grass_logo.png" alt="GRASS logo"><hr align=center size=6 noshade>
+
+<h2>NAME</h2>
+<em><b>m.swim.subbasins</b></em>  - Soil and Water Integrated Model (SWIM) subbasin preprocessor
+<h2>KEYWORDS</h2>
+hydrological modelling, SWIM, subbasins
+<h2>SYNOPSIS</h2>
+<div id="name"><b>m.swim.subbasins</b><br></div>
+<b>m.swim.subbasins help</b><br>
+<div id="synopsis"><b>m.swim.subbasins</b> [-<b>dsk</b>] <b>elevation</b>=<em>name</em> <b>stations</b>=<em>name</em>  [<b>upthreshcolumn</b>=<em>name</em>]   [<b>upthresh</b>=<em>float</em>]   [<b>lothresh</b>=<em>km2</em>]   [<b>depression</b>=<em>name</em>]   [<b>accumulation</b>=<em>string</em>]   [<b>drainage</b>=<em>string</em>]   [<b>streams</b>=<em>string</em>]   [<b>subbasins</b>=<em>string</em>]   [<b>catchments</b>=<em>string</em>]   [<b>catchmentprefix</b>=<em>string</em>]   [<b>slopesteepness</b>=<em>string</em>]   [<b>slopelength</b>=<em>string</em>]   [<b>streamcarve</b>=<em>vector</em>]   [<b>predefined</b>=<em>string</em>]   [<b>rwatershedflags</b>=<em>string</em>]   [--<b>overwrite</b>]  [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>] 
+</div>
+
+<div id="flags">
+<h3>Flags:</h3>
+<dl>
+<dt><b>-d</b></dt>
+<dd>don't process DEM (accumulation, drainage, streams must exist)</dd>
+
+<dt><b>-s</b></dt>
+<dd>Just print statistics of subbasins, --o must be set</dd>
+
+<dt><b>-k</b></dt>
+<dd>Keep intermediat files (include __ in names)</dd>
+
+<dt><b>--overwrite</b></dt>
+<dd>Allow output files to overwrite existing files</dd>
+<dt><b>--help</b></dt>
+<dd>Print usage summary</dd>
+<dt><b>--verbose</b></dt>
+<dd>Verbose module output</dd>
+<dt><b>--quiet</b></dt>
+<dd>Quiet module output</dd>
+</dl>
+</div>
+
+<div id="parameters">
+<h3>Parameters:</h3>
+<dl>
+<dt><b>elevation</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Elevation raster (hole-filled)</dd>
+
+<dt><b>stations</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
+<dd>Station point vector</dd>
+
+<dt><b>upthreshcolumn</b>=<em>name</em></dt>
+<dd>Column with upper subbasin threshold in stations vector</dd>
+
+<dt><b>upthresh</b>=<em>float</em></dt>
+<dd>Upper subbasin threshold (in sq km,mostly underestimated)</dd>
+<dd>ignored if upthreshcolumn is given, mostly underestimated</dd>
+<dd>Default: <em>100</em></dd>
+
+<dt><b>lothresh</b>=<em>km2</em></dt>
+<dd>Lower threshold of subbasin size in sq km (default 5% of upper)</dd>
+
+<dt><b>depression</b>=<em>name</em></dt>
+<dd>Raster map of known real depressions in or around catchment (only if not -d)</dd>
+
+<dt><b>accumulation</b>=<em>string</em></dt>
+<dd>Name of accumlation map to be created (or existing if -d)</dd>
+<dd>Default: <em>accumulation</em></dd>
+
+<dt><b>drainage</b>=<em>string</em></dt>
+<dd>Name of drainge map to be created (or existing if -d)</dd>
+<dd>Default: <em>drainage</em></dd>
+
+<dt><b>streams</b>=<em>string</em></dt>
+<dd>Name of streams vector to be created (or existing if -d)</dd>
+<dd>Default: <em>streams</em></dd>
+
+<dt><b>subbasins</b>=<em>string</em></dt>
+<dd>Name of resulting subbasin vector and raster map</dd>
+<dd>Default: <em>subbasins</em></dd>
+
+<dt><b>catchments</b>=<em>string</em></dt>
+<dd>Name of resulting vector and raster of all stations catchments</dd>
+<dd>Default: <em>catchments</em></dd>
+
+<dt><b>catchmentprefix</b>=<em>string</em></dt>
+<dd>Prefix of individual catchment vector for each station</dd>
+<dd>Default: <em>catchment_</em></dd>
+
+<dt><b>slopesteepness</b>=<em>string</em></dt>
+<dd>USLE slopesteepness from r.watershed, useful for m.swim.substats</dd>
+<dd>Default: <em>slopesteepness</em></dd>
+
+<dt><b>slopelength</b>=<em>string</em></dt>
+<dd>USLE slope length from r.watershed, useful for m.swim.substats</dd>
+<dd>Default: <em>slopelength</em></dd>
+
+<dt><b>streamcarve</b>=<em>vector</em></dt>
+<dd>Existing river network to be carved into the elevation raster</dd>
+
+<dt><b>predefined</b>=<em>string</em></dt>
+<dd>Raster of predefined units to include in the subbasin map</dd>
+
+<dt><b>rwatershedflags</b>=<em>string</em></dt>
+<dd>Flags parsed to r.watershed, check r.watershed --help</dd>
+<dd>Default: <em>s</em></dd>
+
+</dl>
+</div>
+</body>
+</html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html><head>
+
+
+
+<meta content="text/html; charset=ISO-8859-1" http-equiv="content-type"><title>m.swim.subbasins</title></head><body>
+<h2>DESCRIPTION<span style="font-style: italic;"></span></h2>The <span style="font-weight: bold;">m.swim.subbasins</span> module provides flexible interface to the <span style="font-weight: bold;">r.watershed</span>
+module allowing the delineation of subbasins within a specified
+subbasin size range, constraining them to any amount gauging stations
+as well as including predefined subbasins and the production of rich
+ancillary maps and subbasin information (provided in the subbasins
+vector table). The module works in two steps:<br>
+<ol>
+  <li>It first calculates the accumulation, drainage and streams for the entire region. This step can be skipped by setting the <span style="font-weight: bold;">-d flag</span>
+to save time when recalculating the subbasins, but the accumulation,
+drainage and streams raster must exist in that case. This step also
+outputs the slope steepness and slope length rasters needed for the <span style="font-weight: bold;">m.swim.substats</span> module (names given by default).
+  </li>
+  
+  <li>Then it calculates the catchments and subbasins for each station given in <span style="font-weight: bold;">stations</span>, cleans the subbasin maps and produces the additional subbasin information and outputs the subbasin statistics to stdout.<br>
+  </li>
+
+</ol>
+<h3>Subbasin size thresholds<br>
+</h3>
+The upper subbasin size threshold given either for all catchments in <span style="font-weight: bold;">upthresh</span> or for each station's catchment individually by reading the station's column given in <span style="font-weight: bold;">upthreshcolumn</span>
+is a soft limit, i.e. it may exceed this and should be more considered
+a mean subbasin size, as it is mostly underestimated (see the
+r.watershed manual for more details). The <span style="font-weight: bold;">lothresh</span> argument, however, is a hard lower limit, i.e. no subbasins smaller than this should exist in the resultant subbasin map.<br>
+
+
+
+
+
+
+<em></em>
+<h2>NOTES</h2>Although
+this module has been tested, it is still in beta mode and hasn't been
+extensively error coded. Please report unexplained errors to the author
+(see below).<br>
+<h2>EXAMPLE</h2>
+Setting up a SWIM project in the North Carolina (basic) testing location:<br>
+<br>
+Create a new mapset and set region:
+<pre>g.mapset -c mapset=subbasins<br>g.region rast=elevation@PERMANENT<br></pre>
+<h3>Stations</h3>
+Create a stations point vector map:<br>
+<pre>echo "x|y|name|subbsize<br>640579|215607|outlet|0.1<br>640388|216617|headwater|0.05" &gt; stations.dat<br>v.in.ascii input=stations.dat out=stations x=1 y=2 columns='x int, y int, name varchar(20), subbsize double' skip=1</pre>
+<h3>Subbasins</h3>
+Make simple subbasins (default output arguments):
+<pre>m.swim.subbasins elevation=elevation@PERMANENT stations=stations upthresh=0.1 subbasins=subbasins<br></pre>
+
+In
+addition to the subbasins vector and raster map, this also produces
+catchment raster and vector maps, accumulation, drainage, streams,
+slopesteepness and slopelength rasters (as needed by the subsequent
+m.swim.* modules) by default.<br>
+<br>
+Subbasins with varying subbasin thresholds and defined lower threshold:<br>
+<pre>m.swim.subbasins elevation=elevation@PERMANENT stations=stations upthreshcolumn=subbsize lothresh=0.001 subbasins=subbasins</pre>
+
+<em></em>
+<h2>SEE ALSO</h2>
+
+
+<a href="m.swim.hydrotopes.html">m.swim.hydrotopes</a>, 
+<a href="r.watershed.html">r.watershed</a>, <a href="m.swim.substats.html">m.swim.substats</a>, <a href="m.swim.routing.html">m.swim.routing</a><a href="m.swim.routing.html"><br>
+
+</a><a href="file:///home/michel/Desktop/grass.m.swim/m.swim.substats.html"></a> 
+
+<h2>AUTHORS</h2>
+Michel Wortmann, Potsdam Institute for Climate Impact Research (wortmann@pik-potsdam.de)<br>
+ 
+<p><i>Last changed: $Date: 2013-07-31 10:45:15 -0700 (Wed, 31 Jul 2013) $</i>
+
+</p>
+
+  
+
+</body></html>
