@@ -214,26 +214,25 @@ class main:
         grass.message('Searching outlets...')
         grun('r.statistics', base=self.subbasinrast,cover=self.accumulation, method='max',
              output='maxaccum__', **kw)
-        exp = "outlets__=if('%s'==@maxaccum__,%s,null())" %(self.accumulation,self.subbasinrast)
+        exp = "outlets__=if('%s' == @maxaccum__,%s,null())" %(self.accumulation,self.subbasinrast)
         grass.mapcalc(exp, **kw)
         
         grass.message('Growing outlets...')
         # join outlets (set all to 1) and then grow outlets
         grass.mapcalc("outlets1__=if(isnull(outlets__),null(),1)",overwrite=True)
         # grow to all 8 neighbours (1.5 times cell size)
-        grun('r.grow', input='outlets1__', output='outlets__grown', radius=1.5,**kw)
+        grun('r.grow', input='outlets1__', output='outlets__grown', radius=searchradius,**kw)
         grun('r.clump', input='outlets__grown', output='outlets__grown__clumped',**kw)
     
         # make inlets
         grass.message('Searching inlets...')
         grun('r.statistics', base='outlets__grown__clumped', cover=self.accumulation,
              method='max', output='maxoutlet__clumps', **kw)
-        grass.mapcalc("inlets__=if(%s==@maxoutlet__clumps,%s,null())" %(self.accumulation,self.subbasinrast), **kw)
+        grass.mapcalc("inlets__=if(%s == @maxoutlet__clumps,%s,null())" %(self.accumulation,self.subbasinrast), **kw)
     
         # transfer inlet subbasinID to clumps
-        grun('r.statistics', base='outlets__grown__clumped', cover='inlets__',
+        grun('r.stats.zonal', base='outlets__grown__clumped', cover='inlets__',
              method='max', output='clumps__subbasinID', **kw)
-        grass.mapcalc("clumps__subbasinID=int(@clumps__subbasinID)", **kw)
     
         # make outlets vector with nice columns
         grun('r.to.vect', input='outlets__', output=self.outlets,type='point', 
@@ -274,7 +273,8 @@ class main:
         grass.message('''Find outlets (if other than ID 1, check if the accumulation
                      map has negative, ie. off-map flow)...''')
         # get fromto columns
-        sboutin = readSubNxtID(self.subbasins)
+        try: sboutin = readSubNxtID(self.subbasins)
+        except ValueError: grass.fatal('Cant convert the subbasinID, nextID or inletID columns of %s to integers' %self.subbasins)
         outlets = sboutin[sboutin['subbasinID']==sboutin['nextID']]
         outlets['nextID'] = np.negative(outlets['nextID'])
         outlets['inletID']= 0 
@@ -424,7 +424,13 @@ def vreport(vect,index):
 def readSubNxtID(subbasinsvect,columns=('subbasinID','nextID','inletID')):
     '''Vector needs subbasinID, nextID and inletID column'''
     tbl=grass.vector_db_select(subbasinsvect,columns=','.join(columns))['values'].values()
-    t = np.array(zip(*np.array(tbl).T),dtype=zip(columns,(int,)*len(columns)))
+    # check if empty cells
+    tbl=np.array(tbl,dtype=np.unicode)
+    for i,c in enumerate(columns):
+        empty=tbl[tbl[:,i]==u'',i]
+        if len(empty)>0: grass.fatal('The table %s has %s null values in column %s' %(subbasinsvect,len(empty),c))
+    # convert to numpy rec array
+    t = np.array(zip(*tbl.T),dtype=zip(columns,(int,)*len(columns)))
     return t
 
 def fig(subbasins,fname):

@@ -2,7 +2,7 @@
 #
 ############################################################################
 #
-# MODULE:      r.swim
+# MODULE:      m.swim.subbasins
 # AUTHOR(S):   Michel Wortmann, wortmann@pik-potsdam.de
 # PURPOSE:     Preprocessing suit for the Soil and Water Integrated Model (SWIM)
 # COPYRIGHT:   (C) 2012 by Wortmann/PIK
@@ -30,6 +30,7 @@
 #%end
 
 #%Option
+#% guisection: Input
 #% key: stations
 #% type: string
 #% required: yes
@@ -304,8 +305,8 @@ class main:
         #environ['GRASS_MESSAGE_FORMAT'] = 'gui'
         g_run('r.watershed',overwrite=True, **kwargs) # the other keyword arguments
         # postprocess accumulation map
-        grass.mapcalc("{0}=int(if({0}__float<=0,null(),{0}__float))".format(self.accumulation),
-                      overwrite=True)
+        grass.mapcalc("{0}=int(if({0}__float <= 0,null(),{0}__float))".format(self.accumulation),
+                      overwrite=True)          
         # make river network to vector
         grass.message('Making vector river network...')
         g_run('r.thin',input=self.streams,output=self.streams,overwrite=True,quiet=True)
@@ -346,9 +347,9 @@ class main:
                 name='watersheds__st%s' %(i+1)
             grass.message(('Calculating watershed for station %s' %(i+1)))
             g_run('r.water.outlet', input=self.drainage, overwrite=True,
-                  output=name, coordinates='%s,%s' %tuple(s))
+                  output=name+'__all1', coordinates='%s,%s' %tuple(s))
             # give watershed number and put 0 to null()
-            grass.mapcalc(name+' = if('+name+'==1,%s,null())' %(i+1),
+            grass.mapcalc(name+' = if('+name++'__all1'+' == 1,%s,null())' %(i+1),
                           overwrite=True)
             # make vector of catchment as well
             if 'catchmentprefix' in self.options:
@@ -518,8 +519,11 @@ class main:
         #### clean subbasins
         grass.message('Clean subbasin map...')
         # add little areas of watershed to subbasin map that arent covered
-        exp=''''{0}'=if(~isnull('{1}') & isnull({0}),9999,'{0}')'''
-        grass.mapcalc(exp.format(self.subbasins,self.catchments), overwrite=True) 
+        exp=''''subbasins__0'=if(~isnull('{1}') & isnull({0}),9999,'{0}')'''
+        grass.mapcalc(exp.format(self.subbasins,self.catchments), overwrite=True)
+        g_run('g.remove', rast=self.subbasins,quiet=True)
+        g_run('g.rename', rast='subbasins__0,%s' %self.subbasins,quiet=True)
+
         # convert subbasins to vector
         g_run('r.to.vect', overwrite=True, quiet=False, flags='',
                           input=self.subbasins,
@@ -555,9 +559,11 @@ class main:
         
         # get drainage area via accumulation map in sq km
         g_run('r.stats.zonal', base=self.subbasins,cover=self.accumulation, method='max',
-             output='max__accum', overwrite=True)
+             output='max__accum__cells', overwrite=True)
         cellareakm = self.region['nsres']*self.region['ewres']*10**-6
-        grass.mapcalc("max__accum=max__accum*%s" %cellareakm, overwrite=True)
+        grass.mapcalc("max__accum=max__accum__cells*%s" %cellareakm, overwrite=True)
+
+        # upload to subbasin table
         g_run('v.db.addcolumn', map=self.subbasins, column='darea double',quiet=True)
         g_run('v.what.rast', map=self.subbasins,raster='max__accum',column='darea',
               type='centroid',quiet=True)

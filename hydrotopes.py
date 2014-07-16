@@ -2,7 +2,7 @@
 #
 ############################################################################
 #
-# MODULE:      r.swim
+# MODULE:      m.swim.hydrotopes
 # AUTHOR(S):   Michel Wortmann, wortmann@pik-potsdam.de
 # PURPOSE:     Preprocessing suit for the Soil and Water Integrated Model (SWIM)
 # COPYRIGHT:   (C) 2012 by Wortmann/PIK
@@ -116,7 +116,7 @@
 #%end
  
 
-import os,sys, re, subprocess
+import os,sys
 import grass.script as grass
 g_run=grass.run_command
 import numpy as np
@@ -285,24 +285,7 @@ def readinStr(hydrotopemap,strcolumns):
     # make nice record array
     dtype  = zip(strcolumns+['area','ncells'],[int]*(len(strcolumns)+2))
     struct = np.array(zip(*struct),dtype=dtype)
-#
-#    cats=grass.read_command('r.stats', flags='aclNn', input=hydrotopemap,
-#                            separator='|').strip().split('\n')
-#  
-#    # put into list of lists with [map1cat,map2cat,mapXcat...,area, cells]
-#    c = []
-#    for u in cats: # last line break produces empty entry
-#        l=u.split('|') # 'cat','cat labels','area','cells'
-#        # strip all non-numeric stuff from the labels and make integers
-#        if len(l[1])==0: continue # skipping classes that dont have category labels
-#        categories=[re.sub('[^0-9]','',n) for n in l[1].split(';')]
-#        # add area and cell count and save in c list
-#        c+=[  categories + [l[2], l[3]]  ]
-#    grass.message('Here are the first and last two lines of the .str file, make sense?')
-#    print c[:2]
-#    print c[-2:]
-#    # make numpy array
-#    struct=np.array(c, dtype=float)
+
     return struct
 
 def writeStr(array,strname):
