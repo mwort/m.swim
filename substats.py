@@ -16,16 +16,6 @@
 #%Module
 #% description: Soil and Water Integrated Model (SWIM) preprocessor: subbasin statistics
 #%End
-#%Option
-#% guisection: Required
-#% key: subbasins
-#% type: string
-#% required: yes
-#% multiple: no
-#% key_desc: name
-#% description: Subbasin vector map, statistics will be updated in table
-#% gisprompt: old,vector,vector
-#%end
 
 #%Option
 #% guisection: Required
@@ -46,6 +36,17 @@
 #% key_desc: path
 #% description: Path to project folder
 #% gisprompt: old,dir,dir
+#%end
+
+#%Option
+#% guisection: Required
+#% key: subbasins
+#% type: string
+#% required: yes
+#% multiple: no
+#% key_desc: name
+#% description: Subbasin vector map, statistics will be updated in table
+#% gisprompt: old,vector,vector
 #%end
 
 #%Option
@@ -565,7 +566,7 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
         
         # get column out of table        
         stats=getTable(self.subbasins,dtype=float,
-                       column='subbasinID,%s' %column)[column]
+                       columns='subbasinID,%s' %column)[column]
         
         # report statistics
         nans=np.isnan(stats)

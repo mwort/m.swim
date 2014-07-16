@@ -169,7 +169,7 @@ class main:
         cols = grass.vector_columns(self.subbasins)
         if 'subbasinID' not in cols and 'cat' in cols:
             grun('v.db.addcolumn',map=self.subbasins,columns=self.subb_col+' int',quiet=True)
-            grun('v.to.db',map=self.subbasins,columns=self.subb_col,option='cat')
+            grun('v.db.update', map=self.subbasins, column=self.subb_col, qcol='cat')
         
         # make rast 
         grun('v.to.rast',input=self.subbasins,output=self.subbasinrast,
