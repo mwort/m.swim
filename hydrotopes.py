@@ -47,13 +47,14 @@
 #% gisprompt: old,cell,raster
 #%end
 #%Option
-#% guisection: Required
+#% guisection: Required    
 #% key: strfilepath
 #% type: string
 #% required: yes
 #% multiple: no
 #% key_desc: path
 #% description: Path where structure file will be written
+#% gisprompt: new,file,file
 #%end
 #%Option
 #% guisection: Required
@@ -119,6 +120,7 @@
 import os,sys
 import grass.script as grass
 g_run=grass.run_command
+gm   =grass.message
 import numpy as np
 import datetime as dt
 
@@ -163,17 +165,22 @@ class main:
         if self.c and 'contours' not in self.options: maps += [self.contourrast]
         if 'more' in self.options: maps += self.more
         # check
-        grass.message('Checking for NULLs in input maps...')
-        ifnull = '|'.join(['isnull(%s)' %m for m in maps])
-        grass.mapcalc('null__areas=if(%s,1,null())' %ifnull, overwrite=True)
+        gm('Checking for NULLs in input maps...')
+        pow2 = 2**np.arange(len(maps))
+        ifnull = ' + '.join(['isnull(%s)*%s' %(m,i) for m,i in zip(maps,pow2)])
+        grass.mapcalc('null__areas=%s' %ifnull, overwrite=True)
+        g_run('r.null',map='null__areas',setnull=0,quiet=True)
         null = grass.parse_command('r.stats',input='null__areas',flags='aN',separator='=')
         
         if len(null)>0:
-            na = np.array(null.values(),dtype=float).sum()*10**-6
-            grass.fatal(('''%s
-In any of these input maps there is an area of %s sq km of NULL/no data values over the subbasins.
-See the null__area raster. How should they appear in the .str file?
-Set them with r.null''' %(','.join(maps),na),null))
+            gm("In any of the input maps are NULL/no data values over the subbasins area.")
+            gm(" See the null__area raster with this legend including their combinations.")
+            for m,i in zip(maps,pow2): gm("%s = %s" %(i,m))
+            gm('null__area   area [km2]')
+            for m in sorted(null.keys()): gm("%s        %s" %(m,float(null[m])*10**-6))
+            gm("How should they appear in the .str file?")
+            gm("Set them with r.null")
+            grass.fatal('Exiting!')
         g_run('r.mask', flags='r', quiet=True)
 
 # LONGER CHECK, possibly wihtout resolution errors
@@ -215,8 +222,7 @@ Set them with r.null''' %(','.join(maps),na),null))
         exp = self.contourrast+'= if(%s<%s,1)' %(self.elevation, breaks[0]) # for the first, smaller than
         for b in breaks: exp+='+ if(%s>=%s,1)' %(self.elevation,b) # for all greater eq than
         grass.mapcalc(exp, overwrite=True)
-        # remove mask
-        g_run('r.mask', flags='r',quiet=True)
+
         grass.message(('Calculated contourmap: %s' %self.contourrast))
         
         return
@@ -278,9 +284,11 @@ def readinStr(hydrotopemap,strcolumns):
         tbl      = [tuple(l.split('|')) for l in tbl]
         array = np.array(tbl[1:],dtype=zip(tbl[0],['S250']*len(tbl[0])))
         struct += [array['mean']]
+        gm('Read hydrotope values for %s' %s)
     # add number of cells and area
     ncells = array['non_null_cells'].astype(int)
-    area   = (ncells*grass.region()['nsres']).astype(int)
+    reg = grass.region()
+    area   = (ncells*reg['nsres']*reg['ewres']).astype(int)
     struct += [area,ncells]
     # make nice record array
     dtype  = zip(strcolumns+['area','ncells'],[int]*(len(strcolumns)+2))

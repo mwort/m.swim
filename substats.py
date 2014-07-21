@@ -570,17 +570,16 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
         
         # report statistics
         nans=np.isnan(stats)
-        grass.message('''%s statistics:
-        min: %s mean: %s max: %s number of nans: %s''' %(raster,
-        np.min(stats[~nans]),np.mean(stats[~nans]),np.max(stats[~nans]),len(np.where(nans)[0])))
+        gm("%s statistics:" %raster)
+        gm("min: %s mean: %s max: %s number of nans: %s" %(np.min(stats[~nans]),np.mean(stats[~nans]),np.max(stats[~nans]),len(np.where(nans)[0])))
         return stats
         
     def makeMainStreamRast(self):
         # make stream rast with subbasin categories
         streamrast='%s__rast' %self.mainstreams.split('@')[0]
-        grun('v.to.rast',input=self.mainstreams,type='line',output=streamrast,use='val',
+        grun('v.to.rast',input=self.mainstreams,type='line',output=streamrast+'__1',use='val',
              overwrite=True, quiet=True)
-        grass.mapcalc("'{0}'=if(isnull('{0}'),null(),'{1}')".format(streamrast,'subbasin__rast'),
+        grass.mapcalc("'{0}'=if(isnull('{1}'),null(),'{2}')".format(streamrast,streamrast+'__1','subbasin__rast'),
                       overwrite=True)
         
         # check if it has same number of categories than subbasins
@@ -588,8 +587,9 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
         strstats=rstats(streamrast)
         if len(sbstats)!=len(strstats):
             self.nostreams = [sb for sb in sbstats['id'] if sb not in strstats['id']]
-            gm('''These subbasins dont seem to have a mainstream. %s 
-            I will assume they have at least one stream cell.''' %self.nostreams)
+            gm('''These subbasins dont seem to have a mainstream:''')
+            gm(','.join(map(str,self.nostreams))) 
+            gm('''I will assume they have at least one stream cell.''')
         return streamrast
     
     def areaFractions(self):
@@ -612,18 +612,18 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
         streaminfo = rinfo(self.mainstreamrast)
         ewres, nsres = streaminfo['ewres'],streaminfo['nsres']
         exp = "'cell__len'=if(isnull('{streams}'),null(),"
-        exp+= "if('{d}'==4 || '{d}'==8, {ew},0)+if('{d}'==2 || '{d}'==6,{ns},0)"
-        exp+= "+if(%s,{dia},0))"%(" || ".join(["'{d}'==%s" %i for i in [1,3,5,7]]))
+        exp+= "if('{d}'==4 || '{d}'==8, {ew},0)+if('{d}' == 2 || '{d}' == 6,{ns},0)"
+        exp+= "+if(%s,{dia},0))"%(" || ".join(["'{d}' == %s" %i for i in [1,3,5,7]]))
         exp = exp.format(d=self.drainage,streams=self.mainstreamrast,ew=ewres,ns=nsres,
                          dia=np.sqrt(float(ewres)**2+float(nsres)**2))
         grass.mapcalc(exp, overwrite=True)
         
         # report the sum of the cell length in the subbasins
         grun('r.stats.zonal',base=self.mainstreamrast,cover='cell__len',
-             method='sum',output='cell__len__mainstreams',overwrite=True,quiet=True)
+             method='sum',output='cell__len__mainstreams__m',overwrite=True,quiet=True)
 
-        # convert to proper raster and to km
-        exp='cell__len__mainstreams=cell__len__mainstreams*0.001'
+        # convert to km
+        exp='cell__len__mainstreams=cell__len__mainstreams__m*0.001'
         grass.mapcalc(exp=exp, overwrite=True)
         # upload and get values
         lengthrast = self.meanSubbasin('cell__len__mainstreams')
@@ -647,19 +647,21 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
         # where nan, set to grid size
         nolength = tbl[np.isnan(tbl[self.chl])]['subbasinID']
         if len(nolength)>0:
-            whichsb  = ['subbasinID==%i' %sb for sb in nolength]
+            where  = 'subbasinID IN %r' %(tuple(nolength),)
             res      = grass.region()['ewres']*1e-3 # m to km
             grun('v.db.update', map=self.subbasins, column=self.chl,
-                 value=res, where=' or '.join(whichsb),quiet=True)
-            gm('These subbasins have a minimum main channel length of %skm: %s' %(res,nolength))
+                 value=res, where=where,quiet=True)
+            gm('%s subbasins have a minimum main channel length of %skm:' %(len(nolength),res))
+            gm(','.join(map(str,nolength)))
             
         # too large
         toolong = tbl[tbl[self.chl]>tbl['perim__']]['subbasinID']
         if len(toolong)>0:
-            whichsb  = ['subbasinID==%i' %sb for sb in toolong]
+            where  = 'subbasinID IN %r' %(tuple(toolong),)
             grun('v.db.update', map=self.subbasins, column=self.chl,
-                 qcolumn='perim__', where='|'.join(whichsb),quiet=True)
-            gm('These subbasins have a maximum main channel length equal to their perimeter: %s' %toolong)
+                 qcolumn='perim__', where=where,quiet=True)
+            gm('%s subbasins have a maximum main channel length equal to their perimeter:' %len(toolong))
+            gm(','.join(map(str,toolong)))
         
             # remove perimeter column
             grun('v.db.dropcolumn',map=self.subbasins,column='perim__',quiet=True)
@@ -710,7 +712,7 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
              method='max',output='max__accum',overwrite=True,quiet=True)
         res = rinfo(self.accumulation)['ewres']
         # calculate width
-        exp=rasterout+'=min(1.29*(max__accum*(%s^2)/1000000)^0.6,%s)' %(res,maxwidth)
+        exp=rasterout+'=min(1.29 * (max__accum * (%s^2)/1000000)^0.6, %s)' %(res,maxwidth)
         grass.mapcalc(exp, overwrite=True)
 
         return rasterout
@@ -728,7 +730,7 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
              method='max',output='max__accum',overwrite=True,quiet=True)
         res = rinfo(self.accumulation)['ewres']
         # calculate width
-        exp = rasterout+'=min(0.13*(max__accum*(%s^2)/1000000)^0.4,%s)' %(res,maxdepth)
+        exp = rasterout+'=min(0.13 * (max__accum * (%s^2) / 1000000)^0.4, %s)' %(res,maxdepth)
         grass.mapcalc(exp,overwrite=True)
 
         return rasterout

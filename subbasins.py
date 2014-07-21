@@ -286,7 +286,7 @@ class main:
 
         ######### decide on input arguments #######
         kwargs = {'elevation'   : self.elevation,
-                  'threshold'   : int(grass.region()['cells']*10**-4),
+                  'threshold'   : grass.region()['nsres']/1000*np.mean(self.upthresh),
                   # Output
                   'accumulation': self.accumulation+'__float',
                   'drainage'    : self.drainage,
@@ -303,7 +303,9 @@ class main:
         # run r.watershed command and show progress
         #environ=os.environ.copy()
         #environ['GRASS_MESSAGE_FORMAT'] = 'gui'
-        g_run('r.watershed',overwrite=True, **kwargs) # the other keyword arguments
+        grass.message(kwargs)
+        g_run('r.watershed',overwrite=True,**kwargs) # the other keyword arguments
+        
         # postprocess accumulation map
         grass.mapcalc("{0}=int(if({0}__float <= 0,null(),{0}__float))".format(self.accumulation),
                       overwrite=True)          
@@ -349,7 +351,7 @@ class main:
             g_run('r.water.outlet', input=self.drainage, overwrite=True,
                   output=name+'__all1', coordinates='%s,%s' %tuple(s))
             # give watershed number and put 0 to null()
-            grass.mapcalc(name+' = if('+name++'__all1'+' == 1,%s,null())' %(i+1),
+            grass.mapcalc(name+' = if('+name+'__all1'+' == 1,%s,null())' %(i+1),
                           overwrite=True)
             # make vector of catchment as well
             if 'catchmentprefix' in self.options:
@@ -381,7 +383,7 @@ class main:
         """
     
         out={} # for output maps
-		# calculate station topology from individual watershed rasters
+        # calculate station topology from individual watershed rasters
         self.stationtopology = self.getTopology()
         ########### SUBBASINS ##########################
         # use upthresh for all if self.upthresh not already converted to list in __init__
@@ -413,7 +415,7 @@ class main:
             else:
                 subareas+=[watersheds[i]]
             #### MASK SUBAREA #####
-            g_run('r.mask', rast=subareas[i], overwrite=True, quiet=True)
+            #g_run('r.mask', rast=subareas[i], overwrite=True, quiet=True)
                               
             # prepare inputs for the subbasins
             subbasins_name='subbasins__'+subareas[i]
@@ -421,7 +423,7 @@ class main:
             thresh = int(round(self.upthresh[i]*1000**2/grass.region()['ewres']**2))
             grass.message('Subbasin threshold: %s km2, %s cells' %(self.upthresh[i],thresh))
             kwargs ={'elevation': self.elevation,
-                     'basin'    : subbasins_name,
+                     'basin'    : subbasins_name+'__uncut',
                      'threshold': thresh,
                      'flags'    : self.rwatershedflags}
             # carved elevation
@@ -431,9 +433,13 @@ class main:
             ##### r.watershed            
             g_run('r.watershed', overwrite=True, quiet=True, **kwargs)
 
-            g_run('r.mask',flags='r',quiet=True) #remove mask
+            # cut out subbasins for subarea
+            exp = subbasins_name + '=if(isnull(%s), null(), %s)' %(subareas[i],subbasins_name+'__uncut')
+            grass.mapcalc(exp)
+           
+            # g_run('r.mask',flags='r',quiet=True) #remove mask
             subbasins+=[subbasins_name]
-        
+            
         #update maps dictionary
         out['subbasins']= subbasins
         out['subareas'] = subareas
@@ -443,8 +449,11 @@ class main:
         lastmax = 0 # in case only 1 station is used
         for i,s in enumerate(out['subbasins']):
             # if more than one subarea add the last max to the current
-            if i>0: grass.mapcalc('{0}={0}+{1}'.format(s,lastmax),
-                                  overwrite=True, quiet=True)
+            if i>0:
+                gm(lastmax)
+                grass.mapcalc('{0}__lastmax={0} + {1}'.format(s,lastmax),
+                                      overwrite=True, quiet=True)
+                out['subbasins'][i] = s+'__lastmax'
             # get classes and check if subbasins were produced
             classes = getclasses(s)
             if len(classes)==0:
@@ -472,7 +481,6 @@ class main:
         g_run('r.to.vect', overwrite=True, quiet=True, flags='vs',
                       input=self.catchments, output=self.catchments,
                       type='area')
-    
         ### clean subbasin raster and vector keeping the same name
         self.cleanSubbasins()
         ### make continuous subbasinIDs

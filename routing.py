@@ -242,6 +242,7 @@ class main:
         grun('v.db.dropcolumn',map=self.outlets, column='label',**kw)
         
         # make inlets point vector
+        gm('Getting inletIDs...')
         grun('r.to.vect', input='inlets__', output=self.inlets, type='point',**kw)
         grun('v.db.renamecolumn', map=self.inlets, column='value,subbasinID',quiet=quiet)
         grun('v.db.dropcolumn', map=self.inlets, column='label',quiet=quiet)
@@ -385,7 +386,7 @@ class main:
         grass.run_command('r.reclass',input='maxaccum__',output='optiaccum__',
                           rules=tempf,quiet=True)
         # get accumulation and make lines
-        grass.mapcalc("{0}=if({1}>{2},{1},null())".format(self.mainstreams,
+        grass.mapcalc("{0}__unthin=if({1} > {2},{1},null())".format(self.mainstreams,
                       self.accumulation,'optiaccum__'),overwrite=True)
                       
         # make sure all pixels between outlets and inlets are included
@@ -393,7 +394,7 @@ class main:
         #     use='val',type='line',quiet=True)
         #grass.mapcalc("{0}=if(isnull({0})&~isnull({1}),{2},{0})".format(self.mainstreams,
         #              'routingnet__rast',self.accumulation),overwrite=True)
-        grun('r.thin', input=self.mainstreams, output=self.mainstreams, overwrite=True, quiet=True) # may exclude outlet/inlet points
+        grun('r.thin', input=self.mainstreams+'__unthin', output=self.mainstreams, overwrite=True, quiet=True) # may exclude outlet/inlet points
         
         # use predefined streams for subbasins that have them
         if 'streams' in self.options:
@@ -440,6 +441,8 @@ def fig(subbasins,fname):
     fromto = readSubNxtID(subbasins)
     # sort according to next and then subbasin ID
     fromto = np.sort(fromto, order=('subbasinID',))
+    ### TODO: fatal if more than one outlet
+    
     # lines list to be appended
     lines = []
 
