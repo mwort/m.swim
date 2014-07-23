@@ -1,84 +1,12 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<html>
-<head>
-<title>GRASS GIS manual: m.swim.hydrotopes</title>
+<html><head><title>GRASS GIS manual: m.swim.hydrotopes</title>
+
+
+
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
 <link rel="stylesheet" href="grassdocs.css" type="text/css">
-</head>
-<body bgcolor="white">
+<meta content="text/html; charset=ISO-8859-1" http-equiv="content-type"></head><body bgcolor="white">
 
-<img src="grass_logo.png" alt="GRASS logo"><hr align=center size=6 noshade>
-
-<h2>NAME</h2>
-<em><b>m.swim.hydrotopes</b></em>  - Soil and Water Integrated Model (SWIM) preprocessor: hydrotopes
-<h2>KEYWORDS</h2>
-<h2>SYNOPSIS</h2>
-<div id="name"><b>m.swim.hydrotopes</b><br></div>
-<b>m.swim.hydrotopes help</b><br>
-<div id="synopsis"><b>m.swim.hydrotopes</b> [-<b>ck</b>] <b>subbasins</b>=<em>name</em> <b>landuse</b>=<em>name</em> <b>soil</b>=<em>name</em> <b>strfilepath</b>=<em>path</em> <b>hydrotopes</b>=<em>name</em>  [<b>contours</b>=<em>ints or list of ints</em>]   [<b>contourrast</b>=<em>existing rast of elevation contours or to be created</em>]   [<b>elevation</b>=<em>name</em>]   [<b>more</b>=<em>name</em>[,<i>name</i>,...]]   [--<b>help</b>]  [--<b>verbose</b>]  [--<b>quiet</b>] 
-</div>
-
-<div id="flags">
-<h3>Flags:</h3>
-<dl>
-<dt><b>-c</b></dt>
-<dd>include contours, either create if contours given or use contourrast</dd>
-
-<dt><b>-k</b></dt>
-<dd>Keep intermediat files (include __ in names)</dd>
-
-<dt><b>--help</b></dt>
-<dd>Print usage summary</dd>
-<dt><b>--verbose</b></dt>
-<dd>Verbose module output</dd>
-<dt><b>--quiet</b></dt>
-<dd>Quiet module output</dd>
-</dl>
-</div>
-
-<div id="parameters">
-<h3>Parameters:</h3>
-<dl>
-<dt><b>subbasins</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
-<dd>Subbasin raster map</dd>
-
-<dt><b>landuse</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
-<dd>Land use raster map in SWIM land use classification</dd>
-
-<dt><b>soil</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
-<dd>Soil raster map classified to SWIM soil files</dd>
-
-<dt><b>strfilepath</b>=<em>path</em>&nbsp;<b>[required]</b></dt>
-<dd>Path where structure file will be written</dd>
-
-<dt><b>hydrotopes</b>=<em>name</em>&nbsp;<b>[required]</b></dt>
-<dd>Name of hydrotope raster to be created</dd>
-<dd>Default: <em>hydrotopes</em></dd>
-
-<dt><b>contours</b>=<em>ints or list of ints</em></dt>
-<dd>Elevation contours to include in hydrotopes [optional, if set, DEM in Subbasins also needs to be set]</dd>
-
-<dt><b>contourrast</b>=<em>existing rast of elevation contours or to be created</em></dt>
-<dd>Elevation contours to include in hydrotopes [optional, if set, DEM in Subbasins also needs to be set]</dd>
-<dd>Default: <em>contours</em></dd>
-
-<dt><b>elevation</b>=<em>name</em></dt>
-<dd>Elevation raster</dd>
-
-<dt><b>more</b>=<em>name[,<i>name</i>,...]</em></dt>
-<dd>More rasters maps included in hydrotopes [optional]</dd>
-
-</dl>
-</div>
-</body>
-</html>
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html><head>
-
-
-
-
-<meta content="text/html; charset=ISO-8859-1" http-equiv="content-type"><title>m.swim.hydrotopes</title></head><body>
 <h2>DESCRIPTION<span style="font-style: italic;"></span></h2>The <span style="font-weight: bold;">m.swim.hydrotopes</span> module computes the hydrotopes (or Hydrological Response Units/HRU) and writes this information to the SWIM structure file.<br>
 <h3>Structure file (.str)</h3>
 The full path to the structure file should be given to the <span style="font-weight: bold;">strfilepath</span>.
@@ -146,7 +74,10 @@ This implicitly creates a raster called contours and one called hydrotopes (as d
 
 
 <a href="m.swim.subbasins.html">m.swim.subbasins</a>, 
-<a href="r.watershed.html">r.watershed</a>, <a href="m.swim.substats.html">m.swim.substats</a>, <a href="m.swim.routing.html">m.swim.routing</a><a href="m.swim.routing.html"><br>
+<a href="r.watershed.html">r.watershed</a>, <a href="m.swim.substats.html">m.swim.substats</a>, <a href="m.swim.routing.html">m.swim.routing</a><br>
+<br>
+Documentation [external]: <a href="http://www.pik-potsdam.de/%7Ewortmann/grass.swim/doc/">m.swim</a><br>
+<a href="m.swim.routing.html">
 </a> 
 
 <h2>AUTHORS</h2>
