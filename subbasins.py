@@ -96,7 +96,7 @@
 #% key_desc: string
 #% description: Name of accumlation map to be created (or existing if -d)
 #% answer: accumulation
-#% gisprompt: old,cell,raster
+#% gisprompt: new,cell,raster
 #%end
 #%Option
 #% guisection: Topography
@@ -107,7 +107,7 @@
 #% key_desc: string
 #% description: Name of drainge map to be created (or existing if -d)
 #% answer: drainage
-#% gisprompt: old,cell,raster
+#% gisprompt: new,cell,raster
 #%end
 
 #%Option
@@ -119,7 +119,18 @@
 #% key_desc: string
 #% description: Name of streams vector to be created (or existing if -d)
 #% answer: streams
-#% gisprompt: old,vector,vector
+#% gisprompt: new,vector,vector
+#%end
+
+#%Option
+#% guisection: Topography
+#% key: streamthresh
+#% type: double
+#% required: no
+#% multiple: no
+#% key_desc: name
+#% label: Drainage area of smallest stream in km2 (influences station snapping, default: 10% of region)
+#% description: Stations will be snapped to these streams, ie. should not be smaller than the smallest catchment
 #%end
 
 #%Option
@@ -239,10 +250,16 @@ class main:
         # add all options and flags as attributes (only nonempty ones)
         self.options = {}
         for o in optionsandflags:
-            if optionsandflags[o]!='': self.options[o] = optionsandflags[o]
+            if optionsandflags[o]!='':
+                try: self.options[o] = int(optionsandflags[o])             # int
+                except ValueError:
+                    try: self.options[o] = float(optionsandflags[o])       # float
+                    except ValueError: self.options[o] = optionsandflags[o]# str
         self.__dict__.update(self.options)
         # save region for convenience
         self.region = grass.region()
+        self.region['kmtocell'] = lambda km: int(round(np.mean(km)*1000**2/(self.region['ewres']*self.region['nsres'])))
+        self.region['celltokm'] = lambda c: c*(self.region['ewres']*self.region['nsres'])*1e-6
         
         # check if DEM to processed or if all inputs set
         if not ('accumulation' in self.options and 'drainage' in self.options and 'streams' in self.options):
@@ -257,17 +274,23 @@ class main:
                 self.upthresh = np.array(threshs.values(),dtype=float)[:,0]
             except:
                 grass.fatal('Cant read the upper threshold from the column %s' %self.upthreshcolumn)
-        else:
-            self.upthresh = float(self.upthresh)
         
         # lothresh default
-        if 'lothresh' in self.options:
-            self.lothresh = float(self.lothresh)
-        else:
+        if 'lothresh' not in self.options:
             self.lothresh = np.mean(self.upthresh)*0.05
+            
+        # streamthresh
+        if 'streamthresh' in self.options:
+            # convert to cells
+            self.streamthresh = self.region['kmtocell'](self.streamthresh)
+            # check if reasonable
+            fract = float(self.streamthresh)/self.region['cells']
+            if fract > 0.5 or fract < 0.01: grass.warning('streamthresh is %s percent of the region size!' %(fract*100))
+        else:
+            self.streamthresh = self.region['cells']*0.1
          
         # if no r.watershed flags given
-        if 'rwatershedflags' not in self.options: self.rwatershedflags=''
+        if 'rwatershedflags' not in self.options: self.rwatershedflags='s'
         
         # check input for stats print
         if self.s:
@@ -275,7 +298,7 @@ class main:
                 if o not in self.options: grass.fatal('%s needs to be set!')
             # get all catchments
             self.allcatchments=grass.mlist_strings('rast',self.catchmentprefix+'*')
-            print 'Found these catchments %s' %self.allcatchments
+            gm( 'Found these catchments %s' %self.allcatchments)
             # calculate station topology
             self.station_coor = snappoints(self.stations, self.streams)
             self.stationtopology = self.getTopology()
@@ -285,12 +308,16 @@ class main:
         """Make drainage, accumulation and stream raster"""
 
         ######### decide on input arguments #######
+        
+        # from km2 to cells
+        thresh = self.region['kmtocell'](self.upthresh)
+
         kwargs = {'elevation'   : self.elevation,
-                  'threshold'   : grass.region()['nsres']/1000*np.mean(self.upthresh),
+                  'threshold'   : thresh,
                   # Output
-                  'accumulation': self.accumulation+'__float',
+                  'accumulation': 'accum__float',
                   'drainage'    : self.drainage,
-                  'stream'      : self.streams,
+                  #'stream'      : self.streams, # created later with accum raster
                   'slope_steepness': self.slopesteepness,
                   'length_slope': self.slopelength,
                   'flags'       : self.rwatershedflags}
@@ -307,13 +334,13 @@ class main:
         g_run('r.watershed',overwrite=True,**kwargs) # the other keyword arguments
         
         # postprocess accumulation map
-        grass.mapcalc("{0}=int(if({0}__float <= 0,null(),{0}__float))".format(self.accumulation),
+        grass.mapcalc("%s=int(if(accum__float <= 0,null(),accum__float))" %self.accumulation,
                       overwrite=True)          
         # make river network to vector
         grass.message('Making vector river network...')
-        g_run('r.thin',input=self.streams,output=self.streams,overwrite=True,quiet=True)
-        g_run('r.to.vect', flags='s', input=self.streams, output=self.streams,
-              overwrite=True, type='line')
+        grass.mapcalc("{0}__thick = if({1} >= {2}, {1}, null())".format(self.streams,self.accumulation,self.streamthresh))
+        g_run('r.thin',input=self.streams+'__thick',output=self.streams,quiet=True)
+        g_run('r.to.vect', flags='s', input=self.streams, output=self.streams,type='line')
         
         return
     
@@ -420,7 +447,7 @@ class main:
             # prepare inputs for the subbasins
             subbasins_name='subbasins__'+subareas[i]
             # calculate threshold from sq km to cells
-            thresh = int(round(self.upthresh[i]*1000**2/grass.region()['ewres']**2))
+            thresh = int(round(self.upthresh[i]*1000**2/(self.region['ewres']*self.region['nsres'])))
             grass.message('Subbasin threshold: %s km2, %s cells' %(self.upthresh[i],thresh))
             kwargs ={'elevation': self.elevation,
                      'basin'    : subbasins_name+'__uncut',

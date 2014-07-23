@@ -156,15 +156,24 @@ class main:
             self.more = self.more.split(',')
             self.strcolumns += self.more
             
-        # check that all input maps have no NULLs in catchment over subbasins area
-        g_run('r.mask',raster=self.subbasins,overwrite=True)
-        # maps that neednt be null
+
+        # collect maps that need to be integer maps
         maps = [self.landuse,self.soil]
-        # optional
-        if self.c: maps += [self.elevation]
         if self.c and 'contours' not in self.options: maps += [self.contourrast]
         if 'more' in self.options: maps += self.more
-        # check
+        
+        # check if all input maps are int/CELL maps
+        gm('Check if all input are integer raster...')
+        for m in maps:
+            if grass.raster_info(m)['datatype']!='CELL':
+                grass.fatal('%s is not an integer/CELL raster, convert using int() in r.mapcalc' %m)
+
+        # maps that need not be null over subbasins
+        if self.c: maps += [self.elevation]
+            
+        # check that all input maps have no NULLs in catchment over subbasins area
+        g_run('r.mask',raster=self.subbasins,overwrite=True)
+
         gm('Checking for NULLs in input maps...')
         pow2 = 2**np.arange(len(maps))
         ifnull = ' + '.join(['isnull(%s)*%s' %(m,i) for m,i in zip(maps,pow2)])
@@ -182,22 +191,6 @@ class main:
             gm("Set them with r.null")
             grass.fatal('Exiting!')
         g_run('r.mask', flags='r', quiet=True)
-
-# LONGER CHECK, possibly wihtout resolution errors
-#        for m in maps:
-#            areas = grass.parse_command('r.stats',input=','.join([self.subbasins,m]),
-#                                        flags='aN',separator='=')
-#            # only look for areas that have null * in m and make them floats
-#            nullarea = []
-#            for sb in areas:
-#                na = areas[sb].split('=')
-#                if na[0]=='*':
-#                    nullarea += [(int(sb),float(na[1])*10**-6)]
-#            if len(nullarea)>0:
-#                #for i in nullarea: print i
-#                grass.fatal('''%s has NULL/no data values over a total area of %s sq km.
-#                They are located in the above subbasins. How should they appear in the .str file?
-#                Set them with r.null''' %(m,np.array(nullarea)[:,1].sum()))
         
         return
         
