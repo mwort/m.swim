@@ -1,5 +1,6 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html><head>
+
 <meta content="text/html; charset=ISO-8859-1" http-equiv="content-type"><title>Developing and debugging m.swim</title></head><body>
 <h2>Using the central m.swim.git repository</h2>
 <h3>Requirements and copying the m.swim code<br>
@@ -7,19 +8,20 @@
 Frist of all you need to have git installed on your machine or you can use the cluster git.<br>
 <br>
 With a direct cluster connection, you can copy the m.swim code to your machine like this:<br>
-<pre>git clone &lt;username&gt;@cluster.pik-potsdam.de:/home/wortmann/src/grass7/m.swim.git</pre>
+<pre>git clone &lt;username&gt;@cluster.pik-potsdam.de:/home/wortmann/src/m.swim/m.swim.git</pre>
 ...or using the cluster git installation you can copy it on the cluster login like this:<br>
-<pre>git clone /home/wortmann/src/grass7/m.swim.git</pre>
+<pre>git clone /home/wortmann/src/m.swim/m.swim.git</pre>
 <h3>Working with git and changing the code<br>
 </h3>
 Now you have the entire code (incl. documentation) in the m.swim
 directory wherever you executed the clone command. Make your changes to
 the code and commit them inside local m.swim directory like this:<br>
-<pre># check what files are changed and will be commited</pre>
+<br>
+Check what files are changed and will be commited
 <pre>git status</pre>
-<pre># check what lines have changed</pre>
+Check what lines have changed
 <pre>git diff</pre>
-<pre># show what has been prevously changed (the commits) and branches</pre>
+Show what has been prevously changed (the commits) and branches (opens window with gui, i.e. you need X Windows set up!)
 <pre>gitk</pre>
 <h3>Committing changes</h3>
 Add individual files to the commit
