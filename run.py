@@ -453,7 +453,6 @@ import pandas as pa
 import grass.script as grass
 import pylab as pl
 import numpy as np
-pl.ioff()
 
 gm = grass.message
 
@@ -856,6 +855,7 @@ def postprocess():
             if len(runslist)>0:
                 junk = runslist[0].plot(runslist[1:])
             del runslist
+        pl.show()
             
     return
     
@@ -896,7 +896,6 @@ if __name__ == "__main__":
             
         if not flags['u']:
             postprocess()
-            pl.show()
         
     
 
