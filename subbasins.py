@@ -258,7 +258,7 @@ class main:
         self.__dict__.update(self.options)
         # save region for convenience
         self.region = grass.region()
-        self.region['kmtocell'] = lambda km: int(round(np.mean(km)*1000**2/(self.region['ewres']*self.region['nsres'])))
+        self.region['kmtocell'] = lambda km: int(round(np.mean(km)*10**6/(self.region['ewres']*self.region['nsres'])))
         self.region['celltokm'] = lambda c: c*(self.region['ewres']*self.region['nsres'])*1e-6
         
         # check if DEM to processed or if all inputs set
@@ -335,7 +335,7 @@ class main:
         g_run('r.watershed',overwrite=True,**kwargs) # the other keyword arguments
         
         # save subbasins in dictionary
-        self.subbasinsdone = {tresh:'standard__subbasins'}
+        self.subbasinsdone = {thresh:'standard__subbasins'}
         
         # postprocess accumulation map
         grass.mapcalc("%s=int(if(accum__float <= 0,null(),accum__float))" %self.accumulation,
@@ -471,7 +471,10 @@ class main:
                     
                 ##### r.watershed            
                 g_run('r.watershed', overwrite=True, quiet=True, **kwargs)
-
+                
+                # add to done subbasins list
+                self.subbasinsdone[thresh] = subbasins_uncut
+                
             # cut out subbasins for subarea
             exp = subbasins_name + '=if(isnull(%s), null(), %s)' %(subareas[i],subbasins_uncut)
             grass.mapcalc(exp)
