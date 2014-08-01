@@ -287,7 +287,7 @@ class main:
             fract = float(self.streamthresh)/self.region['cells']
             if fract > 0.5 or fract < 0.01: grass.warning('streamthresh is %s percent of the region size!' %(fract*100))
         else:
-            self.streamthresh = self.region['cells']*0.1
+            self.streamthresh = int(self.region['cells']*0.02)
          
         # if no r.watershed flags given
         if 'rwatershedflags' not in self.options: self.rwatershedflags='s'
@@ -352,7 +352,7 @@ class main:
         '''Carve vector streams into the DEM, i.e. setting those cells =0'''
         # stream vector to raster cells
         streamrast = self.streamcarve.split('@')[0]+'__'
-        g_run('v.to.rast',input=self.streamcarve,output=streamrast,
+        g_run('v.to.rast',input=self.streamcarve,output=streamrast, type='line',
               use='val',val=1,quiet=True,overwrite=True)
         # carve
         self.carvedelevation = '%s__carved' %self.elevation.split('@')[0]
@@ -497,7 +497,7 @@ class main:
                                       overwrite=True, quiet=True)
                 out['subbasins'][i] = s+'__lastmax'
             # get classes and check if subbasins were produced
-            classes = getclasses(s)
+            classes = getclasses(s+'__lastmax')
             if len(classes)==0:
                 gm( '%s has no subbasins and will be omitted (station too close to others?)' %s)
                 continue
