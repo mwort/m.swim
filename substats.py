@@ -880,7 +880,7 @@ if __name__=='__main__':
     if not main.k:
         grun('g.mremove',rast='*__*',vect='*__*',flags='f',quiet=True)
         # for reclassed raster
-        grun('g.mremove',rast='*__*',flags='f',quiet=True)
+        grun('g.mremove',rast='*__*',flags='fb',quiet=True)
 
     # report time it took
     delta = dt.datetime.now()-st
