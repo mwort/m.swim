@@ -318,6 +318,7 @@ class main:
                   'accumulation': 'accum__float',
                   'drainage'    : self.drainage,
                   #'stream'      : self.streams, # created later with accum raster
+                  'basin'       : 'standard__subbasins',
                   'slope_steepness': self.slopesteepness,
                   'length_slope': self.slopelength,
                   'flags'       : self.rwatershedflags}
@@ -332,6 +333,9 @@ class main:
         #environ['GRASS_MESSAGE_FORMAT'] = 'gui'
         grass.message(kwargs)
         g_run('r.watershed',overwrite=True,**kwargs) # the other keyword arguments
+        
+        # save subbasins in dictionary
+        self.subbasinsdone = {tresh:'standard__subbasins'}
         
         # postprocess accumulation map
         grass.mapcalc("%s=int(if(accum__float <= 0,null(),accum__float))" %self.accumulation,
@@ -414,7 +418,8 @@ class main:
         self.stationtopology = self.getTopology()
         ########### SUBBASINS ##########################
         # use upthresh for all if self.upthresh not already converted to list in __init__
-        if type(self.upthresh)==float: self.upthresh = [self.upthresh]*len(self.stationtopology)
+        if type(self.upthresh) in [int,float]:
+            self.upthresh = [self.upthresh]*len(self.stationtopology)
         # report station topology and make subbasins
         watersheds=self.allcatchments
         subareas=[]
@@ -449,19 +454,26 @@ class main:
             # calculate threshold from sq km to cells
             thresh = int(round(self.upthresh[i]*1000**2/(self.region['ewres']*self.region['nsres'])))
             grass.message('Subbasin threshold: %s km2, %s cells' %(self.upthresh[i],thresh))
-            kwargs ={'elevation': self.elevation,
-                     'basin'    : subbasins_name+'__uncut',
-                     'threshold': thresh,
-                     'flags'    : self.rwatershedflags}
-            # carved elevation
-            if 'streamcarve' in self.options:
-                kwargs['elevation']=self.carvedelevation
-                
-            ##### r.watershed            
-            g_run('r.watershed', overwrite=True, quiet=True, **kwargs)
+            
+            # check if already calculated with that threshold
+            if thresh in self.subbasinsdone:
+                subbasins_uncut = self.subbasinsdone[thresh]
+                gm('Using %s, already calculated.' %subbasins_uncut)
+            else:
+                subbasins_uncut = subbasins_name+'__uncut'
+                kwargs ={'elevation': self.elevation,
+                         'basin'    : subbasins_uncut,
+                         'threshold': thresh,
+                         'flags'    : self.rwatershedflags}
+                # carved elevation
+                if 'streamcarve' in self.options:
+                    kwargs['elevation']=self.carvedelevation
+                    
+                ##### r.watershed            
+                g_run('r.watershed', overwrite=True, quiet=True, **kwargs)
 
             # cut out subbasins for subarea
-            exp = subbasins_name + '=if(isnull(%s), null(), %s)' %(subareas[i],subbasins_name+'__uncut')
+            exp = subbasins_name + '=if(isnull(%s), null(), %s)' %(subareas[i],subbasins_uncut)
             grass.mapcalc(exp)
            
             # g_run('r.mask',flags='r',quiet=True) #remove mask
@@ -838,7 +850,7 @@ if __name__=='__main__':
     
     # clean
     if not main.k:
-        grass.run_command('g.mremove',rast='*__*',vect='*__*',flags='f',quiet=True)
+        grass.run_command('g.mremove',flags='b',rast='*__*',vect='*__*',flags='f',quiet=True)
     # report time it took
     delta = dt.datetime.now()-st
     grass.message('Execution took %s hh:mm:ss' %delta)

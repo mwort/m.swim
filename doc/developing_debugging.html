@@ -1,6 +1,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html><head>
 
+
 <meta content="text/html; charset=ISO-8859-1" http-equiv="content-type"><title>Developing and debugging m.swim</title></head><body>
 <h2>Using the central m.swim.git repository</h2>
 <h3>Requirements and copying the m.swim code<br>
@@ -23,14 +24,15 @@ Check what lines have changed
 <pre>git diff</pre>
 Show what has been prevously changed (the commits) and branches (opens window with gui, i.e. you need X Windows set up!)
 <pre>gitk</pre>
-<h3>Committing changes</h3>
+<h3>Committing changes locally<br>
+</h3>
 Add individual files to the commit
 <pre>git add &lt;file&gt;</pre>
 ... and then commit
 <pre>git commit -m 'Short description of what has changed'</pre>
 ... or you just commit all files that have changed without adding them:
 <pre>git commit -a -m 'Short description of what has changed'</pre>
-<h3>Changing the central m.swim repository<br>
+<h3>Committing changes to the cluster m.swim repository<br>
 </h3>
 Now you can make these commits to the central cluster directory by
 'pushing' them to it. You'll first have to set up the remote repository
