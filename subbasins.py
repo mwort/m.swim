@@ -302,6 +302,9 @@ class main:
             # calculate station topology
             self.station_coor = snappoints(self.stations, self.streams)
             self.stationtopology = self.getTopology()
+        
+        # initialise subbasinsdone
+        self.subbasinsdone={}
         return
         
     def procDEM(self):
@@ -310,7 +313,12 @@ class main:
         ######### decide on input arguments #######
         
         # from km2 to cells
-        thresh = self.region['kmtocell'](self.upthresh)
+        if type(self.upthresh) in [int,float]:
+            uthresh=self.upthresh
+        else: # take most common one in upthresh column
+            uthresh = max(set(self.upthresh), key=list(self.upthresh).count)
+            
+        thresh = self.region['kmtocell'](uthresh)
 
         kwargs = {'elevation'   : self.elevation,
                   'threshold'   : thresh,
@@ -335,7 +343,7 @@ class main:
         g_run('r.watershed',overwrite=True,**kwargs) # the other keyword arguments
         
         # save subbasins in dictionary
-        self.subbasinsdone = {thresh:'standard__subbasins'}
+        self.subbasinsdone[thresh] = 'standard__subbasins'
         
         # postprocess accumulation map
         grass.mapcalc("%s=int(if(accum__float <= 0,null(),accum__float))" %self.accumulation,
