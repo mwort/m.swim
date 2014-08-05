@@ -492,12 +492,11 @@ class main:
         for i,s in enumerate(out['subbasins']):
             # if more than one subarea add the last max to the current
             if i>0:
-                gm(lastmax)
                 grass.mapcalc('{0}__lastmax={0} + {1}'.format(s,lastmax),
                                       overwrite=True, quiet=True)
                 out['subbasins'][i] = s+'__lastmax'
             # get classes and check if subbasins were produced
-            classes = getclasses(s+'__lastmax')
+            classes = getclasses(out['subbasins'][i])
             if len(classes)==0:
                 gm( '%s has no subbasins and will be omitted (station too close to others?)' %s)
                 continue
