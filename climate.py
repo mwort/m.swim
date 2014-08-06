@@ -131,7 +131,6 @@ class main:
         return
         
     def writeClimStationfile(self):
-        filepath = self.datadir
         stationvect = self.climstations
         # get columns in correct order into array
         cols = [self.fnames,self.stationelevation]
@@ -146,13 +145,13 @@ class main:
                        dtype=[('ids',int),('names','S5120'),('x',float), ('y',float), ('z',int)])
         # add filepath to name/2nd column
         for i,n in enumerate(a['names']):
-            a['names'][i] = str(os.path.join(self.outdir,n+self.ext))
+            a['names'][i] = str(os.path.join(self.datadir,n+self.ext))
     
         # write file
         sfpath = os.path.join(self.outdir,'stationfile.dat')
         # put header
         head='ID  FILE                       POINT_X     POINT_Y            ELEV'
-        np.savetxt(sfpath, a, fmt='%6i  %-'+str(len(filepath)+32)+'s%12.1f%12.1f%10.1f',
+        np.savetxt(sfpath, a, fmt='%6i  %-'+str(len(self.datadir)+32)+'s%12.1f%12.1f%10.1f',
                    header=head)
         gm( 'Saved climate stations to %s' %sfpath)
         
