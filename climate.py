@@ -149,10 +149,9 @@ class main:
     
         # write file
         sfpath = os.path.join(self.outdir,'stationfile.dat')
-        # put header
-        head='ID  FILE                       POINT_X     POINT_Y            ELEV'
-        np.savetxt(sfpath, a, fmt='%6i  %-'+str(len(self.datadir)+32)+'s%12.1f%12.1f%10.1f',
-                   header=head)
+        f = file(sfpath,'w')
+        f.write('ID  FILE                       POINT_X     POINT_Y            ELEV\n')
+        np.savetxt(f, a, fmt='%6i  %-'+str(len(self.datadir)+32)+'s%12.1f%12.1f%10.1f')
         gm( 'Saved climate stations to %s' %sfpath)
         
         return
@@ -168,10 +167,9 @@ class main:
         
         # save to file
         sfpath = os.path.join(self.outdir,'virtualstationfile.dat')
-        # put header
-        head='ID  POINT_X     POINT_Y            ELEV'
-        np.savetxt(sfpath, tbl, fmt='%6i %12.1f%12.1f%10.1f',
-                   header=head)
+        f = file(sfpath,'w')
+        f.write('id    x     y      z\n')
+        np.savetxt(f, tbl, fmt='%6i %12.1f%12.1f%10.1f')
         gm( 'Saved virtual stations to %s' %sfpath)
         return
         
