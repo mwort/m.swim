@@ -23,6 +23,7 @@
 #% key: subbasins
 #% type: string
 #% multiple: no
+#% required: yes
 #% key_desc: name
 #% label: Subbasins vector
 #% description: Subbasins for which climate data will be interpolated
@@ -33,6 +34,7 @@
 #% guisection: Subbasins
 #% key: elevation
 #% type: string
+#% required: yes
 #% multiple: no
 #% key_desc: name
 #% description: Name of column with subbasin elevation
