@@ -336,6 +336,26 @@ class main:
 #            grun('v.in.lines',input=tf,output=self.outletinletlines,separator=',',quiet=True)
             # get subbasin centroids
             sbinfo = vreport(self.subbasins,index='subbasinID')
+            
+# snapp centroids to mainstreams
+#def snappoints(points, lines):
+#    '''correct points to lines by snapping'''
+#
+#    # get distances to rivernetwork and nearest x and y
+#    snapped_points=grass.read_command('v.distance',flags='p',quiet=True,
+#                         from=points,to=lines,
+#                         from_type='point',to_type='line',
+#                         upload='dist,to_x,to_y',column='d,x,y').split()
+#    # format, report and reassign station_coor
+#    snapped_coor=[]
+#    for d in snapped_points[1:]:
+#        d=d.split('|')
+#        snapped_coor+=[(float(d[2]),float(d[3]))]
+#        gm('Station %s moved by %8.1fm to: %s' %(d[0],float(d[1]),snapped_coor[-1]))
+#
+#    return snapped_coor
+            
+            
             # from centroids to outlets
             for o in oinfo:
                 lines+=[line(sbinfo[o],oinfo[o])]
