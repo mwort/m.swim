@@ -351,7 +351,13 @@ class main:
                       overwrite=True)          
         # make river network to vector
         grass.message('Making vector river network...')
-        grass.mapcalc("{0}__thick = if({1} >= {2}, {1}, null())".format(self.streams,self.accumulation,self.streamthresh))
+        # stream condition
+        scon = '{1} >= {2}' %(self.accumulation,self.streamthresh)
+        # include those streams that were carved as well
+        if 'streamcarve' in self.options:
+            scon += ' | !isnull(%s)' %self.streamrastcarved
+        # extract out of accumulation and make vector
+        grass.mapcalc(self.streams+"__thick = if(%s, %s, null())" %(scon,self.accumulation))
         g_run('r.thin',input=self.streams+'__thick',output=self.streams,quiet=True)
         g_run('r.to.vect', flags='s', input=self.streams, output=self.streams,type='line')
         
@@ -360,13 +366,13 @@ class main:
     def carveStreams(self):
         '''Carve vector streams into the DEM, i.e. setting those cells =0'''
         # stream vector to raster cells
-        streamrast = self.streamcarve.split('@')[0]+'__'
-        g_run('v.to.rast',input=self.streamcarve,output=streamrast, type='line',
-              use='val',val=1,quiet=True,overwrite=True)
+        self.streamrastcarved = self.streamcarve.split('@')[0]+'__'
+        g_run('v.to.rast',input=self.streamcarve,output=self.streamrastcarved,
+              type='line', use='val',val=1,quiet=True,overwrite=True)
         # carve
         self.carvedelevation = '%s__carved' %self.elevation.split('@')[0]
-        grass.mapcalc("%s=if(isnull(%s),%s,0)" %(self.carvedelevation,streamrast,self.elevation),
-                      overwrite=True)
+        grass.mapcalc("%s=if(isnull(%s),%s,0)" %(self.carvedelevation,
+                      self.streamrastcarved,self.elevation), overwrite=True)
         gm('Carved %s into the elevation %s' %(self.streamcarve,self.elevation))
         return
         
