@@ -44,12 +44,6 @@
 #% label: Only remake routing network and .fig file (eg. after manual editing, outlets and inlets needed!)
 #%end
 
-#%Flag
-#% guisection: Output
-#% key: c
-#% label: Include centroids in routing network vector (will look messy)
-#%end
-
 #%Option
 #% guisection: Output
 #% key: routingnet
@@ -324,34 +318,20 @@ class main:
         gm('Connected %s outlets' %len(oinfo))
         
         # connect centroids with outlets and inlets with centroids if -c flag set
-        self.outletinletlines = self.routingnet
-        if self.c:
-#            # make only outlet=inlet connection line vector for buildRoutingNet
-#            # open temp file
-#            tf=grass.tempfile()
-#            f=file(tf,'w')
-#            f.writelines(lines)
-#            f.close()
-#            self.outletinletlines = 'outlet__inlet'
-#            grun('v.in.lines',input=tf,output=self.outletinletlines,separator=',',quiet=True)
-            # get subbasin centroids
-            sbinfo = vreport(self.subbasins,index='subbasinID')
-            # from centroids to outlets
-            for o in oinfo:
-                lines+=[line(sbinfo[o],oinfo[o])]
-            # from inlets to centroids
-            for i in iinfo:
-                # get subbasinId of inlet
-                insb = int(iinfo[i]['subbasinID'])
-                lines+=[line(iinfo[i],sbinfo[insb])]
-            # connect centroids with nextID centroid
-#            for sb in sbinfo:
-#                nextsbid = int(sbinfo[sb]['nextID'])
-#                if nextsbid<=0: continue # outlets
-#                lines+=[line(sbinfo[sb],sbinfo[nextsbid])]
-            # connect outlets with centroids of nextID for all manually changed subbasins
-            for sb in manual:
-                lines+=line(oinfo[int(sb['subbasinID'])],sbinfo[int(sb['nextID'])])
+        # get subbasin centroids
+        sbinfo = vreport(self.subbasins,index='subbasinID')
+        # from centroids to outlets
+        for o in oinfo:
+            lines+=[line(sbinfo[o],oinfo[o])]
+        # from inlets to centroids
+        for i in iinfo:
+            # get subbasinId of inlet
+            insb = int(iinfo[i]['subbasinID'])
+            lines+=[line(iinfo[i],sbinfo[insb])]
+            
+        # connect outlets with centroids of nextID for all manually changed subbasins
+        for sb in manual:
+            lines+=line(oinfo[int(sb['subbasinID'])],sbinfo[int(sb['nextID'])])
         # write to tmpfile and read as lines
         tf=grass.tempfile()
         f=file(tf,'w')
@@ -399,7 +379,7 @@ class main:
         # use predefined streams for subbasins that have them
         if 'streams' in self.options:
             grun('v.to.rast',input=self.streams,output='stream__rast',
-             use='val',val=1,quiet=True)
+             use='val',type='line',val=1,quiet=True)
             grun('r.thin', input='stream__rast', output='stream__rast__thin',
                  overwrite=True, quiet=True)
             grun('r.stats.zonal',base=self.subbasinrast,cover='stream__rast__thin',
