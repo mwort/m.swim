@@ -453,7 +453,7 @@ import pandas as pa
 import grass.script as grass
 import pylab as pl
 import numpy as np
-
+grun = grass.run_command
 gm = grass.message
 
 try:
@@ -463,8 +463,7 @@ except ImportError:
     sys.exit()
 
 def loadDefs():
-    # make non-interactive
-    sys.argv.remove('--ui')
+    if '--ui' in sys.argv: sys.argv.remove('--ui')
     # get names of module parameters
     options, flags = grass.parser()
     # get default values for the arguments
@@ -486,7 +485,6 @@ def loadDefs():
     sys.argv += ['-%s' %''.join(defflags)]
     sys.argv += ['%s=%s' %s for s in options.items()]
     sys.argv += ['--ui']
-
     return
 
 def findFiles(filedict,findin='.',fatal=True):
@@ -499,12 +497,12 @@ def findFiles(filedict,findin='.',fatal=True):
             foundf[f]+=[os.path.join(root, fn) for fn in fnmatch.filter(filenames, ffiles[f])]
             
     # check if dublicated or none found
-    for f in foundf:
+    for f in foundf.keys():
         if len(foundf[f]) != 1:
             if fatal: grass.fatal('Found no or more than one %s file: %r' %(ffiles[f],foundf[f]))
             else:
                 grass.warning('Found no or more than one %s file: %r' %(ffiles[f],foundf[f]))
-                remove = foundf.pop(f)
+                foundf[f] = 'file not found'
         else:
             foundf[f] = foundf[f][0]
             
@@ -526,7 +524,8 @@ def writeTxtDB(path,fmt):
     return
 
 def getStations(resourcedir='mySWIM',**datakwargs):
-    ####### STATIONS ################################################        
+    ####### STATIONS ################################################    
+    stationsinfo = grass.vector_info(options['stationsvect'])    
     # get stations table    
     try: stationstbl = grass.vector_db_select(options['stationsvect'])
     except: grass.fatal('Cant read the attribute table of %s, has it got one?' %options['stationsvect'])
@@ -547,13 +546,12 @@ def getStations(resourcedir='mySWIM',**datakwargs):
         idcol = ['s%s' %s for s in range(1,len(stationstbl)+1)]
         gm(idcol)
         # make subbasinID column and upload them
-        grass.run_command('v.db.addcolumn',map=options['stationsvect'],
+        grun('v.db.addcolumn',map=options['stationsvect'],
                           columns='stationID varchar(5)',quiet=True)
         catcol = stationstbl.icol(1)
         for i,s in enumerate(catcol):
-            grass.run_command('v.db.update',map=options['stationsvect'],
-                              column='stationID', where='%s=%s' %(catcol.name,s),
-                              value=idcol[i],quiet=True)
+            grun('v.db.update',map=options['stationsvect'], column='stationID',
+                 where='%s=%s' %(catcol.name,s), value=idcol[i],quiet=True)
         # make sure the csvdata file is read without header
         datakwargs.update({'names':['time']+idcol,'skiprows':1})
     # set as index
@@ -573,12 +571,21 @@ def getStations(resourcedir='mySWIM',**datakwargs):
         
     else:
         gm('Will upload subbasinIDs from the subbasins rast to the stationsvect table. Double check them and run the setup again if changed.')
-        grass.run_command('v.db.addcolumn',map=options['stationsvect'],
+        # first check if in same mapset then stationsvect
+        if stationsinfo['mapset'] != grass.gisenv()['MAPSET']:
+            grass.warning(' !!! Changing into mapset: %s !!!' %stationsinfo['mapset'])
+            grun('g.mapset',mapset=stationsinfo['mapset'],quiet=True)
+        grun('v.db.addcolumn',map=options['stationsvect'],
                           columns='subbasinID int',quiet=True)
-        grass.run_command('v.what.rast',map=options['stationsvect'],
+        grun('v.what.rast',map=options['stationsvect'],
                           raster=options['subbasins'],column='subbasinID',quiet=True)
         subids = grass.vector_db_select(options['stationsvect'],columns='subbasinID')
         stationstbl['subbasinID'] = np.array(subids['values'].values()).flatten()
+    # convert subbasinIDs to int
+    for i,s in enumerate(stationstbl['subbasinID']):
+        try: stationstbl['subbasinID'][i] = int(s)
+        except: stationstbl['subbasinID'][i] = np.nan
+        
     # report on found subbasinIDs
     gm('Found these subbasinIDs:\n%s' %stationstbl['subbasinID'])
     
@@ -587,26 +594,35 @@ def getStations(resourcedir='mySWIM',**datakwargs):
     gm('Attempting to read discharge data. I am expecting a header like this:')
     gm(','.join(['YYYY-MM-DD']+list(idcol)))
     data = pa.read_csv(options['csvdata'],parse_dates=0,index_col=0,**datakwargs)
-    # check if read properly
-
+    data.index.name = 'time'
+    # check if read properlyq
     # check if all cats are in csvdata as columns
-    fpaths = []
     for s in stationstbl.index:
         if s not in data:
-            gm('Cant find %s in the csvdata table header. This station wont have any data.' %s)
+            grass.warning('Cant find %s in the csvdata table header. This station wont have any data.' %s)
             gm(stationstbl.ix[s].to_string())
-            fpaths += ['None']
-        # write individual files to resource folder
-        else:
-            path = os.path.join(resourcedir,s+'.pa')
-            sdat = pa.DataFrame({'Q':data[s]})
-            sdat.index.name = 'time'
-            sdat.to_pickle(path)
-            gm('Saved Q data for the station %s to %s in a python.pandas format.' %(s,path))
-            gm(sdat.head().to_string())
-            fpaths += [path]
-    # attach paths to stationstbl
-    stationstbl['data'] = fpaths
+            data[s]=np.nan
+    # get days per year covered
+    peran = (~data.isnull()).astype(int).resample('a','sum')
+    peran.index=peran.index.year
+    # report
+    gm('Overvations found (days per year):')
+    for l in peran.to_string().split('\n'): gm(l)
+#        # write individual files to resource folder
+#        else:
+#            path = os.path.join(resourcedir,s+'.pa')
+#            sdat = pa.DataFrame({'Q':data[s]})
+#            sdat.index.name = 'time'
+#            sdat.to_pickle(path)
+#            gm('Saved Q data for the station %s to %s in a python.pandas format.' %(s,path))
+#            gm(sdat.head().to_string())
+#            fpaths += [path]
+#    # attach paths to stationstbl
+#    stationstbl['data'] = fpaths
+            
+    # write out table to resourcedir
+    path = os.path.join(resourcedir,'observations.csv')
+    data.to_csv(path)
     # return as dictionary of stations
     stations = stationstbl.T.to_dict()
     return stations
@@ -693,7 +709,7 @@ def setupPro(resourcedir='mySWIM',parfile='mySWIM/myswim.py'):
     
     # check if resource files exists and if not create them
     rfiles = {'runsf': [('runID','04i'),('paramID','04i'),('climID','04i'),
-                        ('runTime','26s'),('station','5s'),('NSE','+7.3f'),
+                        ('runTIME','26s'),('station','5s'),('NSE','+7.3f'),
                         ('bias','+6.1f'),('start','10s'),('end','10s'),
                         ('purpose','-12s'),('notes','-64s')],
               'paramf': [('paramID','04i')]+zip(sorted(par.keys()),['7.4f']*len(par)),
@@ -711,6 +727,7 @@ def setupPro(resourcedir='mySWIM',parfile='mySWIM/myswim.py'):
     
     # get stations info and data
     p['stations'] = getStations(resourcedir=resourcedir)
+    p['obsf']     = os.path.join(resourcedir,'observations.csv')
     
     # write all in p to a parameter file
     parfpath = os.path.join(resourcedir,'myswim.py')
@@ -718,6 +735,7 @@ def setupPro(resourcedir='mySWIM',parfile='mySWIM/myswim.py'):
     parf.write('### mySWIM parameter file, saved on: %s\n' %dt.datetime.now())
     for e in sorted(p.keys()): parf.write('%s=%r\n' %(e,p[e]))
     
+    gm('All set up! To proceed, uncheck the -0 flag and change into %s' %p['prodir'])
     return
 
 def checkInput():
@@ -756,7 +774,7 @@ def checkInput():
     # interactive
     if 'interactive' in ops:
         # check if peststation set properly
-        if 'interactive' in ops and ops['interactive'] in p.stations:
+        if 'interactive' in ops and ops['interactive'] not in p.stations:
             grass.fatal("Have you set interactive to a valid station ID?")
         grass.warning('Interactive mode is experimental! The run statistics wont be saved!')
     
@@ -861,7 +879,13 @@ def postprocess():
     
     
 if __name__ == "__main__":
-    # first start up SWIMpy
+
+    # check if prodir to change into is given
+    for a in sys.argv:
+        if a.startswith('prodir='):
+            os.chdir(a.split('=')[1])
+
+    # try to start up SWIMpy
     try:
         p = swim.pro()
     except:
@@ -869,17 +893,17 @@ if __name__ == "__main__":
                       set up a SWIM project in the Settings section and setting the -0 flag.''')
         # add -0 setup flag
         sys.argv += ['-0']
-
+        
     # check if project defaults can/must be loaded
-    if ('--ui' in sys.argv or len(sys.argv) < 2) and 'p' in vars():
+    if 'p' in vars() and ('--ui' in sys.argv or len(sys.argv)<2):
         loadDefs()
+        
     # normal start
     options, flags = grass.parser()
     
     # setup project
     if flags['0']:
         setupPro()
-        gm('All set up! To proceed, uncheck the -0 flag')
     else:
         # Input checking
         options = checkInput()
@@ -899,3 +923,8 @@ if __name__ == "__main__":
         
     
 
+# run.py -0 prodir=/data/sumario/wortmann/Tarim/testing proname=tari \
+#             simf=/data/sumario/wortmann/Tarim/testing/Output/Res/rvaddQ_subbasin.prn \
+#             stationsvect=Tarim_stations@PERMANENT stationidcolumn=id \
+#             csvdata=/data/sumario/wortmann/Tarim/testing/mySWIM/observations.csv \
+#             subbasins=subbasins@subbasins_new hydrotopes=hydrotopes@hydrotopes

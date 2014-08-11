@@ -279,12 +279,12 @@ def readinStr(hydrotopemap,strcolumns):
         struct += [array['mean']]
         gm('Read hydrotope values for %s' %s)
     # add number of cells and area
-    ncells = array['non_null_cells'].astype(int)
+    ncells = array['non_null_cells'].astype(np.int64)
     reg = grass.region()
-    area   = (ncells*reg['nsres']*reg['ewres']).astype(int)
+    area   = (ncells*reg['nsres']*reg['ewres']).astype(np.int64)
     struct += [area,ncells]
     # make nice record array
-    dtype  = zip(strcolumns+['area','ncells'],[int]*(len(strcolumns)+2))
+    dtype  = zip(strcolumns+['area','ncells'],[np.int64]*(len(strcolumns)+2))
     struct = np.array(zip(*struct),dtype=dtype)
 
     return struct
