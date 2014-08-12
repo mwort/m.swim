@@ -449,6 +449,7 @@ components = {'s':'isc', 'n':'icn','i':'intercep','t':'iemeth','r':'res_switch',
 
 import os, sys, fnmatch
 import datetime as dt
+import subprocess
 import pandas as pa
 import grass.script as grass
 import pylab as pl
@@ -706,13 +707,15 @@ def setupPro(resourcedir='mySWIM',parfile='mySWIM/myswim.py'):
         
     gm('Found these parameters in the bsn file: %s' %','.join(par.keys()))
     gm('Those parameters will be saved in the future!')
+    # make parameter save formats
+    pfmts = [(e,{True:'14.3f',False:'7.4'}[par[e]>50]) for e in sorted(par.keys())]
     
     # check if resource files exists and if not create them
     rfiles = {'runsf': [('runID','04i'),('paramID','04i'),('climID','04i'),
                         ('runTIME','26s'),('station','5s'),('NSE','+7.3f'),
                         ('bias','+6.1f'),('start','10s'),('end','10s'),
                         ('purpose','-12s'),('notes','-64s')],
-              'paramf': [('paramID','04i')]+zip(sorted(par.keys()),['7.4f']*len(par)),
+              'paramf': [('paramID','04i')]+pfmts,
               'climsf': [('climID','04i'), ('title','50s'),
                          ('start','10s'), ('end','10s'), ('notes','-64s')]}
     for f in rfiles:
@@ -738,6 +741,42 @@ def setupPro(resourcedir='mySWIM',parfile='mySWIM/myswim.py'):
     gm('All set up! To proceed, uncheck the -0 flag and change into %s' %p['prodir'])
     return
 
+def runinteractive(station):
+    '''Interactive plotting while SWIM is running'''
+    # open process and pipe it to python
+    swimcmd = p.swim+' '+p.prodir+'/'
+    ps = subprocess.Popen(swimcmd, shell=True, 
+                      stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    # initial simfile change time
+    chtime = os.stat(p.simf).st_mtime
+    # set up graph
+    pl.ion()
+    ax = pl.gca()
+    ax.clear()
+    Q = {'%s obs' %station: p.stations[station]['data']['Q'],
+         '%s sim' %station: np.nan}
+    Q = pa.DataFrame(Q, index=pa.DatetimeIndex(start=p.startdate,end=p.enddate,freq='D'))
+    ax = Q.plot(style=['k--','r'],ax=ax)
+    oline,sline = ax.lines
+    pl.draw()
+    
+    while True:
+        # print out model stdout
+        nextline = ps.stdout.readline()
+        if nextline == '' and ps.poll() != None:
+            break
+        gm(nextline)
+        # check if simfile change time
+        if os.stat(p.simf).st_mtime != chtime:
+            # update graph
+            Q['sim'] = swim.readSim(p.simf,simc=p.stations[station]['subbasinID'],
+                               hotstart=False)['Q']
+            sline.set_ydata(Q['sim'])
+            pl.title(nextline)
+            pl.draw()
+    sys.stdout.flush()
+    return
+    
 def checkInput():
     '''Check all user input when pre/pro/postprocessing, not when setting up'''
     # convert and empty options that are not needed
@@ -795,6 +834,15 @@ def checkInput():
                 gm('%s is not a stationID' %s)
                 if s not in runids:
                     grass.fatal('showruns seems to have an invalid runID or stationID: %s' %s)
+    
+    # decide what to parse to run/storeRuns
+    # needed input        
+    parse = {'stations':options['savestations']}
+    # optional input
+    oparse = ['notes','purpose']
+    parse.update({n: options[n] for n in oparse if n in options})
+    ops['parse'] = parse
+    
     return ops
     
     
@@ -808,7 +856,7 @@ def preprocess():
     p.rwcod(**cod)
     
     ### parameters #########################################################
-    if 'paramid' in options:
+    if 'paramid' in options and options['paramid']!=0:
         params = options['paramid']
     else:
         params = options.copy()
@@ -824,12 +872,16 @@ def preprocess():
     ### PEST ###############################################################
     if flags['a']:    
         # set up pest, might through exceptions
-        options['pestname'] = p.setupPest('%s_pest' %options['peststation'])
+        options['pestname'] = p.setupPest('%s_pest' %options['peststation'],
+                                          stations=options['peststation'])
 
     return
     
 def process():
     '''Run swim or pest'''
+    # set buffer environment variables to write output every line
+    os.environ['GFORTRAN_UNBUFFERED_ALL'] = '1'
+    
     if flags['a']:    
         # PEST
         # submit to cluster        
@@ -838,11 +890,11 @@ def process():
         p.runPest(options['pestname'],**ll)
         
     elif 'interactive' in options:
-        p.runinteractive(options['interactive'])
+        runinteractive(options['interactive'])
     else:
-        # normal run
-        if flags['l']: options['ll']='m.swim.run'
-        p.last = p.run(stations=options['savestations'],**options)
+        if flags['l']: options['parse']['ll']='m.swim.run'
+        # run        
+        p.last = p.run(**options['parse'])
     
     return
 
@@ -851,7 +903,7 @@ def postprocess():
     
     # store runs if postprocessing only
     if flags['p'] and flags['v']:
-        stored = p.storeRuns(**options)
+        stored = p.storeRuns(**options['parse'])
         
     ### PLOTTING Q ##########################################################
     if 'showruns' in options:
@@ -880,19 +932,21 @@ def postprocess():
     
 if __name__ == "__main__":
 
-    # check if prodir to change into is given
-    for a in sys.argv:
-        if a.startswith('prodir='):
-            os.chdir(a.split('=')[1])
+#    # check if prodir to change into is given
+#    for a in sys.argv:
+#        if a.startswith('prodir='):
+#            os.chdir(a.split('=')[1])
 
     # try to start up SWIMpy
-    try:
-        p = swim.pro()
-    except:
-        grass.warning('''No SWIM project found, make sure to be in the SWIM project folder or 
-                      set up a SWIM project in the Settings section and setting the -0 flag.''')
-        # add -0 setup flag
-        sys.argv += ['-0']
+    if '-0' not in sys.argv:
+        try:
+            p = swim.pro()
+        except:
+            grass.warning('''\
+            No SWIM project found, make sure to be in the SWIM project folder or \
+            set up a SWIM project in the Settings section and setting the -0 flag.''')
+            # add -0 setup flag
+            sys.argv += ['-0','--ui']
         
     # check if project defaults can/must be loaded
     if 'p' in vars() and ('--ui' in sys.argv or len(sys.argv)<2):
