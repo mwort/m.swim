@@ -124,6 +124,17 @@
 #% gisprompt: old,vector,vector
 #%end
 
+#%Option
+#% guisection: Optional
+#% key: rivercourse
+#% type: string
+#% required: no
+#% multiple: yes
+#% key_desc: subbasinID
+#% label: SubbasinID(s) to calculate river course for (to column: 'course_$id')
+#% description: Uploads cumulative mainChannelLength for all subbasins in column: course_subbasinID
+#%end
+
 #%Flag
 #% guisection: Optional
 #% key: k
@@ -184,7 +195,14 @@ class main:
                                        ('nextID',int),('inletID',int)])
             except:
                 grass.fatal('No integers or uneven number of values in fromto pairs. %s' %self.fromto)
-            
+        
+        # check river course
+        if 'rivercourse' in self.options:
+            if type(self.rivercourse)==str:
+                self.rivercourse = map(int,self.rivercourse.split(','))
+            elif type(self.rivercourse)==int:
+                self.rivercourse = [self.rivercourse]
+
         return
 
     def routing(self, searchradius=1.5, overwrite=True, quiet=True):
@@ -391,6 +409,43 @@ class main:
         grun('r.to.vect', input=self.mainstreams, output=self.mainstreams,
              type='line',quiet=True)
         return
+
+    def getCourse(self,headsb):
+        '''Create river course from the headwater subbasin headsb to the outlet,
+        that is reached when nextID<0.
+        Subbasin vector needs to have subbasinID,nextID,mainChannelLength columns
+    
+        Uploads cumulative river lengths for the subbasins of the river course.
+        '''
+        gm('Calculating course for subbasinID %s...' %headsb)
+        # get subbasinIDs,nextIDs,mainChannelLength
+        subbasins = grass.vector_db_select(self.subbasins,
+                    columns='subbasinID,nextID')['values'].values()
+        nextids   = {int(s[0]):int(s[1]) for s in subbasins}
+        
+        # make course column
+        ccol = 'course_%s' %headsb
+        grun('v.db.addcolumn',map=self.subbasins,columns='%s double' %ccol)
+        
+        # find river course
+        riverlength = 0
+        riversb     = []
+        sb = headsb
+        while sb>0:
+            riversb     += [sb]
+            riverlength += 1
+            grun('v.db.update',map=self.subbasins,column=ccol, value=riverlength,
+                 where='subbasinID=%s' %sb)
+            sb = nextids[sb]
+        # report
+        grass.message('''
+        Uploaded cumulative river length from the %s to the outlet to the
+        subbasin table in column %s (number of subbasins: %s). Check subbasin 
+        table and sort by %s 
+        To extract the subbasins use: 
+        v.extract map=%s where='%s!='' 
+        ''' %(headsb,ccol,riverlength,ccol,self.subbasins,ccol))
+        return 0
         
 def vreport(vect,index):
     '''Return the v.report table with coordinates as a dictionary with subbasinID
@@ -583,7 +638,10 @@ if __name__=='__main__':
         fname = os.path.join(main.figpath)
         grass.message('Will write .fig file to %s!' %fname)
         fig(main.outlets,fname)
-        
+    
+    # rivercouse
+    if 'rivercourse' in main.options:
+        for s in main.rivercourse: main.getCourse(s)
         
     # clean
     if not main.k:
