@@ -492,6 +492,9 @@ class main:
             # only if chl and chs is empty, make proper mainstream rast
             self.mainstreamrast = self.makeMainStreamRast()
         
+        # get current maps and environment
+        self.maps = {t:grass.mlist_grouped(t) for t in ['rast','vect']}
+        self.env  = grass.gisenv()
         return
         
     def subbasinStats(self):
@@ -531,6 +534,10 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
                 stats = float(self.options[param])*np.ones(self.nsubbasins)
                 grass.message( 'Using default value for %s = %s' %(param,stats[0]))
             except: # map name given
+                rast = self.options[param].split('@')
+                rast,maps = {1: (rast,self.env['MAPSET']),2: rast}[len(rast)]
+                if rast not in self.maps['rast'][maps]:
+                    grass.fatal('%s not found.' %self.options[param])
                 grass.message( 'Will use average subbasin values of %s for %s.' %(self.options[param],param))
                 # upload mean values to subbasins table                
                 rastname = self.meanSubbasin(self.options[param])
@@ -642,7 +649,7 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
         grun('v.to.db',map=self.subbasins,columns='perim__',option='perimeter',
              units='kilometer',quiet=True)
         # get subbasin table
-        tbl=getTable('subbasins',columns='subbasinID,%s,%s' %('perim__',self.chl),
+        tbl=getTable(self.subbasins,columns='subbasinID,%s,%s' %('perim__',self.chl),
                        dtype=[int,float,float])
         # where nan, set to grid size
         nolength = tbl[np.isnan(tbl[self.chl])]['subbasinID']
@@ -670,7 +677,7 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
             grun('v.to.rast',input=self.subbasins,output=self.chl,use='attr',
                  attrcolumn=self.chl,type='area',overwrite=True,quiet=True)
         # return array of corrected lengths
-        tbl=getTable('subbasins',dtype=[int,float],columns='subbasinID,%s' %self.chl)
+        tbl=getTable(self.subbasins,dtype=[int,float],columns='subbasinID,%s' %self.chl)
         return tbl[self.chl]
         
     def mainChannelSlope(self,rasterout='mainChannelSlope'):
