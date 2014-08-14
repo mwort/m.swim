@@ -23,7 +23,7 @@
 #% keywords: SWIM, hydrological modelling
 #%end
 
-
+### RUN #######################################################################
 #%option
 #% key: notes
 #% type: string
@@ -69,6 +69,17 @@
 #% key: u
 #% label: Preprocess SWIM files only (SWIM not started and no postprocessing)
 #% description: e.g. start SWIM from commandline
+#% guisection: Run
+#%end
+
+#%option
+#% key: setclim
+#% type: string
+#% required: no
+#% multiple: no
+#% key_desc: string
+#% label: Set clim* files with correct start from clims table
+#% description: Needs to be a valid climID
 #% guisection: Run
 #%end
 
@@ -240,6 +251,9 @@
 
 components = {'s':'isc', 'n':'icn','i':'intercep','t':'iemeth','r':'res_switch',
               'c':'subcatch','g':'iirrig'}
+
+### CLIMATE ##################################################################
+# climID
 
 ### PEST #####################################################################
 
@@ -454,6 +468,7 @@ import pandas as pa
 import grass.script as grass
 import pylab as pl
 import numpy as np
+import sqlite3 as sql
 grun = grass.run_command
 gm = grass.message
 
@@ -524,9 +539,44 @@ def writeTxtDB(path,fmt):
     gm( 'Created DB in %s' %(path))
     return
 
+def sqlTbl(name,columns):
+    '''Create a new empty table in the same sqlite.db as stations and connect.'''
+    db = grass.vector_db(options['stationsvect'])
+    # check if table already linked to this vector
+    if name in [db[l]['name'] for l in db]:
+        grass.warning('Table %s already attached to %s.' %(name,options['stationsvect']))
+        return None        
+    # connect
+    try: con = sql.connect(db[1]['database'])
+    except:
+        grass.warning('''Cant connect to sqlite database, make sure %s is connected
+        to a sqlite database on layer 1.''' %options['stationsvect'])
+        return None
+    # sql connection
+    cur = con.cursor()
+    # create column type
+    cols = []
+    for c in columns:
+        if 'i' in c[1]: typ='INT'
+        elif 'f' in c[1]: typ='DOUBLE'
+        elif 's' in c[1]: typ='VARCHAR(%s)' %abs(int(c[1][:-1]))
+        else: raise ValueError('Dont know how to convert %s for table %s'%(c,name))
+        cols += [c[0]+' '+typ]
+    # Create table
+    stm = 'CREATE TABLE IF NOT EXISTS %s (%s)' %(name,', '.join(cols))
+    cur.execute(stm)
+    con.commit()
+    con.close()
+    # attach to stations
+    grass.run_command('v.db.connect',map=options['stationsvect'],
+                      table=name, key=columns[0][0], layer=max(db)+1)
+                      
+    return
+    
 def getStations(resourcedir='mySWIM',**datakwargs):
     ####### STATIONS ################################################    
-    stationsinfo = grass.vector_info(options['stationsvect'])    
+    stationsinfo = grass.vector_info(options['stationsvect'])
+
     # get stations table    
     try: stationstbl = grass.vector_db_select(options['stationsvect'])
     except: grass.fatal('Cant read the attribute table of %s, has it got one?' %options['stationsvect'])
@@ -641,7 +691,12 @@ def setupPro(resourcedir='mySWIM',parfile='mySWIM/myswim.py'):
     
     # change into prodir as all subsequent paths maybe relative to that
     os.chdir(p['prodir'])
-        
+
+    # check if in same mapset
+    stationsinfo = grass.vector_info(options['stationsvect'])
+    if stationsinfo['mapset']!=grass.gisenv()['MAPSET']:
+        grass.fatal('Must be in same mapset as %s.' %(options['stationsvect']))
+  
     # find files in prodir
     ffiles = {'bsn':'.bsn','cod':'.cod','strf':'.str'}
     ffiles = dict([(e,options['proname']+ffiles[e]) for e in ffiles])
@@ -708,7 +763,7 @@ def setupPro(resourcedir='mySWIM',parfile='mySWIM/myswim.py'):
     gm('Found these parameters in the bsn file: %s' %','.join(par.keys()))
     gm('Those parameters will be saved in the future!')
     # make parameter save formats
-    pfmts = [(e,{True:'14.3f',False:'7.4'}[par[e]>50]) for e in sorted(par.keys())]
+    pfmts = [(e,{True:'14.3f',False:'7.4f'}[par[e]>50]) for e in sorted(par.keys())]
     
     # check if resource files exists and if not create them
     rfiles = {'runsf': [('runID','04i'),('paramID','04i'),('climID','04i'),
@@ -727,6 +782,12 @@ def setupPro(resourcedir='mySWIM',parfile='mySWIM/myswim.py'):
         else: # create
             writeTxtDB(name,rfiles[f])
             p[f] = name
+        # add sqlite tables to same database as self.stations
+        tblname = f[:-1]
+        sqlTbl(tblname,rfiles[f])
+    
+    # save sqlitedb
+    p['sqlitedb'] = grass.vector_db(options['stationsvect'])[1]['database']
     
     # get stations info and data
     p['stations'] = getStations(resourcedir=resourcedir)
@@ -738,6 +799,9 @@ def setupPro(resourcedir='mySWIM',parfile='mySWIM/myswim.py'):
     parf.write('### mySWIM parameter file, saved on: %s\n' %dt.datetime.now())
     for e in sorted(p.keys()): parf.write('%s=%r\n' %(e,p[e]))
     
+    # llcmds
+    if 'llcmds' in options:
+        p['llcmds'] = dict([cmd.split(':') for cmd in options['llcmds'].split(',')])
     gm('All set up! To proceed, uncheck the -0 flag and change into %s' %p['prodir'])
     return
 
@@ -776,6 +840,7 @@ def runinteractive(station):
             pl.draw()
     sys.stdout.flush()
     return
+
     
 def checkInput():
     '''Check all user input when pre/pro/postprocessing, not when setting up'''
@@ -837,7 +902,7 @@ def checkInput():
     
     # decide what to parse to run/storeRuns
     # needed input        
-    parse = {'stations':options['savestations']}
+    parse = {'stations':ops['savestations']}
     # optional input
     oparse = ['notes','purpose']
     parse.update({n: options[n] for n in oparse if n in options})
@@ -848,8 +913,10 @@ def checkInput():
     
 def preprocess():
     '''Check all input and write to swim files'''
-                    
-    ### COD FILE if needed #################################################
+    ### climID set ###########################################################
+    if 'setclim' in options and options['setclim']!=0:
+        p.climschange(options['setclim'],startyear=options['iyr'])
+    ### COD FILE if needed ###################################################
     cod = {}
     for i in ['iyr','nbyr']:
         if i in options: cod[i]=options[i]

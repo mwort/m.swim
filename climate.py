@@ -125,63 +125,82 @@ class main:
         self.region = grass.region()
         
         # INPUT CHECK
+        
+        # input dir
+        if not os.path.exists(self.datadir): grass.fatal('%s doesnt exisist!' %self.datadir)
+
+        # climate stations columns
+        cols=grass.vector_columns(self.climstations)
+        for c in [self.fnames, self.stationelevation]:
+            if c not in cols: grass.fatal('Cant find %s in table %s' %(c,self.climatestations))
+        # subbasins
+        if self.elevation not in grass.vector_columns(self.subbasins):
+            grass.fatal('Cant find %s in table %s' %(self.elevation,self.subbasins))
+
         # no extension
         if 'ext' not in self.options: self.ext=''
-## TODO        
+        ## TODO        
         return
         
     def writeClimStationfile(self):
-        stationvect = self.climstations
-        # get columns in correct order into array
-        cols = [self.fnames,self.stationelevation]
-        a   = grass.vector_db_select(stationvect,columns=','.join(cols))
-        a   = np.array(a['values'].values())
-        names = map(str,a[:,0])
-        z   = map(float,a[:,1])
-        # get coordinates
-        coor = vectCoords(stationvect)
-        # make nice array
-        a   = np.array(zip(coor['cat'],names,coor['x'],coor['y'],z),
-                       dtype=[('ids',int),('names','S5120'),('x',float), ('y',float), ('z',int)])
+        # get coordinates and table
+        coor, a = vectCoordsTbl(self.climstations)
         # add filepath to name/2nd column
-        for i,n in enumerate(a['names']):
-            a['names'][i] = str(os.path.join(self.datadir,n+self.ext))
-    
+        fnames = []
+        for i,n in enumerate(a[self.fnames]):
+            fnames += [os.path.join(self.datadir,n+self.ext)]
+            if not os.path.exists(fnames[-1]): grass.warning('%s doesnt exisist!' %fnames[-1])
+        # get needed cols
+        cols = np.array(zip(coor['cat'],
+                            fnames,coor['x'],coor['y'],
+                            a[self.stationelevation]),
+                        dtype=[('cat',int),('fnames','S1000'),('x',float),('y',float),('z',float)])
         # write file
         sfpath = os.path.join(self.outdir,'stationfile.dat')
         f = file(sfpath,'w')
         f.write('ID  FILE                       POINT_X     POINT_Y            ELEV\n')
-        np.savetxt(f, a, fmt='%6i  %-'+str(len(self.datadir)+32)+'s%12.1f%12.1f%10.1f')
+        np.savetxt(f, cols, fmt='%6i  %-'+str(len(self.datadir)+32)+'s%12.1f%12.1f%10.1f')
         gm( 'Saved climate stations to %s' %sfpath)
         
         return
     
     def writeVirtualStationfile(self):
-        # get coordinates and cats
-        coor = vectCoords(self.subbasins)
-        # add z
-        z = np.array(grass.vector_db_select(self.subbasins,
-                     columns=self.elevation)['values'].values(),dtype=float)
-        # table to write out
-        tbl = np.column_stack((coor['cat'],coor['x'],coor['y'],z))
+        # get coordinates and table
+        coor, a = vectCoordsTbl(self.subbasins)
+        coor['z'] = a[self.elevation]
         
         # save to file
         sfpath = os.path.join(self.outdir,'virtualstationfile.dat')
         f = file(sfpath,'w')
         f.write('id    x     y      z\n')
-        np.savetxt(f, tbl, fmt='%6i %12.1f%12.1f%10.1f')
+        np.savetxt(f, coor, fmt='%6i %12.1f%12.1f%10.1f')
         gm( 'Saved virtual stations to %s' %sfpath)
         return
         
-def vectCoords(vect):
+def vectCoordsTbl(vect):
     '''Return the v.report table with coordinates as an array with
     column names in the entries for a point vector'''
+    # get table, returned columns:
+    # table columns, x, y, z
     t=grass.read_command('v.report', map=vect, option='coor').split()
-    t=[tuple(l.split('|')) for l in t][1:]
-    t=[(l[0],l[-3],l[-2]) for l in t]
-    t=np.array(t,dtype=[('cat',int),('x',float),('y',float)])
-    
-    return t
+    t=[tuple(l.split('|')) for l in t]
+    colnames = t[0]
+    t=np.array(t[1:])
+    # set empty cell to nan
+    t[t=='']=np.nan
+    columns = []
+    for c in t.T: # loop over columns
+        try: columns += [np.array(c,int)]
+        except ValueError:
+            try: columns += [np.array(c,float)]
+            except ValueError: columns += [c]
+    # now fuse to make recArray of table and of coordinates
+    tblcols  = columns[:-3]
+    tbl   = np.array(zip(*tblcols), dtype=zip(colnames,[c.dtype for c in tblcols]))
+    coorcols = [columns[0]]+columns[-3:]
+    coor  = np.array(zip(*coorcols), dtype=zip(['cat','x','y','z'],[c.dtype for c in coorcols]))
+
+    return coor,tbl
     
 if __name__=='__main__':
     st = dt.datetime.now()
