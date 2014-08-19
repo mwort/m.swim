@@ -282,6 +282,7 @@ components = {'s':'isc', 'n':'icn','i':'intercep','t':'iemeth','r':'res_switch',
 #% label: Pest parameter file header 
 #% description: Only upto the parameter data section, the rest is produced automatically. Comments are lines starting #
 #% gisprompt: old,file,file
+#% answer: ./mySWIM/pest/parameters.txt
 #% guisection: Autocalibration
 #%end
 
@@ -463,7 +464,7 @@ components = {'s':'isc', 'n':'icn','i':'intercep','t':'iemeth','r':'res_switch',
 
 import os, sys, fnmatch
 import datetime as dt
-import subprocess
+import subprocess, imp
 import pandas as pa
 import grass.script as grass
 import pylab as pl
@@ -679,7 +680,10 @@ def getStations(resourcedir='mySWIM',**datakwargs):
     return stations
         
 def setupPro(resourcedir='mySWIM',parfile='mySWIM/myswim.py'):
-    '''Set up all files needed for SWIM and mySWIM and write mySWIM folder and parameterfile'''
+    '''Set up all files needed for SWIM and mySWIM and write mySWIM resource dirs
+    and parameterfile. In this function, grass input arguments are all in options
+    without any removal of empty ones ''!
+    '''
     # collect parameters in dict
     p = {}
     
@@ -738,6 +742,11 @@ def setupPro(resourcedir='mySWIM',parfile='mySWIM/myswim.py'):
             os.makedirs(d)
     # attach to p
     p.update(resourcedirs)
+    
+    # pest parameters
+    p['pestdir'] = os.path.join(resourcedir,'pest')
+    p['pestexe'] = os.path.join(resourcedir,'pest/pest')
+    p['pestinstructions'] = options['pestinstructions']
             
     # get parameters from bsn file
     try: par,tmplt = swim.readBsnf(p['bsn'])
@@ -793,15 +802,22 @@ def setupPro(resourcedir='mySWIM',parfile='mySWIM/myswim.py'):
     p['stations'] = getStations(resourcedir=resourcedir)
     p['obsf']     = os.path.join(resourcedir,'observations.csv')
     
+    # llcmds
+    if 'llcmds' in options:
+        p['llcmds'] = dict([cmd.split(':') for cmd in options['llcmds'].split(',')])
+    
     # write all in p to a parameter file
     parfpath = os.path.join(resourcedir,'myswim.py')
+    if os.path.exists(parfpath):
+        pars = imp.load_source('myswim',parfpath)
+        opars= {e:pars.__getattribute__(e) for e in dir(pars) if e not in p and not e.startswith('__')}
+        gm('Previous myswim parameter file found! Preserved these parameter: %r' %opars)
+        p.update(opars)
+    # now write 
     parf = file(parfpath,'w')
     parf.write('### mySWIM parameter file, saved on: %s\n' %dt.datetime.now())
     for e in sorted(p.keys()): parf.write('%s=%r\n' %(e,p[e]))
     
-    # llcmds
-    if 'llcmds' in options:
-        p['llcmds'] = dict([cmd.split(':') for cmd in options['llcmds'].split(',')])
     gm('All set up! To proceed, uncheck the -0 flag and change into %s' %p['prodir'])
     return
 
