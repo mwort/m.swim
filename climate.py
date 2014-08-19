@@ -90,6 +90,81 @@
 #%end
 
 #%Option
+#% guisection: Climate data
+#% key: nodata
+#% type: string
+#% multiple: no
+#% key_desc: value
+#% description: No data value
+#%end
+
+#%flag
+#% key: e
+#% label: Elevation correction with daily lapse rates
+#% guisection: Interpolation
+#%end
+
+#%flag
+#% key: p
+#% label: Precipitation correction
+#% guisection: Interpolation
+#%end
+
+#%Option
+#% guisection: Interpolation
+#% key: method
+#% type: string
+#% multiple: no
+#% key_desc: method
+#% description: Interpolation method
+#% options: IDW, Kriging
+#%end
+
+#%Option
+#% guisection: Interpolation
+#% key: start
+#% type: string
+#% multiple: no
+#% key_desc: DD.MM.YYYY
+#% description: Start date
+#%end
+#%Option
+#% guisection: Interpolation
+#% key: end
+#% type: string
+#% multiple: no
+#% key_desc: DD.MM.YYYY
+#% description: End date
+#%end
+
+#%Option
+#% guisection: Interpolation
+#% key: minnb
+#% type: integer
+#% multiple: no
+#% key_desc: int
+#% description: Minimum neighbours
+#%end
+
+#%Option
+#% guisection: Interpolation
+#% key: maxnb
+#% type: integer
+#% multiple: no
+#% key_desc: int
+#% description: Maximum neighbours
+#%end
+
+#%Option
+#% guisection: Interpolation
+#% key: maxdist
+#% type: double
+#% multiple: no
+#% key_desc: float
+#% description: Maximum distance of search radius [km]
+#%end
+
+#%Option
 #% guisection: Output
 #% key: outdir
 #% type: string
@@ -139,7 +214,14 @@ class main:
 
         # no extension
         if 'ext' not in self.options: self.ext=''
-        ## TODO        
+        
+        # check if INTERPOL.PAR can be written
+        self.par = True
+        parneeded = ['method','start','end','minnb','maxnb','maxdist','nodata']
+        if any([e not in self.options for e in parneeded]):
+            grass.warning('''Won't write INTERPOL.PAR as any of these arguments 
+            is not set %s''' %(parneeded,))
+            self.par = False
         return
         
     def writeClimStationfile(self):
@@ -157,6 +239,7 @@ class main:
                         dtype=[('cat',int),('fnames','S1000'),('x',float),('y',float),('z',float)])
         # write file
         sfpath = os.path.join(self.outdir,'stationfile.dat')
+        self.stfile = sfpath
         f = file(sfpath,'w')
         f.write('ID  FILE                       POINT_X     POINT_Y            ELEV\n')
         np.savetxt(f, cols, fmt='%6i  %-'+str(len(self.datadir)+32)+'s%12.1f%12.1f%10.1f')
@@ -175,7 +258,66 @@ class main:
         f.write('id    x     y      z\n')
         np.savetxt(f, coor, fmt='%6i %12.1f%12.1f%10.1f')
         gm( 'Saved virtual stations to %s' %sfpath)
+        self.vstfile=sfpath
         return
+    
+    def stationDistance(self):
+        '''Calculate distances from all virtualstations to all climate stations
+        within the max distance threshold'''
+        # create table with distances
+        dist = gread('v.distance', flags='pa', _from=self.subbasins, from_type='centroid',
+               to=self.climstations, dmax=self.maxdist*1e3, upload='dist', column='distance')
+        dist = [tuple(l.split('|')) for l in dist.split()]
+        dist = np.array(dist[1:],dtype=zip(dist[0],[int,int,float]))
+        n = len(np.unique(dist['from_cat']))
+        if n==0: grass.fatal('No subbasins have corresponding climstation within the maxdist.')
+        grass.warning('%s subbasins have %3.1f climstations on average within the maxdist.' \
+                      %(n,len(dist)/float(n)))
+        # m to km
+        dist['distance'] = dist['distance']*1e-3
+        # check n station and mean distance
+        aggregated = []
+        for i in np.unique(dist['from_cat']):
+            subb = dist[dist['from_cat']==i]
+            aggregated += [(i,len(subb),subb['distance'].min(),
+                            subb['distance'].mean(),subb['distance'].max())]
+        # make rec array
+        aggregated = np.array(aggregated,dtype=[('subbasinID',int),('n',int),
+                                ('min',float),('mean',float),('max',float)])
+        # save
+        statspath = os.path.join(self.outdir,'stationstats.dat')
+        np.savetxt(statspath,aggregated,fmt='%7i %7i %9.1f %9.1f %9.1f',
+                   header='subbasin n      min       mean      max      ')
+        # report
+        gm('Wrote table with number of climstations, min, mean, max distance to %s'%statspath)
+        gm('Summary statistics:')
+        gm('Stats  min    mean    max')
+        for i,u in zip(['n','min','mean','max'],['stations']+3*['km']):
+            gm(('%-4s'+3*' %7.1f'+' %s')%(i,aggregated[i].min(),aggregated[i].mean(),
+                                    aggregated[i].max(),u))
+            
+        return aggregated
+        
+    def writePARfile(self):
+        
+        f = file(os.path.join(self.outdir,'INTERPOL.PAR'),'w')
+        f.write('ClimateStationFile %r \n' %self.stfile)
+        f.write('VirtualStations %r \n' %self.vstfile)
+        f.write('OutputPath %r \n' %self.outdir)
+        f.write('PrecCorr %s \n' %(str(bool(self.p)).upper()))
+        f.write('NoDataValue %r \n' %str(self.nodata))
+        f.write('BeginDate %r \n' %self.start)
+        f.write('EndDate %r \n' %self.end)
+        # Method
+        method = {'IDW':1, 'Kriging': 3}[self.method]
+        if self.e: method += 1
+        f.write('InterpolationMethod %s \n' %(' '.join(6*[str(method)])))
+        f.write('NumNeighboursMax %s \n' %self.maxnb)
+        f.write('NumNeighboursMin %s \n' %self.minnb)
+        f.write('Maxdist %s \n' %(self.maxdist*1e3))
+        
+        f.write('''distributed  FALSE \nSubbasinMap ""  \nDemMap ""''')
+        
         
 def vectCoordsTbl(vect):
     '''Return the v.report table with coordinates as an array with
@@ -217,7 +359,11 @@ if __name__=='__main__':
     # process
     main.writeClimStationfile()
     main.writeVirtualStationfile()
-
+    if main.par:
+        main.writePARfile()
+    if 'maxdist' in main.options:
+        stats = main.stationDistance()
+    
     # report time it took
     delta = dt.datetime.now()-st
     grass.message('Execution took %s hh:mm:ss' %delta)
