@@ -230,7 +230,7 @@ class main:
         # add filepath to name/2nd column
         fnames = []
         for i,n in enumerate(a[self.fnames]):
-            fnames += [os.path.join(self.datadir,n+self.ext)]
+            fnames += [os.path.join(self.datadir,str(n)+self.ext)]
             if not os.path.exists(fnames[-1]): grass.warning('%s doesnt exisist!' %fnames[-1])
         # get needed cols
         cols = np.array(zip(coor['cat'],
