@@ -352,7 +352,7 @@ class main:
         # make river network to vector
         grass.message('Making vector river network...')
         # stream condition
-        scon = '{1} >= {2}' %(self.accumulation,self.streamthresh)
+        scon = '{0} >= {1}'.format(self.accumulation,self.streamthresh)
         # include those streams that were carved as well
         if 'streamcarve' in self.options:
             scon += ' | !isnull(%s)' %self.streamrastcarved

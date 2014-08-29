@@ -535,7 +535,7 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
                 grass.message( 'Using default value for %s = %s' %(param,stats[0]))
             except: # map name given
                 rast = self.options[param].split('@')
-                rast,maps = {1: (rast,self.env['MAPSET']),2: rast}[len(rast)]
+                rast,maps = {1: (rast[0],self.env['MAPSET']),2: rast}[len(rast)]
                 if rast not in self.maps['rast'][maps]:
                     grass.fatal('%s not found.' %self.options[param])
                 grass.message( 'Will use average subbasin values of %s for %s.' %(self.options[param],param))
