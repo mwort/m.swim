@@ -519,7 +519,7 @@ def findFiles(filedict,findin='.',fatal=True):
             if fatal: grass.fatal('Found no or more than one %s file: %r' %(ffiles[f],foundf[f]))
             else:
                 grass.warning('Found no or more than one %s file: %r' %(ffiles[f],foundf[f]))
-                foundf[f] = 'file not found'
+                del foundf[f]
         else:
             foundf[f] = foundf[f][0]
             
@@ -724,11 +724,14 @@ def setupPro(resourcedir='mySWIM',parfile='mySWIM/myswim.py'):
                  'subcatchbsn':'subcatch.bsn',
                  'wgen':'wgen.dat',
                  'wstor':'wstor.dat'}
-    # simf
-    if len(options['simf'])>0: swimfiles['simf']=os.path.basename(options['simf'])
     # check for files with warning if not exists
     swimfiles = findFiles(swimfiles,findin=p['prodir'],fatal=False)
     p.update(swimfiles) # only those that were found and not double    
+    
+    # simf
+    p['simf']=options['simf']
+    if len(options['simf'])>0 or os.path.exists(options['simf']):
+        grass.warning('Simulated discharge file %s not found or not given.' %options['simf'])
     
     # check if mySWIM already exists and if not create dir
     resourcedirs = {'resourcedir':os.path.join(p['prodir'],resourcedir)}
@@ -803,7 +806,7 @@ def setupPro(resourcedir='mySWIM',parfile='mySWIM/myswim.py'):
     p['obsf']     = os.path.join(resourcedir,'observations.csv')
     
     # llcmds
-    if 'llcmds' in options:
+    if options['llcmds']!='':
         p['llcmds'] = dict([cmd.split(':') for cmd in options['llcmds'].split(',')])
     
     # write all in p to a parameter file
