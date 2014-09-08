@@ -303,7 +303,7 @@ class main:
         f = file(os.path.join(self.outdir,'INTERPOL.PAR'),'w')
         f.write('ClimateStationFile %r \n' %self.stfile)
         f.write('VirtualStations %r \n' %self.vstfile)
-        f.write('OutputPath %r/ \n' %self.outdir)
+        f.write('OutputPath %r \n' %(self.outdir+'/'))
         f.write('PrecCorr %s \n' %(str(bool(self.p)).upper()))
         f.write('NoDataValue %r \n' %str(self.nodata))
         f.write('BeginDate %r \n' %self.start)

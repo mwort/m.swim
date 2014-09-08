@@ -41,7 +41,7 @@
 #% required: no
 #% multiple: no
 #% key_desc: string
-#% options: calibration,validation,autocalibration,testing
+#% options: calibration,validation,autocalibration,scenario,reference,sensitivity,testing
 #% label: Purpose of run
 #% description: Categories to later group runs better
 #% answer: calibration
