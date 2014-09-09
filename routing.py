@@ -535,7 +535,8 @@ def subbasinorder(fromto):
     hw = fromto[noinlets]
     orderX = hw
     i = 0
-    while len(orderX)>1:
+    # as long as there is one routed that isnt the outlet
+    while len(orderX)>=1 and any(orderX['nextID']>0):
         # loop over each subbasin and correct order in order dict
         #sys.stdout.write('\rCalculating stream order %s' %i)
         for sb in orderX['subbasinID']:
@@ -543,8 +544,9 @@ def subbasinorder(fromto):
                 order[sb] = max([order[sb],i])
             else:
                 order[sb] = i
-        # get downstream subbasins
-        ins = np.unique(orderX['nextID'])
+        # get downstream subbasin info
+        ins = np.unique(orderX['nextID']) # all downstream ids
+        # get their info
         orderX = fromto[np.array([s in ins for s in fromto['subbasinID']])]
         # increase order
         i += 1
