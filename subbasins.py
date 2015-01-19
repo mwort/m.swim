@@ -867,7 +867,7 @@ if __name__=='__main__':
     
     # clean
     if not main.k:
-        grass.run_command('g.mremove',rast='*__*',vect='*__*',flags='fb',quiet=True)
+        grass.run_command('g.mremove',type='rast,vect', pattern='*__*',flags='fb',quiet=True)
     # report time it took
     delta = dt.datetime.now()-st
     grass.message('Execution took %s hh:mm:ss' %delta)

@@ -647,10 +647,7 @@ if __name__=='__main__':
         
     # clean
     if not main.k:
-        grun('g.mremove',rast='*__*',vect='*__*',flags='f',quiet=True)
-        # for reclassed raster
-        grun('g.mremove',rast='*__*',flags='bf',quiet=True)
-
+        grass.run_command('g.mremove',type='rast,vect', pattern='*__*',flags='fb',quiet=True)
     
     # remove mask
     grun('r.mask',flags='r',quiet=True)
