@@ -1,11 +1,8 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html><head>
-  
-  <meta content="text/html; charset=ISO-8859-1" http-equiv="content-type">
-  <title>GRASS m.swim.* modules</title>
 
   
-</head><body>
+  <meta content="text/html; charset=ISO-8859-1" http-equiv="content-type"><title>GRASS m.swim.* modules</title></head><body>
 <h1><a class="mozTocH1" name="mozTocId597946"></a>
 <img alt="GRASS logo" src="grass_logo.png">
 The m.swim.* modules</h1>
@@ -70,6 +67,13 @@ And the manual pages:<br>
 You may need to have administrator rights to copy the files depending
 on your OS. (Under unix-like environments, just precede the commands
 with <span style="font-family: monospace;">sudo</span>)<br>
+<br>
+<h3>Windows</h3>
+Under Windows the $GISBASE/scripts folder is something like this: C:\Programm Files\Grass7.0\scripts<br>
+Just copy the files in the downloaded Windows folder (with .py
+extension) into this scripts folder and the manual pages into the
+\html\ folder. You should then be able to launch the scirpts from the
+GRASS GUI command console (next to the Map layers tab).<br>
 
 <br>
 
@@ -79,7 +83,7 @@ If the installation doesnt work, the scripts also work on their own
 only in text mode). Launch them like a python script like this (to open
 the text based help):<br>
 
-<pre>python m.swim.subbasins --help</pre>
+<pre>python m.swim.subbasins.py --help</pre>
 
 <h3><a class="mozTocH3" name="mozTocId706779"></a>Using GRASS on the
 PIK cluster</h3>
@@ -158,6 +162,24 @@ you can find them here:<br>
 <br>
 
 <br>
+<h2>Prerequisits</h2>
+<ul>
+  <li>the DEM must be slightly larger then the entire topographical
+catchment, by one cell in each direction to be precise. Using a precut
+DEM is therefore not advisable, but this can be overcome by adding an
+'a' to the rwatershedflags in the m.swim.subbasins (this might lead to
+errors later on though).</li>
+  <li>the stationthresh in the m.swim.subbasin module should be
+slightly smaller than the drainage area of the station with the
+smallest drainage area. If stations don't produce the expected
+catchment area, they are most likely not snapped to the appropriate
+stream. Moving these stations closer to the exact stream location will
+avoid this.<br>
+  </li>
+  <li>the location's database should be SQLite (check with db.connect -p)<br>
+  </li>
+</ul>
+
 
 <h2><a class="mozTocH2" name="mozTocId247420"></a>Setting up a SWIM
 project</h2>
