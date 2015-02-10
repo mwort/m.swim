@@ -344,7 +344,7 @@ if __name__=='__main__':
     # clean
     g_run('r.mask', flags='r', quiet=True)
     if not main.k:
-        grass.run_command('g.mremove',type='rast,vect', pattern='*__*',flags='fb',quiet=True)
+        grass.run_command('g.remove',type='raster,vector', pattern='*__*',flags='fb',quiet=True)
     
     # report time it took
     delta = dt.datetime.now()-st

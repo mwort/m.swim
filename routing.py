@@ -443,7 +443,7 @@ class main:
         subbasin table in column %s (number of subbasins: %s). Check subbasin 
         table and sort by %s 
         To extract the subbasins use: 
-        v.extract map=%s where='%s!='' 
+        v.extract map=%s where="%s!=''"
         ''' %(headsb,ccol,riverlength,ccol,self.subbasins,ccol))
         return 0
         
@@ -647,7 +647,7 @@ if __name__=='__main__':
         
     # clean
     if not main.k:
-        grass.run_command('g.mremove',type='rast,vect', pattern='*__*',flags='fb',quiet=True)
+        grass.run_command('g.remove',type='raster,vector', pattern='*__*',flags='fb',quiet=True)
     
     # remove mask
     grun('r.mask',flags='r',quiet=True)

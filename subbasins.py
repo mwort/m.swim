@@ -759,9 +759,9 @@ def snappoints(points, lines):
 
     # get distances to rivernetwork and nearest x and y
     snapped_points=grass.read_command('v.distance',flags='p',quiet=True,
-                         _from=points,to=lines,
+                         from_=points,to=lines,
                          from_type='point',to_type='line',
-                         upload='dist,to_x,to_y',column='d,x,y').split()
+                         upload='dist,to_x,to_y').split()
     # format, report and reassign station_coor
     snapped_coor=[]
     for d in snapped_points[1:]:
@@ -867,7 +867,7 @@ if __name__=='__main__':
     
     # clean
     if not main.k:
-        grass.run_command('g.mremove',type='rast,vect', pattern='*__*',flags='fb',quiet=True)
+        grass.run_command('g.remove',type='raster,vector',pattern='*__*',flags='fb',quiet=True)
     # report time it took
     delta = dt.datetime.now()-st
     grass.message('Execution took %s hh:mm:ss' %delta)

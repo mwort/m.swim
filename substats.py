@@ -493,7 +493,7 @@ class main:
             self.mainstreamrast = self.makeMainStreamRast()
         
         # get current maps and environment
-        self.maps = {t:grass.mlist_grouped(t) for t in ['rast','vect']}
+        self.maps = {t:grass.list_grouped(t) for t in ['rast','vect']}
         self.env  = grass.gisenv()
         return
         
@@ -809,11 +809,6 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
         f.close()
         grass.message( 'Wrote %s' %outname)
         return
-                
-    def clean(self):
-        if not self.k:
-            grass.run_command('g.mremove',rast='*__*',vect='*__*',flags='f',quiet=True)
-        return
 
 
 
@@ -885,7 +880,7 @@ if __name__=='__main__':
     # clean
     grun('r.mask',flags='r')
     if not main.k:
-        grass.run_command('g.mremove',type='rast,vect', pattern='*__*',flags='fb',quiet=True)
+        grass.run_command('g.remove',type='raster,vector', pattern='*__*',flags='fb',quiet=True)
 
     # report time it took
     delta = dt.datetime.now()-st

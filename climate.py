@@ -265,8 +265,8 @@ class main:
         '''Calculate distances from all virtualstations to all climate stations
         within the max distance threshold'''
         # create table with distances
-        dist = gread('v.distance', flags='pa', _from=self.subbasins, from_type='centroid',
-               to=self.climstations, dmax=self.maxdist*1e3, upload='dist', column='distance')
+        dist = gread('v.distance', flags='pa', from_=self.subbasins, from_type='centroid',
+               to=self.climstations, dmax=self.maxdist*1e3, upload='dist')
         dist = [tuple(l.split('|')) for l in dist.split()]
         dist = np.array(dist[1:],dtype=zip(dist[0],[int,int,float]))
         n = len(np.unique(dist['from_cat']))
