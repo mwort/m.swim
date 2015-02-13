@@ -268,7 +268,7 @@ class main:
         dist = gread('v.distance', flags='pa', from_=self.subbasins, from_type='centroid',
                to=self.climstations, dmax=self.maxdist*1e3, upload='dist')
         dist = [tuple(l.split('|')) for l in dist.split()]
-        dist = np.array(dist[1:],dtype=zip(dist[0],[int,int,float]))
+        dist = np.array(dist[1:],dtype=zip(['from_cat','to_cat','distance'],[int,int,float]))
         n = len(np.unique(dist['from_cat']))
         if n==0: grass.fatal('No subbasins have corresponding climstation within the maxdist.')
         grass.warning('%s subbasins have %3.1f climstations on average within the maxdist.' \
