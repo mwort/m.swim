@@ -585,7 +585,7 @@ class main:
         # add little areas of watershed to subbasin map that arent covered
         exp=''''subbasins__0'=if(~isnull('{1}') & isnull({0}),9999,'{0}')'''
         grass.mapcalc(exp.format(self.subbasins,self.catchments), overwrite=True)
-        g_run('g.remove', rast=self.subbasins,quiet=True)
+        g_run('g.remove', type='rast',name=self.subbasins,quiet=True,flags='f')
         g_run('g.rename', rast='subbasins__0,%s' %self.subbasins,quiet=True)
 
         # convert subbasins to vector
@@ -717,7 +717,7 @@ def rreclass(in_raster, in_list, out_list, proper=True):
     # make reclassed raster a proper raster, remove in_rast and rename output
     if proper:
         grass.mapcalc('__temp='+in_raster+'__', overwrite=True, quiet=True)
-        g_run('g.remove', rast=in_raster+'__,'+in_raster, quiet=True)
+        g_run('g.remove', type='rast', name=in_raster+'__,'+in_raster,flags='f', quiet=True)
         g_run('g.rename', rast='__temp,'+in_raster, quiet=True)
     return
     

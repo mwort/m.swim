@@ -64,6 +64,7 @@
 #% multiple: no
 #% key_desc: name
 #% answer: hydrotopes
+#% gisprompt: new,cell,raster
 #% description: Name of hydrotope raster to be created
 #%end
 #%Flag
