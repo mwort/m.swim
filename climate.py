@@ -324,7 +324,7 @@ def vectCoordsTbl(vect):
     column names in the entries for a point vector'''
     # get table, returned columns:
     # table columns, x, y, z
-    t=grass.read_command('v.report', map=vect, option='coor').split()
+    t=grass.read_command('v.report', map=vect, option='coor').split('\n')[:-1]
     t=[tuple(l.split('|')) for l in t]
     colnames = t[0]
     t=np.array(t[1:])
