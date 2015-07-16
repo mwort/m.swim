@@ -431,6 +431,17 @@ components = {'s':'isc', 'n':'icn','i':'intercep','t':'iemeth','r':'res_switch',
 #%end
 
 #%option
+#% key: climatedir
+#% type: string
+#% required: no
+#% key_desc: path
+#% label: Folder with all climate interpolations
+#% description: Title in clims table refers to subfolders of this folder.
+#% gisprompt: old,dir,dir
+#% guisection: Settings
+#%end
+
+#%option
 #% key: subbasins
 #% type: string
 #% required: no
@@ -616,7 +627,6 @@ def getStations(resourcedir='mySWIM',**datakwargs):
             grass.fatal('Cant find subbasinidcolumn %s' %options['subbasinidcolumn'])
         # change name of column to subbasinID
         stationstbl['subbasinID'] = stationstbl[options['subbasinidcolumn']]
-        stationstbl.drop(options['subbasinidcolumn'],axis=1,inplace=True)
         
     elif 'subbasinID' in stationstbl:
         gm('Found subbasinID column in the subbasinsvect table.')
@@ -746,11 +756,14 @@ def setupPro(resourcedir='mySWIM',parfile='mySWIM/myswim.py'):
     # attach to p
     p.update(resourcedirs)
     
+    # climate dir
+    p['climatedir'] = options['climatedir']
+    
     # pest parameters
     p['pestdir'] = os.path.join(resourcedir,'pest')
     p['pestexe'] = os.path.join(resourcedir,'pest/pest')
     p['pestinstructions'] = options['pestinstructions']
-            
+    
     # get parameters from bsn file
     try: par,tmplt = swim.readBsnf(p['bsn'])
     except:

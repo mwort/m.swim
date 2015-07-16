@@ -664,11 +664,11 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
         # too large
         toolong = tbl[tbl[self.chl]>tbl['perim__']]['subbasinID']
         if len(toolong)>0:
-            where  = 'subbasinID IN %r' %(tuple(toolong),)
-            grun('v.db.update', map=self.subbasins, column=self.chl,
-                 qcolumn='perim__', where=where,quiet=True)
             gm('%s subbasins have a maximum main channel length equal to their perimeter:' %len(toolong))
             gm(','.join(map(str,toolong)))
+            where  = {True: 'subbasinID=%s'%toolong[0],False:'subbasinID IN %r' %(tuple(toolong),) }[len(toolong)==1]
+            grun('v.db.update', map=self.subbasins, column=self.chl,
+                 qcolumn='perim__', where=where,quiet=True)
         
             # remove perimeter column
             grun('v.db.dropcolumn',map=self.subbasins,column='perim__',quiet=True)
