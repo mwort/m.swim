@@ -654,7 +654,7 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
         # where nan, set to grid size
         nolength = tbl[np.isnan(tbl[self.chl])]['subbasinID']
         if len(nolength)>0:
-            where  = 'subbasinID IN %r' %(tuple(nolength),)
+            where  = 'subbasinID IN (%s)' %(','.join(map(str,nolength)))
             res      = grass.region()['ewres']*1e-3 # m to km
             grun('v.db.update', map=self.subbasins, column=self.chl,
                  value=res, where=where,quiet=True)
@@ -666,7 +666,7 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
         if len(toolong)>0:
             gm('%s subbasins have a maximum main channel length equal to their perimeter:' %len(toolong))
             gm(','.join(map(str,toolong)))
-            where  = {True: 'subbasinID=%s'%toolong[0],False:'subbasinID IN %r' %(tuple(toolong),) }[len(toolong)==1]
+            where  = 'subbasinID IN (%s)' %(','.join(map(str,toolong)))
             grun('v.db.update', map=self.subbasins, column=self.chl,
                  qcolumn='perim__', where=where,quiet=True)
         
