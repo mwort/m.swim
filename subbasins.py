@@ -839,10 +839,9 @@ if __name__=='__main__':
     grass.message(('GIS Environment:',grass.gisenv()))
     grass.message(('Parameters:',o,f))
     # warn if MASKED
-    try:
+    if 'MASK' in grass.list_grouped('rast')[grass.gisenv()['MAPSET']]:
         maskcells=grass.read_command('r.stats',input='MASK',flags='nc').split()[1]
         grass.message('!!! MASK active with %s cells, will only process those !!!'%maskcells)
-    except: pass
     
     # send all to main
     keywords = o; keywords.update(f)

@@ -179,10 +179,6 @@ class main:
         # make rast 
         grun('v.to.rast',input=self.subbasins,output=self.subbasinrast,
                  use='attr', attrcolumn=self.subb_col,overwrite=True, quiet=True)
-        # make labels for subbasins
-        grun('v.label', map=self.subbasins, column=self.subb_col, size=1000,
-             color='red',quiet=True,overwrite=True)
-        gm('Made subbasinID labels for the subbasin vector. Show them using d.labels')
         # check fromto and prepare
         if 'fromto' in self.options:
             try:
@@ -492,7 +488,11 @@ def fig(subbasins,fname):
     # get order of nextID subbasin
     downstorder = fromto.copy()
     for i,sb in enumerate(fromto['nextID']):
-        downstorder['nextID'][i] = order[sb]
+        if sb>0:
+            downstorder['nextID'][i] = order[sb]
+        else:
+            # outlet order
+            downstorder['nextID'][i] = order[-1]
 
     # next storage location, i.e. non subbasin
     sID = fromto['subbasinID'].max()+1
@@ -535,7 +535,7 @@ def subbasinorder(fromto):
     hw = fromto[noinlets]
     orderX = hw
     i = 0
-    # as long as there is one routed that isnt the outlet
+    # as long as there is one routed that isnt the largest outlet
     while len(orderX)>=1 and any(orderX['nextID']>0):
         # loop over each subbasin and correct order in order dict
         #sys.stdout.write('\rCalculating stream order %s' %i)
