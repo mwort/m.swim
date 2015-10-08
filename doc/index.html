@@ -1,6 +1,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html><head>
 
+
   
   <meta content="text/html; charset=ISO-8859-1" http-equiv="content-type"><title>GRASS m.swim.* modules</title></head><body>
 <h1><a class="mozTocH1" name="mozTocId597946"></a>
@@ -11,40 +12,16 @@ The m.swim.* modules</h1>
 <hr align="center" noshade="noshade" size="6">Contents:<span style="text-decoration: underline;"></span><br>
 
 <ul id="mozToc">
+<!--mozToc h1 1 h2 2 h3 3 h4 4 h5 5 h6 6--><li><a href="#mozTocId597946">
 
-<!--mozToc h1 1 h2 2 h3 3 h4 4 h5 5 h6 6-->
-  <li><a href="#mozTocId597946">The m.swim.* modules</a>
-    <ul>
-      <li><a href="#mozTocId449479">Installation </a>
-        <ul>
-          <li><a href="#mozTocId706779">Using GRASS on the
-PIK cluster</a></li>
-          <li><a href="#mozTocId920153">Developing and debugging</a></li>
-        </ul>
-      </li>
-      <li><a href="#mozTocId716843">Using the GUI</a></li>
-      <li><a href="#mozTocId424369">Help pages </a></li>
-      <li><a href="#mozTocId247420">Setting up a SWIM
-project</a>
-        <ul>
-          <li><a href="#mozTocId424802">Stations</a></li>
-          <li><a href="#mozTocId283437">Subbasins</a></li>
-          <li><a href="#mozTocId42767">Hydrotopes</a></li>
-          <li><a href="#mozTocId960595">Routing</a></li>
-          <li><a href="#mozTocId556678">Subbasin statistics</a></li>
-          <li><a href="#mozTocId988927">Additional files</a></li>
-        </ul>
-      </li>
-      <li><a href="#mozTocId708460">GRASS best practice</a>
-        <ul>
-          <li><a href="#mozTocId103465">Region</a></li>
-          <li><a href="#mozTocId235081">Mapsets</a></li>
-          <li><a href="#mozTocId90458">Workflow</a></li>
-        </ul>
-      </li>
-    </ul>
-  </li>
+The m.swim.* modules</a><ul><li><a href="#mozTocId449479">Installation
+</a><ul><li><a href="#mozTocId14079">Windows</a></li><li><a href="#mozTocId706779">Using GRASS on the
+PIK cluster</a></li><li><a href="#mozTocId920153">Developing and
+debugging</a></li></ul></li><li><a href="#mozTocId716843">Using the GUI</a></li><li><a href="#mozTocId424369">Help pages
+</a></li><li><a href="#mozTocId994431">Prerequisits</a></li><li><a href="#mozTocId852305">Workflow and map dependencies</a></li><li><a href="#mozTocId247420">Setting up a SWIM
+project</a><ul><li><a href="#mozTocId424802">Stations</a></li><li><a href="#mozTocId283437">Subbasins</a></li><li><a href="#mozTocId42767">Hydrotopes</a></li><li><a href="#mozTocId960595">Routing</a></li><li><a href="#mozTocId556678">Subbasin statistics</a></li><li><a href="#mozTocId988927">Additional files</a></li></ul></li><li><a href="#mozTocId708460">GRASS best practice</a><ul><li><a href="#mozTocId103465">Region</a></li><li><a href="#mozTocId235081">Mapsets</a></li><li><a href="#mozTocId90458">Workflow</a></li></ul></li></ul></li>
 </ul>
+
 
 <br>
 
@@ -68,7 +45,7 @@ You may need to have administrator rights to copy the files depending
 on your OS. (Under unix-like environments, just precede the commands
 with <span style="font-family: monospace;">sudo</span>)<br>
 <br>
-<h3>Windows</h3>
+<h3><a class="mozTocH3" name="mozTocId14079"></a>Windows</h3>
 Under Windows the $GISBASE/scripts folder is something like this: C:\Programm Files\Grass7.0\scripts<br>
 Just copy the files in the downloaded Windows folder (with .py
 extension) into this scripts folder and the manual pages into the
@@ -162,7 +139,7 @@ you can find them here:<br>
 <br>
 
 <br>
-<h2>Prerequisits</h2>
+<h2><a class="mozTocH2" name="mozTocId994431"></a>Prerequisits</h2>
 <ul>
   <li>the DEM must be slightly larger then the entire topographical
 catchment, by one cell in each direction to be precise. Using a precut
@@ -176,9 +153,15 @@ catchment area, they are most likely not snapped to the appropriate
 stream. Moving these stations closer to the exact stream location will
 avoid this.<br>
   </li>
-  <li>the location's database should be SQLite (check with db.connect -p)<br>
-  </li>
+  <li>the location's database should be SQLite (check with <span style="font-family: monospace;">db.connect -p</span>)</li><br>
 </ul>
+<h2><a class="mozTocH2" name="mozTocId852305"></a>Workflow and map dependencies</h2>
+<br>
+<img style="width: 960px; height: 432px;" alt="" src="m.swim_workflow.png"><br>
+<ul>
+
+</ul>
+
 
 
 <h2><a class="mozTocH2" name="mozTocId247420"></a>Setting up a SWIM
@@ -343,5 +326,6 @@ potential 'Methods' article section ;)</li>
 <br>
 
 <br>
+
 
 </body></html>
