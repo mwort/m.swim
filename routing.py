@@ -492,7 +492,7 @@ def fig(subbasins,fname):
             downstorder['nextID'][i] = order[sb]
         else:
             # outlet order
-            downstorder['nextID'][i] = order[-1]
+            downstorder['nextID'][i] = max(order.values())
 
     # next storage location, i.e. non subbasin
     sID = fromto['subbasinID'].max()+1
