@@ -388,9 +388,12 @@ class main:
         ######### WATERSHEDS #################
         gm('Creating station catchments...')
         # create watersheds for stations
-        for i,s in enumerate(self.station_coor):
+        for i,si in enumerate(self.station_coor):
+            # unpack station info
+            cat,dist,x,y = si
+            s = (x,y)
             if 'catchmentprefix' in self.options:
-                name=self.catchmentprefix+'%s' %(i+1)
+                name=self.catchmentprefix+'%s' %(cat)
             else:
                 name='watersheds__st%s' %(i+1)
             grass.message(('Calculating watershed for station %s' %(i+1)))
@@ -412,7 +415,7 @@ class main:
         '''Return a dictionary with staions as keys and lists of watershed ids
         as values'''
         # get station topology
-        stopo=rwhat(self.allcatchments, self.station_coor)
+        stopo=rwhat(self.allcatchments, self.station_coor[['x','y']])
         # list of numpy arrays with indeces of nonzero cat values
         stopo=stopo.transpose()
         topo=[]
@@ -458,7 +461,7 @@ class main:
                 subareas+=[subarea_name]
                 ### check if outlet, ie. if stations-1 are included no others are downstream
                 if len(included)==len(self.stationtopology)-1:
-                    self.outletcoor = self.station_coor[i]
+                    self.outletcoor = self.station_coor[['x','y']][i]
             else:
                 subareas+=[watersheds[i]]
             #### MASK SUBAREA #####
@@ -667,7 +670,7 @@ class main:
         gm('-----------------------------------------------------------------')
         print( '''Catchment sizes :
 ID  excl. upstream   incl. upstream  outlet subbasin  upstream stations''')        
-        outletsb = rwhat([self.subbasins],self.station_coor)
+        outletsb = rwhat([self.subbasins],self.station_coor[['x','y']])
         for i,a in enumerate(scs):
             upstsize = np.sum(scs[self.stationtopology[a[0]],1])+a[1]
             print( '%3i %14.2f %16.2f %16i  %s' %(a[0],a[1],upstsize,
@@ -763,11 +766,13 @@ def snappoints(points, lines):
                          from_type='point',to_type='line',
                          upload='dist,to_x,to_y').split()
     # format, report and reassign station_coor
-    snapped_coor=[]
-    for d in snapped_points[1:]:
-        d=d.split('|')
-        snapped_coor+=[(float(d[2]),float(d[3]))]
-        gm('Station %s moved by %8.1fm to: %s' %(d[0],float(d[1]),snapped_coor[-1]))
+    snapped_coor=np.array([tuple(d.split('|')) for d in snapped_points[1:]],
+                          dtype=[('cat',int),('distance',float),
+                                 ('x',float),('y',float)])
+    # report
+    gm('Station snapped to streams:\ncat        distance[m]  x            y')
+    for d in snapped_coor:
+        gm('%10s %12.1f %12.1f %12.1f' %tuple(d))
 
     return snapped_coor
         
