@@ -148,28 +148,13 @@ class main:
         grass.run_command('v.to.rast',input=self.grid,output=self.grid+'__',
                           use='cat',type='area')
         
-        # cross with subbasin raster
-        crossrast = self.subbasins.split('@')[0]+'__'+self.grid+'__cross'
-        grass.run_command('r.cross', flags='z', input=self.subbasins+','+self.grid+'__',
-                          output=crossrast)
-        
-        
-        # read in cross raster and grid table
-        cross = grass.read_command('r.stats',flags='aln',input=crossrast,
-                                   separator='pipe').split('\n')[:-1]
-        # extract index, Category subbasinID, category gridID, area
-        tbl   = []
-        dtype = [('ix',int),('subbasinID',int),('gridID',int),('area',float)]
-        for l in cross:
-            i,cats,a = l.split('|')
-            # lines without category (r.cross bug?)
-            if len(cats.split(';')) < 2: continue
-            # remove 'category'
-            sbid,gid = [s.split()[1] for s in cats.split(';')]
-            # add to tbl
-            tbl += [(int(i),int(sbid),int(gid),float(a))]
-        # make rec array
-        tbl = np.array(tbl,dtype=dtype)
+        # cross subbasin raster and grid raster and get areas
+        crossrast = self.subbasins+','+self.grid+'__'
+        cross = grass.read_command('r.stats',flags='an',input=crossrast,
+                                   separator='pipe').split()
+        # cross = ( subbasinID, gridID, area )
+        dtype = [('subbasinID',int),('gridID',int),('area',float)]
+        tbl = np.array([tuple(l.split('|')) for l in cross],dtype=dtype)
         # sort by subbasin and area
         tbl.sort(order=('subbasinID','area'))
     
