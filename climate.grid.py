@@ -50,15 +50,6 @@
 #% description: grid size in degrees
 #%end
 
-#%Option
-#% guisection: Output
-#% key: maxcells
-#% type: integer
-#% multiple: no
-#% key_desc: int
-#% answer: 4
-#% description: Maximum cells to write into output
-#%end
 
 #%Option
 #% guisection: Output
@@ -99,9 +90,8 @@ class main:
         self.region=grass.region()
         self.proj=grass.parse_command('g.proj',flags='g')
         
-        # convert res and maxcells
+        # convert res
         self.res = float(self.res)
-        self.maxcells = int(self.maxcells)
         return
     
     def mkLonLatGrid(self):
@@ -160,60 +150,84 @@ class main:
     
         return tbl
     
+#    def writeNCInfo(self,tbl):    
+#        # get unique subbasins
+#        subb = np.unique(tbl['subbasinID'])
+#        
+#        areas  = np.zeros((len(subb),self.maxcells))
+#        gridids= np.zeros((len(subb),self.maxcells),int)
+#        many = {}
+#        # format
+#        for i,sbid in enumerate(subb):
+#            sb = tbl[['gridID','area']][tbl['subbasinID']==sbid][::-1]
+#            n = len(sb)
+#            # save those areas that are more than self.maxcells
+#            if n>self.maxcells: many[sbid]=sb
+#            # fit into data arrays
+#            nn = min(n,self.maxcells)
+#            areas[i,:nn]   = sb['area'][:nn]
+#            gridids[i,:nn] = sb['gridID'][:nn]
+#        
+#        # report on cell counts
+#        counts = (gridids>0).sum(axis=1)
+#        grass.message('Cells per subbasin [subbasin count]:')
+#        for i in range(1,self.maxcells+1):
+#            grass.message('%s: %s'%(i,len(counts[counts==i])))
+#        
+#        # report on areas not taken into account
+#        if len(many)>0:
+#            grass.message('There are %s subbasins with more than %s climate cells:'%(len(many),self.maxcells))
+#            grass.message('SubbasinID _ n grid cells _ proportion of subbasin (%)')
+#            for s in sorted(many.keys()):
+#                # proportion of areas more than self.maxcells in
+#                prop = many[s]['area'][self.maxcells:].sum() * 100/many[s]['area'].sum()
+#                print('%11i %14i %12.1f'%(s,len(many[s]),prop))
+#    
+#        # make ratios out of areas (must be transposed to make division work along columns)
+#        ratios = (areas.T/areas.sum(axis=1)).T
+#    
+#        # get lon,lats (ditionary with cell ids as keys and [lon,lat] as entry
+#        lonlats = grass.vector_db_select(self.grid,columns='lon,lat')['values']
+#        lonlats[0] = [0,0] # lonlat for grids with 0 weight
+#        # pickout lonlats for gridids
+#        lon = np.array([[lonlats[i][0] for i in l] for l in gridids],float)
+#        lat = np.array([[lonlats[i][1] for i in l] for l in gridids],float)
+#        
+#        # fill data array interweaving subb + lon1, lon1, ratio1 ...
+#        data = np.empty((len(subb),self.maxcells*3+1), dtype=float)
+#        data[:,0]    = subb
+#        data[:,1::3] = lon
+#        data[:,2::3] = lat
+#        data[:,3::3] = ratios
+#        # write out
+#        fmt = '%12i '+' '.join(['%12.3f %12.3f %12.6f']*self.maxcells)
+#        head= '%10s '%'subbasinID' + ' '.join(['%12s %12s %12s'%('lon','lat','weight')]*self.maxcells)
+#        np.savetxt(self.outpath,data,fmt=fmt,header=head)
+#        grass.message('Wrote %s lines and %s columns to %s'%(data.shape+(self.outpath,)))
+#        return 0
+
     def writeNCInfo(self,tbl):    
-        # get unique subbasins
-        subb = np.unique(tbl['subbasinID'])
-        
-        areas  = np.zeros((len(subb),self.maxcells))
-        gridids= np.zeros((len(subb),self.maxcells),int)
-        many = {}
-        # format
-        for i,sbid in enumerate(subb):
-            sb = tbl[['gridID','area']][tbl['subbasinID']==sbid][::-1]
-            n = len(sb)
-            # save those areas that are more than self.maxcells
-            if n>self.maxcells: many[sbid]=sb
-            # fit into data arrays
-            nn = min(n,self.maxcells)
-            areas[i,:nn]   = sb['area'][:nn]
-            gridids[i,:nn] = sb['gridID'][:nn]
-        
-        # report on cell counts
-        counts = (gridids>0).sum(axis=1)
-        grass.message('Cells per subbasin [subbasin count]:')
-        for i in range(1,self.maxcells+1):
-            grass.message('%s: %s'%(i,len(counts[counts==i])))
-        
-        # report on areas not taken into account
-        if len(many)>0:
-            grass.message('There are %s subbasins with more than %s climate cells:'%(len(many),self.maxcells))
-            grass.message('SubbasinID _ n grid cells _ proportion of subbasin (%)')
-            for s in sorted(many.keys()):
-                # proportion of areas more than self.maxcells in
-                prop = many[s]['area'][self.maxcells:].sum() * 100/many[s]['area'].sum()
-                print('%11i %14i %12.1f'%(s,len(many[s]),prop))
-    
-        # make ratios out of areas (must be transposed to make division work along columns)
-        ratios = (areas.T/areas.sum(axis=1)).T
-    
+
         # get lon,lats (ditionary with cell ids as keys and [lon,lat] as entry
-        lonlats = grass.vector_db_select(self.grid,columns='lon,lat')['values']
-        lonlats[0] = [0,0] # lonlat for grids with 0 weight
+        lonlatmap = grass.vector_db_select(self.grid,columns='lon,lat')['values']
+
         # pickout lonlats for gridids
-        lon = np.array([[lonlats[i][0] for i in l] for l in gridids],float)
-        lat = np.array([[lonlats[i][1] for i in l] for l in gridids],float)
+        lons = np.array([lonlatmap[i][0] for i in tbl['gridID']],float)
+        lats = np.array([lonlatmap[i][1] for i in tbl['gridID']],float)
         
-        # fill data array interweaving subb + lon1, lon1, ratio1 ...
-        data = np.empty((len(subb),self.maxcells*3+1), dtype=float)
-        data[:,0]    = subb
-        data[:,1::3] = lon
-        data[:,2::3] = lat
-        data[:,3::3] = ratios
+        # get proportions in each subbasin
+        props = np.zeros(len(tbl))
+        for sb in np.unique(tbl['subbasinID']):
+            isb = tbl['subbasinID']==sb
+            props[isb] = tbl['area'][isb]/tbl['area'][isb].sum()
+        
+        # make out array
+        outtbl = np.column_stack((tbl['subbasinID'],lons,lats,props))
         # write out
-        fmt = '%12i '+' '.join(['%12.3f %12.3f %12.6f']*self.maxcells)
-        head= '%10s '%'subbasinID' + ' '.join(['%12s %12s %12s'%('lon','lat','weight')]*self.maxcells)
-        np.savetxt(self.outpath,data,fmt=fmt,header=head)
-        grass.message('Wrote %s lines and %s columns to %s'%(data.shape+(self.outpath,)))
+        fmt = '%12i %12.3f %12.3f %12.6f'
+        head= '%10s '%'subbasinID' + '%12s %12s %12s'%('lon','lat','weight')
+        np.savetxt(self.outpath,outtbl,fmt=fmt,header=head)
+        grass.message('Wrote %s lines and %s columns to %s'%(outtbl.shape+(self.outpath,)))
         return 0
 
 
