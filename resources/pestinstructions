@@ -1,0 +1,68 @@
+### Lines starting with # are comments and {key} will be inserted by swim.py
+pcf
+* control data
+# RSTFLE (restart|norestart: whether to be able to restart PEST with -r/-j flag) PESTMODE (estimation|pediction|regularisation: normally in estimation mode, others require more sections in file)
+restart estimation
+#
+# NPAR (number of parameters listed) NOBS (number of observations) NPARGP (number of parameter groups) NPRIOR (number of prior observation) NOBSGP (number of observation groups)
+{nparams} {nobs} {npgroups} 0 {nobsgroups}
+#
+# NTPLFLE (number of template/input files) NINSFLE (number of instruction files) PRECIS (single|double: parameter precision) DPOINT (point|nopoint: if nopoint, will omit decimal point when redundant) NUMCOM JACFILE MESSFILE (for normal operation these three should be: 1 0 0)
+1 1 double point 1 0 0
+#
+# RLAMBDA1 (initial Marquardt lambda, >1/<10, will be reduced, if PEST complains the the normal matrix is not positive definite, this needs to be increased) RLAMFAC (>1, factor by which PEST decreases, divides or increases, multiplies lambda) PHIRATSUF (fraction of when to end iteration, 0.3 often appropriate) PHIREDLAM (how easy RLAMBDA is met, 0.01 is often appropriat) NUMLAM (between 5 and 10, number of lamdas)
+5.0 2.0 0.3 0.03 12
+#
+# RELPARMAX and FACPARMAX (maximum relative change and max factor change of parameters) FACORIG (>0, 0.001 is often suitable)
+1.4 1.4 0.001 0
+#
+# PHIREDSWH (0.01 is often suitable)
+0.1
+#
+# Termination criteria
+# NOPTMAX (max number of iterations for a single parameter estimation, 0 and -1 hav special meaning) PHIREDSTP and NPHISTP (normally 0.01 and 4) NPHINORED (max iterations if objective function not reduced, 3-4 is often enough) RELPARSTP and NRELPAR (0.01 and 2-3 often suitable)
+30 0.001 5 5 0.001 5
+#
+# ICOV ICOR IEIG (1|0: whether to print covariance, correlation coefficent and eigenvalues in .mtt file)
+1 1 1
+#
+* parameter groups
+# PARGPNME (group name, 12 chars max) INCTYP (relative|absolute|rel_to_max: how parameters are changed, if rel_to_max increment is fraction of max value of all params in group) DERINC (fraction or amount by which param will be changed) DERINCLB (absolute lower bound for relative params) FORCEN (switch|always_2|always_3: how long forward difference estimation is used) DERINCMUL (factor by which DERINC is multiplied for derivative estimation, normally btw 1 and 2) DERMTHD (parabolic|best_fit|outside_pts: which method to use for three-point derivative estimation) 
+et         absolute 0.05    0.0     switch 2.0 parabolic
+bff        relative 0.1     0.1     switch 1.5 parabolic
+cnum    relative 0.05    0.00001 switch 1.5 parabolic
+abf       relative 0.05    0.00001 switch 1.5 parabolic
+roc       relative 0.05    0.01    switch 1.5 parabolic
+sccor    relative 0.1     0.01    switch 1.5 parabolic
+# for snow melt and fall temperatures (degrees C)
+tsnow   absolute 0.3     0.0     switch 2.0 parabolic
+# for snow melt rate (cm per day per degree)
+melt     absolute 0.05   0.0     switch 2.0 parabolic
+# T and P lapse rates
+lapsr    absolute 0.0008  0.0     switch 2.0 parabolic
+gmrate absolute 0.3     0.0     switch 2.0 parabolic
+fix        absolute 1       0       switch 1.0 parabolic
+#
+* parameter data
+# PARNME (parameter name, 12 char max) PARTRANS (none: no transformation |log:log-tranform parameter, yields better results, but wont work when the parameter become 0 or less |fixed:not changed during optimisation |tied: tied to other parameter must be set in below) PARCHGLIM (relative|factor: limit of change method, factor is a/f or a*f, relative is (a-a0)/a0 < r, log-transformed Ps must be factor, RELPARMAX and FACPARMAX specify their respective max values) PARVAL1 (initial parameter value, must lie within bounds, for tied parameter this sets the ratio to the parent param, careful with 0s, cant be log-transformed or bounded by factor or relative limits, maybe better to shift) PARLBND and PARUBND (lower and upper boundary of change) PARGP (parameter group as given in group section, none is dummy for fixed) SCALE and OFFSET (factors to shift the parameter in calculation to avoid negatives or 0s, other values in original) DERCOM (should be left 1)
+da       fixed  relative   {da}       0  10000000    fix   1.0 0.0 1
+thc      fixed  factor     {thc}      0.7      1.5   et    1.0 0.0 1
+ecal     fixed  factor     {ecal}     0.7      1.5   et    1.0 0.0 1
+bff      log    factor     {bff}      0.1      1     bff   1.0 0.0 1
+cnum1    fixed  factor     {cnum1}    0.99     1.01  cnum  1.0 0.0 1
+cnum2    fixed  factor     {cnum2}    0.99     1.01  cnum  1.0 0.0 1
+cnum3    fixed  factor     {cnum3}    0.99     1.01  cnum  1.0 0.0 1
+abf0     fixed  relative   {abf0}     0.001    1.0   abf   1.0 0.0 1
+roc2     log    relative   {roc2}     0.1      5     roc   1.0 0.0 1
+roc4     log    factor     {roc4}     0.1      5     roc   1.0 0.0 1
+sccor    log    factor     {sccor}    0.1     10     sccor 1.0 0.0 1
+tsnfall  none   relative   {tsnfall} -3        5     tsnow 1.0 0.0 1
+tmelt    none   relative   {tmelt}   -3        5     tsnow 1.0 0.0 1
+smrate   none   relative   {smrate}   0.1      1.2   melt  1.0 0.0 1
+xgrad    fixed  relative   {xgrad}    0.000    0.0005 lapsr 1.0 0.0 1
+tgrad    fixed  relative   {tgrad}   -0.009   -0.000 lapsr 1.0 0.0 1
+gmrate   none   relative   {gmrate}   1.0     20     gmrate 1.0 0.0 1
+tlrch    fixed  factor    {tlrch}     0.7      15   et    1.0 0.0 1
+evrch    fixed  factor    {evrch}     0.7      15   et    1.0 0.0 1
+#
+# PARNME PARTIED (one such line for each tied parameter)
