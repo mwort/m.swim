@@ -168,7 +168,7 @@ class main:
         # make sure subbasins are in current mapset
         VectMapset=self.subbasins.split('@')
         if len(VectMapset)==2 and VectMapset[1]!=grass.gisenv()['MAPSET']:
-            grass.fatal('!!! %s needs to be in the current mapset!!!' %(self.subbasins))
+            grass.fatal('!!! %s needs to be in the current mapset because I will update its table !!!' %(self.subbasins))
 
         # check what columns to use
         cols = grass.vector_columns(self.subbasins)
@@ -272,7 +272,7 @@ class main:
         # check outlets
         self.checkOutletAndFromto()
         
-        gm('Routing successfully complete. nextID and inletID added to %s table.' %self.subbasins)
+        gm('Routing successfully completed. nextID and inletID added to %s table.' %self.subbasins)
         
         return
         
