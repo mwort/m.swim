@@ -1,316 +1,352 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <meta name="description" content="">
+    <meta name="author" content="">
 
-<head>
+    <title>Dashboard Template for Bootstrap</title>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+    <link href="dashboard.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Custom styles for this template -->
+<style media="screen">
+body {
+padding-top:120px;
+}
+.navbar-default {
+  background-color: #fff;
+  background-image: none;
+}
+
+.affix {
+  overflow-y: auto;
+  background-color: #fff;
+  z-index: 1000;
+}
+
+.mozTocH2, .mozTocH3 {
+  display: block;
+  position: relative;
+  top: -150px;
+  visibility: hidden;
+}
+.nav a {
+  font-weight: bold;
+}
+.nav .nav a {
+  padding-top: 0px!important;
+  padding-left: 40px;
+  font-weight: normal;
+}
+@media (min-width: 767px) {
+.affix {
+    position:fixed;
+}
+}
+img.resize {
+  width: 100%;
+  height: auto;
+}
+
+</style>
+  </head>
+
+  <body>
+    <!-- Fixed navbar -->
+
+        <nav class="navbar navbar-default navbar-fixed-top">
+          <div class="container-fluid">
+            <div class="navbar-header">
+              <h1><a class="navbar-brand" name="mozTocId597946"></a>
+                <img alt="GRASS logo" src="grass_logo.png">
+                The m.swim.* modules</h1>
+            </div>
+          </div>
+        </nav>
 
 
-
-  <meta content="text/html; charset=ISO-8859-1" http-equiv="content-type">
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
-
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  <title>GRASS m.swim.* modules</title>
-</head>
-
-<body>
-  <div class="container" position="fixed">
-
-    <h1><a class="mozTocH1" name="mozTocId597946"></a>
-      <img alt="GRASS logo" src="grass_logo.png">
-      The m.swim.* modules</h1>
-
-  </div>
-
-<div class="container">
-  <div class="row">
-    <div class="col-sm-3 sidebar-outer">
-      <div class="sidebar-nav">
-        <div class="navbar navbar-default" role="navigation">
-          <div class="navbar-header">Contents:<span style="text-decoration: underline;"></span></div>
-          <br>
-            <ul class="nav nav-pills nav-stacked">
-              <li ><a href="#mozTocId449479">Installation</a>
-                <ul class="nav nav-pills nav-stacked">
-                  <li ><a href="#mozTocId14079">Windows</a></li>
-                  <li ><a href="#mozTocId706779">Using GRASS on the PIK cluster</a></li>
-                  <li ><a href="#mozTocId920153">Developing and debugging</a></li>
-                </ul>
-              </li>
-              <li ><a href="#mozTocId716843">Using the GUI</a></li>
-              <li ><a href="#mozTocId424369">Help pages</a></li>
-              <li   ><a href="#mozTocId994431">Prerequisits</a></li>
-              <li  ><a href="#mozTocId852305">Workflow and map dependencies</a></li>
-              <li ><a href="#mozTocId247420">Setting up a SWIM project</a>
-                <ul  class="nav nav-pills nav-stacked">
-                  <li ><a href="#mozTocId424802">Stations</a></li>
-                  <li ><a href="#mozTocId283437">Subbasins</a></li>
-                  <li  ><a href="#mozTocId42767">Hydrotopes</a></li>
-                  <li ><a href="#mozTocId960595">Routing</a></li>
-                  <li ><a href="#mozTocId556678">Subbasin statistics</a></li>
-                  <li ><a href="#mozTocId988927">Additional files</a></li>
-                </ul>
-              </li>
-              <li ><a href="#mozTocId708460">GRASS best practice</a>
-                <ul  class="nav nav-pills nav-stacked">
-                  <li ><a href="#mozTocId103465">Region</a></li>
-                  <li ><a href="#mozTocId235081">Mapsets</a></li>
-                  <li ><a href="#mozTocId90458">Workflow</a></li>
-                </ul>
-              </li>
+    <!-- Content -->
+    <div class="container-fluid">
+      	<div class="row">
+          <div class="col-lg-3 col-sm-4 col-xs-5 ">
+              <ul id="sidebar" class="nav navbar-light nav-stacked affix">
+                <li ><a href="#mozTocId449479">Installation</a>
+                  <ul class="nav nav-stacked">
+                    <li ><a href="#mozTocId14079">Windows</a></li>
+                    <li ><a href="#mozTocId706779">Using GRASS on the PIK cluster</a></li>
+                    <li ><a href="#mozTocId920153">Developing and debugging</a></li>
+                  </ul>
+                </li>
+                <li ><a href="#mozTocId716843">Using the GUI</a></li>
+                <li ><a href="#mozTocId424369">Help pages</a></li>
+                <li   ><a href="#mozTocId994431">Prerequisits</a></li>
+                <li  ><a href="#mozTocId852305">Workflow and map dependencies</a></li>
+                <li ><a href="#mozTocId247420">Setting up a SWIM project</a>
+                  <ul  class="nav nav-stacked">
+                    <li ><a href="#mozTocId424802">Stations</a></li>
+                    <li ><a href="#mozTocId283437">Subbasins</a></li>
+                    <li  ><a href="#mozTocId42767">Hydrotopes</a></li>
+                    <li ><a href="#mozTocId960595">Routing</a></li>
+                    <li ><a href="#mozTocId556678">Subbasin statistics</a></li>
+                    <li ><a href="#mozTocId988927">Additional files</a></li>
+                  </ul>
+                </li>
+                <li ><a href="#mozTocId708460">GRASS best practice</a>
+                  <ul  class="nav nav-stacked">
+                    <li ><a href="#mozTocId103465">Region</a></li>
+                    <li ><a href="#mozTocId235081">Mapsets</a></li>
+                    <li ><a href="#mozTocId90458">Workflow</a></li>
+                  </ul>
+                </li>
             </ul>
           </div>
-      </div>
-    </div>
 
-    <div class="col-sm-9">
+          <div class="col-lg-9 col-sm-8 col-xs-7">
+            <h2><a class="mozTocH2" name="mozTocId449479"></a>Installation<br></h2>
 
-      <div class="content">
-        <br>
-        <h2><a class="mozTocH2" name="mozTocId449479"></a>Installation<br></h2>
-
-        <a href="http://www.pik-potsdam.de/%7Ewortmann/m.swim/grass.swim.zip" target="_blank">Download the modules</a>
-        <br>
-
-        <br> Then copy the scripts to your GRASS base folder like this in an open GRASS session:<br>
-
-        <pre>cp m.swim.* $GISBASE/scripts/</pre> And the manual pages:
-        <br>
-
-        <pre>cp doc/* $GISBASE/docs/html/</pre> You may need to have administrator rights to copy the files depending on your OS. (Under unix-like environments, just precede the commands with <span style="font-family: monospace;">sudo</span>)
-        <br>
-        <br>
-        <h3><a class="mozTocH3" name="mozTocId14079"></a>Windows</h3> Under Windows the $GISBASE/scripts folder is something like this: C:\Programm Files\Grass7.0\scripts
-        <br> Just copy the files in the downloaded Windows folder (with .py extension) into this scripts folder and the manual pages into the \html\ folder. You should then be able to launch the scirpts from the GRASS GUI command console (next to the Map layers
-        tab).
-        <br>
-
-        <br> If the installation doesnt work, the scripts also work on their own (but probably
-        <br> only in text mode). Launch them like a python script like this (to open the text based help):
-        <br>
-
-        <pre>python m.swim.subbasins.py --help</pre>
-
-        <h3><a class="mozTocH3" name="mozTocId706779"></a>Using GRASS on the
-      PIK cluster</h3> If you don't want to use them locally, use the GRASS7 cluster version with the modules preinstalled. Use a direct connection to the cluster and make sure your X Window is set properly (otherwise don't expect any GUI windows to pop up). Then load the
-        environment variables like this:
-        <br>
-
-        <pre>source /home/wortmann/src/grass7/externalstart<br></pre>
-
-        <span style="font-weight: bold;"></span>...and you are good to go.
-        <br>
-
-        <br>
-
-        <h3><a class="mozTocH3" name="mozTocId920153"></a>Developing and
-      debugging</h3> PIK cluster users can use the git repository on the cluster to make changes to the m.swim.* code. Here is a quick <a href="developing_debugging.html">HOWTO</a>.
-        <br>
-
-        <br>
-
-        <span style="font-weight: bold;"></span>
-        <h2><a class="mozTocH2" name="mozTocId716843"></a>Using the GUI<span style="font-weight: bold;"></span></h2>
-
-        <span style="font-weight: bold;">
-      </span>The m.swim.* modules (like any other GRASS module) can be either used as a script command or to open a GUI widget. On the GRASS command line, type the following to open them:
-        <br>
-
-        <pre>m.swim.subbasin &amp;<br>m.swim.hydrotopes &amp;<br>m.swim.routing &amp;<br>m.swim.substats &amp;</pre> If you want to also set arguments on the command line and still open the GUI, just add a --ui flag. E.g.:
-        <br>
-
-        <pre>m.swim.subbasin elevation=elevation@PERMANENT stations=stations upthresh=2 --ui &amp;<span style="font-weight: bold;"><br></span></pre> Here are some screenshots of the GUI:<span style="font-family: monospace;"><br>
-      <br>
-      <a href="m.swim.subbasins.html"><img style="border: 0px solid ; width: 945px; height: 549px;" alt="m.swim.subbasin GUI" title="m.swim.subbasin GUI" src="subbasin_screenshot.png"></a><br>
-      </span><em><span style="font-style: italic;">The m.swim.subbasins GUI
-      in the subbasin design tab.</span></em><span style="font-family: monospace;"><br>
-      <br>
-      <img style="width: 996px; height: 836px;" alt="routing network plotted" title="routing network" src="routingnetwork_screenshot.png"><br>
-      </span><em>The routing network (red) plotted with the subbasins (black)
-      and the mainstreams (blue).</em><span style="font-family: monospace;"><br>
-      <br>
-      </span>More screenshots:<span style="font-family: monospace;"><br>
-      <br>
-      </span><em><a href="routing_screenshot.png" target="_blank">m.swim.routing
-      GUI</a>, <a href="subbasin_table_screenshot.png" target="_blank">subbasin
-      table</a>, <a href="substats_screenshot.png" target="_blank">m.swim.substats
-      GUI</a>, <a href="help_screenshot.png">help page</a></em><span style="font-family: monospace;"><a href="help_screenshot.png"><br>
-      </a><br>
-      </span>To view your output you will have to open the GRASS wxPython GUI if you havent already done so. Here is the manual: <a href="http://grass.osgeo.org/grass70/manuals/wxGUI.html">GRASS70 GUI</a>
-        <br>
-
-        <span style="font-family: monospace;"></span>
-        <h2><a class="mozTocH2" name="mozTocId424369"></a>Help pages<br>
-      </h2> All GRASS manuals come with a manual page as the last tab in the GUI or you can find them here:
-        <br>
-
-        <br>
-
-        <a href="m.swim.subbasins.html">m.swim.subbasins</a>
-        <br>
-
-        <a href="m.swim.hydrotopes.html">m.swim.hydrotopes</a>
-        <br>
-
-        <a href="m.swim.routing.html">m.swim.routing</a>
-        <a href="m.swim.routing.html">
-          <br>
-        </a><a href="m.swim.substats.html">m.swim.substats</a>
-        <br>
-
-        <br>
-
-        <br>
-        <h2><a class="mozTocH2" name="mozTocId994431"></a>Prerequisits</h2>
-        <ul>
-          <li>the DEM must be slightly larger then the entire topographical catchment, by one cell in each direction to be precise. Using a precut DEM is therefore not advisable, but this can be overcome by adding an 'a' to the rwatershedflags in the m.swim.subbasins
-            (this might lead to errors later on though).</li>
-          <li>the stationthresh in the m.swim.subbasin module should be slightly smaller than the drainage area of the station with the smallest drainage area. If stations don't produce the expected catchment area, they are most likely not snapped to the appropriate
-            stream. Moving these stations closer to the exact stream location will avoid this.
+            <a href="http://www.pik-potsdam.de/%7Ewortmann/m.swim/grass.swim.zip" target="_blank">Download the modules</a>
             <br>
-          </li>
-          <li>the location's database should be SQLite (check with <span style="font-family: monospace;">db.connect -p</span>)</li>
-          <br>
-        </ul>
-        <h2><a class="mozTocH2" name="mozTocId852305"></a>Workflow and map dependencies</h2>
-        <br>
-        <img style="width: 960px; height: 432px;" alt="" src="m.swim_workflow.png">
-        <br>
-        <ul>
 
-        </ul>
+            <br> Then copy the scripts to your GRASS base folder like this in an open GRASS session:<br>
+
+            <pre>cp m.swim.* $GISBASE/scripts/</pre> And the manual pages:
+            <br>
+
+            <pre>cp doc/* $GISBASE/docs/html/</pre> You may need to have administrator rights to copy the files depending on your OS. (Under unix-like environments, just precede the commands with <span style="font-family: monospace;">sudo</span>)
+            <br>
+            <br>
+            <h3><a class="mozTocH3" name="mozTocId14079"></a>Windows</h3> Under Windows the $GISBASE/scripts folder is something like this: C:\Programm Files\Grass7.0\scripts
+            <br> Just copy the files in the downloaded Windows folder (with .py extension) into this scripts folder and the manual pages into the \html\ folder. You should then be able to launch the scirpts from the GRASS GUI command console (next to the Map layers
+            tab).
+            <br>
+
+            <br> If the installation doesnt work, the scripts also work on their own (but probably
+            <br> only in text mode). Launch them like a python script like this (to open the text based help):
+            <br>
+
+            <pre>python m.swim.subbasins.py --help</pre>
+
+            <h3><a class="mozTocH3" name="mozTocId706779"></a>Using GRASS on the
+            PIK cluster</h3> If you don't want to use them locally, use the GRASS7 cluster version with the modules preinstalled. Use a direct connection to the cluster and make sure your X Window is set properly (otherwise don't expect any GUI windows to pop up). Then load the
+            environment variables like this:
+            <br>
+
+            <pre>source /home/wortmann/src/grass7/externalstart<br></pre>
+
+            <span style="font-weight: bold;"></span>...and you are good to go.
+            <br>
+
+            <br>
+
+            <h3><a class="mozTocH3" name="mozTocId920153"></a>Developing and
+            debugging</h3> PIK cluster users can use the git repository on the cluster to make changes to the m.swim.* code. Here is a quick <a href="developing_debugging.html">HOWTO</a>.
+            <br>
+
+            <br>
+
+            <span style="font-weight: bold;"></span>
+            <h2><a class="mozTocH2" name="mozTocId716843"></a>Using the GUI<span style="font-weight: bold;"></span></h2>
+
+            <span style="font-weight: bold;">
+            </span>The m.swim.* modules (like any other GRASS module) can be either used as a script command or to open a GUI widget. On the GRASS command line, type the following to open them:
+            <br>
+
+            <pre>m.swim.subbasin &amp;<br>m.swim.hydrotopes &amp;<br>m.swim.routing &amp;<br>m.swim.substats &amp;</pre> If you want to also set arguments on the command line and still open the GUI, just add a --ui flag. E.g.:
+            <br>
+
+            <pre>m.swim.subbasin elevation=elevation@PERMANENT stations=stations upthresh=2 --ui &amp;<span style="font-weight: bold;"><br></span></pre> Here are some screenshots of the GUI:<span style="font-family: monospace;"><br>
+            <br>
+            <a href="m.swim.subbasins.html"><img class="resize" alt="m.swim.subbasin GUI" title="m.swim.subbasin GUI" src="subbasin_screenshot.png"></a><br>
+            </span><em><span style="font-style: italic;">The m.swim.subbasins GUI
+            in the subbasin design tab.</span></em><span style="font-family: monospace;"><br>
+            <br>
+            <img class="resize" alt="routing network plotted" title="routing network" src="routingnetwork_screenshot.png"><br>
+            </span><em>The routing network (red) plotted with the subbasins (black)
+            and the mainstreams (blue).</em><span style="font-family: monospace;"><br>
+            <br>
+            </span>More screenshots:<span style="font-family: monospace;"><br>
+            <br>
+            </span><em><a href="routing_screenshot.png" target="_blank">m.swim.routing
+            GUI</a>, <a href="subbasin_table_screenshot.png" target="_blank">subbasin
+            table</a>, <a href="substats_screenshot.png" target="_blank">m.swim.substats
+            GUI</a>, <a href="help_screenshot.png">help page</a></em><span style="font-family: monospace;"><a href="help_screenshot.png"><br>
+            </a><br>
+            </span>To view your output you will have to open the GRASS wxPython GUI if you havent already done so. Here is the manual: <a href="http://grass.osgeo.org/grass70/manuals/wxGUI.html">GRASS70 GUI</a>
+            <br>
+
+            <span style="font-family: monospace;"></span>
+            <h2><a class="mozTocH2" name="mozTocId424369"></a>Help pages<br>
+            </h2> All GRASS manuals come with a manual page as the last tab in the GUI or you can find them here:
+            <br>
+
+            <br>
+
+            <a href="m.swim.subbasins.html">m.swim.subbasins</a>
+            <br>
+
+            <a href="m.swim.hydrotopes.html">m.swim.hydrotopes</a>
+            <br>
+
+            <a href="m.swim.routing.html">m.swim.routing</a>
+            <a href="m.swim.routing.html">
+              <br>
+            </a><a href="m.swim.substats.html">m.swim.substats</a>
+            <br>
+
+            <br>
+
+            <br>
+            <h2><a class="mozTocH2" name="mozTocId994431"></a>Prerequisits</h2>
+            <ul>
+              <li>the DEM must be slightly larger then the entire topographical catchment, by one cell in each direction to be precise. Using a precut DEM is therefore not advisable, but this can be overcome by adding an 'a' to the rwatershedflags in the m.swim.subbasins
+                (this might lead to errors later on though).</li>
+              <li>the stationthresh in the m.swim.subbasin module should be slightly smaller than the drainage area of the station with the smallest drainage area. If stations don't produce the expected catchment area, they are most likely not snapped to the appropriate
+                stream. Moving these stations closer to the exact stream location will avoid this.
+                <br>
+              </li>
+              <li>the location's database should be SQLite (check with <span style="font-family: monospace;">db.connect -p</span>)</li>
+              <br>
+            </ul>
+            <h2><a class="mozTocH2" name="mozTocId852305"></a>Workflow and map dependencies</h2>
+            <br>
+            <img class="resize"  alt="" src="m.swim_workflow.png">
+            <br>
+            <ul>
+
+            </ul>
 
 
 
-        <h2><a class="mozTocH2" name="mozTocId247420"></a>Setting up a SWIM
-      project</h2> Create a new mapset and set region:
-        <pre>g.mapset -c mapset=subbasins<br>g.region rast=elevation@PERMANENT</pre>
+            <h2><a class="mozTocH2" name="mozTocId247420"></a>Setting up a SWIM
+            project</h2> Create a new mapset and set region:
+            <pre>g.mapset -c mapset=subbasins<br>g.region rast=elevation@PERMANENT</pre>
 
-        <h3><a class="mozTocH3" name="mozTocId424802"></a>Stations</h3> Create a stations point vector map:
-        <br>
+            <h3><a class="mozTocH3" name="mozTocId424802"></a>Stations</h3> Create a stations point vector map:
+            <br>
 
-        <pre>echo "x|y|name|subbsize<br>640579|215607|outlet|0.1<br>640388|216617|headwater|0.05" &gt; stations.dat<br>v.in.ascii input=stations.dat out=stations x=1 y=2 columns='x int, y int, name varchar(20), subbsize double' skip=1</pre>
+            <pre>echo "x|y|name|subbsize<br>640579|215607|outlet|0.1<br>640388|216617|headwater|0.05" &gt; stations.dat<br>v.in.ascii input=stations.dat out=stations x=1 y=2 columns='x int, y int, name varchar(20), subbsize double' skip=1</pre>
 
-        <h3><a class="mozTocH3" name="mozTocId283437"></a>Subbasins</h3> Make simple subbasins (default output arguments):
-        <pre>m.swim.subbasins elevation=elevation@PERMANENT stations=stations upthresh=0.1 subbasins=subbasins<br></pre> In addition to the subbasins vector and raster map, this also produces catchment raster and vector maps, accumulation, drainage, streams,
-        slopesteepness and slopelength rasters (as needed by the subsequent m.swim.* modules) by default.
-        <br>
+            <h3><a class="mozTocH3" name="mozTocId283437"></a>Subbasins</h3> Make simple subbasins (default output arguments):
+            <pre>m.swim.subbasins elevation=elevation@PERMANENT stations=stations upthresh=0.1 subbasins=subbasins<br></pre> In addition to the subbasins vector and raster map, this also produces catchment raster and vector maps, accumulation, drainage, streams,
+            slopesteepness and slopelength rasters (as needed by the subsequent m.swim.* modules) by default.
+            <br>
 
-        <br> Subbasins with varying subbasin thresholds and defined lower threshold:
-        <br>
+            <br> Subbasins with varying subbasin thresholds and defined lower threshold:
+            <br>
 
-        <pre>m.swim.subbasins elevation=elevation@PERMANENT stations=stations upthreshcolumn=subbsize lothresh=0.001 subbasins=subbasins</pre>
+            <pre>m.swim.subbasins elevation=elevation@PERMANENT stations=stations upthreshcolumn=subbsize lothresh=0.001 subbasins=subbasins</pre>
 
-        <em></em>
-        <br>
+            <em></em>
+            <br>
 
-        <h3><a class="mozTocH3" name="mozTocId42767"></a>Hydrotopes</h3> Calculate hydrotopes with the subbasins, landuse and soil raster maps:
-        <br>
+            <h3><a class="mozTocH3" name="mozTocId42767"></a>Hydrotopes</h3> Calculate hydrotopes with the subbasins, landuse and soil raster maps:
+            <br>
 
-        <pre>m.swim.hydrotopes subbasins=subbasins landuse=landuse@PERMANENT soil=soils@PERMANENT strfilepath=mypro.str hydrotopes=hydrotopes</pre> Alternatively, contours (either as interval or list of breaks through the <span style="font-weight: bold;">controus</span>  argument; or as a raster map through the <span style="font-weight: bold;">contourrast</span> argument) and <span style="font-weight: bold;">more</span> maps can be used to further subdevide the hydrotopes:
-        <br>
+            <pre>m.swim.hydrotopes subbasins=subbasins landuse=landuse@PERMANENT soil=soils@PERMANENT strfilepath=mypro.str hydrotopes=hydrotopes</pre> Alternatively, contours (either as interval or list of breaks through the <span style="font-weight: bold;">controus</span>  argument; or as a raster map through the <span style="font-weight: bold;">contourrast</span> argument) and <span style="font-weight: bold;">more</span> maps can be used to further subdevide the hydrotopes:
+            <br>
 
-        <pre>m.swim.hydrotopes subbasins=subbasins landuse=landuse@PERMANENT soil=soils@PERMANENT -c contours=50 \<br>                 &nbsp;elevation=elevation@PERMANENT more=geology@PERMANENT strfilepath=Input/mypro.str</pre> This implicitly creates a raster
-        called contours and one called hydrotopes (as default names given for the <span style="font-weight: bold;">hydrotopes</span> and <span style="font-weight: bold;">contourrast</span> arguments).
-        <br>
+            <pre>m.swim.hydrotopes subbasins=subbasins landuse=landuse@PERMANENT soil=soils@PERMANENT -c contours=50 \<br>                 &nbsp;elevation=elevation@PERMANENT more=geology@PERMANENT strfilepath=Input/mypro.str</pre> This implicitly creates a raster
+            called contours and one called hydrotopes (as default names given for the <span style="font-weight: bold;">hydrotopes</span> and <span style="font-weight: bold;">contourrast</span> arguments).
+            <br>
 
-        <h3><a class="mozTocH3" name="mozTocId960595"></a>Routing</h3> Calculate the routing structure, routing network and mainstreams (the output defaults are: mainstreams=mainstreams, routingnet=routingnetwork, outlets=subbasinoutlets, inlets=subbasininlets; which can also be set explicitly):
-        <br>
+            <h3><a class="mozTocH3" name="mozTocId960595"></a>Routing</h3> Calculate the routing structure, routing network and mainstreams (the output defaults are: mainstreams=mainstreams, routingnet=routingnetwork, outlets=subbasinoutlets, inlets=subbasininlets; which can also be set explicitly):
+            <br>
 
-        <pre><span style="font-family: monospace;"></span>m.swim.routing subbasins=subbasins accumulation=accumulation<br></pre> Or set the -c flag to include the centroids in the routing network:
-        <br>
+            <pre><span style="font-family: monospace;"></span>m.swim.routing subbasins=subbasins accumulation=accumulation<br></pre> Or set the -c flag to include the centroids in the routing network:
+            <br>
 
-        <pre><span style="font-family: monospace;"></span>m.swim.routing -c subbasins=subbasins accumulation=accumulation<br></pre> Check routing structure and write SWIM routing file (the --o overwrite is necessary as the mainstreams are recreated):
-        <br>
+            <pre><span style="font-family: monospace;"></span>m.swim.routing -c subbasins=subbasins accumulation=accumulation<br></pre> Check routing structure and write SWIM routing file (the --o overwrite is necessary as the mainstreams are recreated):
+            <br>
 
-        <pre>m.swim.routing -r subbasins=subbasins figpath=mypro.fig --o<br></pre> Both these steps can also be executed at once (but may result in an error if the there are too many outlets):
-        <br>
+            <pre>m.swim.routing -r subbasins=subbasins figpath=mypro.fig --o<br></pre> Both these steps can also be executed at once (but may result in an error if the there are too many outlets):
+            <br>
 
-        <pre>m.swim.routing subbasins=subbasins accumulation=accumulation figpath=Input/mypro.fig</pre>
+            <pre>m.swim.routing subbasins=subbasins accumulation=accumulation figpath=Input/mypro.fig</pre>
 
-        <br>
+            <br>
 
-        <h3><a class="mozTocH3" name="mozTocId556678"></a>Subbasin statistics</h3> Create the subbasin statistics files in a Sub folder and the file.cio in the <span style="font-weight: bold;">projectpath</span> with all default input (mainstreams, drainage, accumulation,&nbsp; stp and sl also have default values but included here
-        to emphasise that they are needed as input):
-        <br>
+            <h3><a class="mozTocH3" name="mozTocId556678"></a>Subbasin statistics</h3> Create the subbasin statistics files in a Sub folder and the file.cio in the <span style="font-weight: bold;">projectpath</span> with all default input (mainstreams, drainage, accumulation,&nbsp; stp and sl also have default values but included here
+            to emphasise that they are needed as input):
+            <br>
 
-        <pre>m.swim.substats subbasins=subbasins projectname=mypro projectpath=. elevation=elevation@PERMANENT \<br>                mainstreams=mainstreams drainage=drainage accumulation=accumulation stp=slopesteepness sl=slopelength</pre> When recalculating
-        or changing parameters, the calculation can be accelerated by setting <span style="font-weight: bold;">chl, chs, chd,
-      chw </span>explicitly:
-        <br>
+            <pre>m.swim.substats subbasins=subbasins projectname=mypro projectpath=. elevation=elevation@PERMANENT \<br>                mainstreams=mainstreams drainage=drainage accumulation=accumulation stp=slopesteepness sl=slopelength</pre> When recalculating
+            or changing parameters, the calculation can be accelerated by setting <span style="font-weight: bold;">chl, chs, chd,
+            chw </span>explicitly:
+            <br>
 
-        <pre>m.swim.substats subbasins=subbasins projectname=mypro projectpath=. elevation=elevation@PERMANENT \<br>                delay=geology@PERMANENT chl=mainChannelLength chs=mainChannelSlope chd=channelDepth chw=channelWidth<br><br><br></pre>
+            <pre>m.swim.substats subbasins=subbasins projectname=mypro projectpath=. elevation=elevation@PERMANENT \<br>                delay=geology@PERMANENT chl=mainChannelLength chs=mainChannelSlope chd=channelDepth chw=channelWidth<br><br><br></pre>
 
-        <h3><a class="mozTocH3" name="mozTocId988927"></a>Additional files</h3> The following files/folders are not written by any of the modules and will have to be copied into the projdir from elsewhere:
-        <br>
+            <h3><a class="mozTocH3" name="mozTocId988927"></a>Additional files</h3> The following files/folders are not written by any of the modules and will have to be copied into the projdir from elsewhere:
+            <br>
 
-        <div style="margin-left: 40px;">Input/
-          <br>
+            <div style="margin-left: 40px;">Input/
+              <br>
+            </div>
+
+            <div style="margin-left: 80px;">clim1.dat, clim2.dat
+              <br> mypro.bsn
+              <br> mypro.cod
+              <br> runoff.dat
+              <br> wstor.dat
+              <br> crop.dat
+              <br> cntab.dat
+              <br> Soil/soil*.dat
+              <br> soil.cio
+              <br> wgen.dat
+              <br>
+            </div>
+
+            <div style="margin-left: 40px;">Output/
+              <br>
+            </div>
+
+            <div style="margin-left: 80px;">Res/
+              <br> GIS/
+              <br> Flo/
+              <br>
+            </div>
+
+            <br>
+
+            <h2><a class="mozTocH2" name="mozTocId708460"></a>GRASS best practice</h2>
+
+            <h3><a class="mozTocH3" name="mozTocId103465"></a>Region</h3>
+
+            <ul>
+
+              <li>always double check the current region settings using <span style="font-family: Courier New,Courier,monospace;">g.region -p</span></li>
+              <li>save your default region by setting the region with the <span style="font-family: Courier New,Courier,monospace;">-s</span> flag in the PERMANENT mapset. This allows you to easily revert to it using <span style="font-family: Courier New,Courier,monospace;">g.region -d</span>      and all new mapset you create are set to this region by default</li>
+              <li>create a raster (and vector) that defines your Region of Interest (
+                <span style="font-family: Courier New,Courier,monospace;">ROI</span>). This allows you to crop all imported maps to this or limit the computation to these cells by setting <span style="font-family: Courier New,Courier,monospace;">r.mask ROI</span></li>
+            </ul>
+
+            <h3><a class="mozTocH3" name="mozTocId235081"></a>Mapsets</h3>
+
+            <ul>
+
+              <li>create more mapsets rather then filling one or the PERMANENT mapset up with too many maps. Think of them as folders in your GRASS database and subdivide your work accordingly. The PERMANENT mapset should only hold the most basic maps you need to access
+                a lot, e.g. elevation, ROI, country_boundaries.</li>
+            </ul>
+
+            <h3><a class="mozTocH3" name="mozTocId90458"></a>Workflow</h3>
+
+            <ul>
+
+              <li>as GRASS' great strength is it's 'scriptability', make sure to 'save' the commands you used in a text file or shell script. Use the 'COPY' button in each command window to load the module's command into your cache and paste it. This will allow you
+                to easily recreate your work later on and simultaneously provide a great manuscript for a potential 'Methods' article section ;)</li>
+              <li>make use of the help pages and manual each module comes with</li>
+            </ul>
+          </div>
         </div>
-
-        <div style="margin-left: 80px;">clim1.dat, clim2.dat
-          <br> mypro.bsn
-          <br> mypro.cod
-          <br> runoff.dat
-          <br> wstor.dat
-          <br> crop.dat
-          <br> cntab.dat
-          <br> Soil/soil*.dat
-          <br> soil.cio
-          <br> wgen.dat
-          <br>
-        </div>
-
-        <div style="margin-left: 40px;">Output/
-          <br>
-        </div>
-
-        <div style="margin-left: 80px;">Res/
-          <br> GIS/
-          <br> Flo/
-          <br>
-        </div>
-
-        <br>
-
-        <h2><a class="mozTocH2" name="mozTocId708460"></a>GRASS best practice</h2>
-
-        <h3><a class="mozTocH3" name="mozTocId103465"></a>Region</h3>
-
-        <ul>
-
-          <li>always double check the current region settings using <span style="font-family: Courier New,Courier,monospace;">g.region -p</span></li>
-          <li>save your default region by setting the region with the <span style="font-family: Courier New,Courier,monospace;">-s</span> flag in the PERMANENT mapset. This allows you to easily revert to it using <span style="font-family: Courier New,Courier,monospace;">g.region -d</span>      and all new mapset you create are set to this region by default</li>
-          <li>create a raster (and vector) that defines your Region of Interest (
-            <span style="font-family: Courier New,Courier,monospace;">ROI</span>). This allows you to crop all imported maps to this or limit the computation to these cells by setting <span style="font-family: Courier New,Courier,monospace;">r.mask ROI</span></li>
-        </ul>
-
-        <h3><a class="mozTocH3" name="mozTocId235081"></a>Mapsets</h3>
-
-        <ul>
-
-          <li>create more mapsets rather then filling one or the PERMANENT mapset up with too many maps. Think of them as folders in your GRASS database and subdivide your work accordingly. The PERMANENT mapset should only hold the most basic maps you need to access
-            a lot, e.g. elevation, ROI, country_boundaries.</li>
-        </ul>
-
-        <h3><a class="mozTocH3" name="mozTocId90458"></a>Workflow</h3>
-
-        <ul>
-
-          <li>as GRASS' great strength is it's 'scriptability', make sure to 'save' the commands you used in a text file or shell script. Use the 'COPY' button in each command window to load the module's command into your cache and paste it. This will allow you
-            to easily recreate your work later on and simultaneously provide a great manuscript for a potential 'Methods' article section ;)</li>
-          <li>make use of the help pages and manual each module comes with</li>
-        </ul>
-
-        <br>
-
-        <br>
-      </div>
     </div>
-  </div>
-</div>
-</body>
 
+  </body>
 </html>
