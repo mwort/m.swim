@@ -112,21 +112,22 @@ img.resize {
           <div class="col-lg-9 col-sm-8 col-xs-7">
             <h2><a class="mozTocH2" name="mozTocId449479"></a>Installation<br></h2>
 
-            <a href="http://www.pik-potsdam.de/%7Ewortmann/m.swim/grass.swim.zip" target="_blank">Download the modules</a>
+            <a href="http://www.pik-potsdam.de/%7Ewortmann/m.swim/latest.zip" target="_blank">Download the modules</a>
+            or clone the git repository from the cluster SWIM directory like this:
+            <pre>git clone /data/swim/preprocessing/m.swim.git</pre>
             <br>
 
-            <br> Then copy the scripts to your GRASS base folder like this in an open GRASS session:<br>
-
-            <pre>cp m.swim.* $GISBASE/scripts/</pre> And the manual pages:
+            <br> Then copy the scripts to your GRASS addons script directory. On linux this should be as easy as this in an open GRASS session:
             <br>
 
-            <pre>cp doc/* $GISBASE/docs/html/</pre> You may need to have administrator rights to copy the files depending on your OS. (Under unix-like environments, just precede the commands with <span style="font-family: monospace;">sudo</span>)
+            <pre>cp m.swim.* $GRASS_ADDON_PATH/scripts/</pre>
+            And the manual pages:
+            <pre>cp doc/* $GRASS_ADDON_PATH/docs/html/</pre>
+            Make sure $GRASS_ADDON_PATH is set to something sensible and that the $GRASS_ADDON_PATH/scripts/ and $GRASS_ADDON_PATH/docs/html/ directories actually exist. If this is the first addon you are installing, they might be missing.
+
             <br>
             <br>
-            <h3><a class="mozTocH3" name="mozTocId14079"></a>Windows</h3> Under Windows the $GISBASE/scripts folder is something like this: C:\Programm Files\Grass7.0\scripts
-            <br> Just copy the files in the downloaded Windows folder (with .py extension) into this scripts folder and the manual pages into the \html\ folder. You should then be able to launch the scirpts from the GRASS GUI command console (next to the Map layers
-            tab).
-            <br>
+            <h3><a class="mozTocH3" name="mozTocId14079"></a>Windows</h3> Under Windows the you will need to add the .py extension to the m.swim.* scripts to work.
 
             <br> If the installation doesnt work, the scripts also work on their own (but probably
             <br> only in text mode). Launch them like a python script like this (to open the text based help):
