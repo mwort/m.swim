@@ -366,7 +366,7 @@ class main:
         maxaccum    = maxaccum[:,1]
         # calculate optima accumulation for nice headwater mainstreams
         optiaccum   = maxaccum-np.int32(cellcounts*0.1)
-        # check incoming subbasins maxaccum and take its min
+        # check incoming subbasins maxaccum and take the smallest accumulation to update optiaccum
         subnext     = readSubNxtID(self.outlets)
         optiaccum   = dict(zip(subbasinIDs,optiaccum))
         maxaccum    = dict(zip(subbasinIDs,maxaccum))

@@ -48,7 +48,12 @@ It is highly recommended to use <span style="font-weight: bold;">the
 same accumulation map as was used to produce the subbasin map</span>
 (in the same resolution and grass region)!!! If this condition is not
 met, inexact routing and multiple outlet subbasins are highly likely.<br>
-<br>
+
+If you have not produced the accumulation raster with m.swim.subbasin, make sure it has the data type CELL and has no minus values in the catchment of interest. The best way to ensure thatis to run:<br>
+<pre>r.mapcalc exp="accumulation_correct=if(accumulation_incorrect > 0,int(accumulation_incorrect), null())"</pre>
+
+If you are using predefined subbasins that are split over multiple parts (they really should't, but assuming you have a valid reason for it), the routingnet can not be created and the argument must be set to none (routingnet=''). This does not affect the .fig file.
+
 Although this module has been tested, it is still in beta mode and
 hasn't been extensively error coded. Please report unexplained errors
 to the author (see below).<br>
