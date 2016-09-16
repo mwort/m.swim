@@ -24,18 +24,8 @@
 #% type: string
 #% multiple: no
 #% key_desc: name
-#% label: Subbasins vector
+#% label: Subbasins vector or raster
 #% description: Subbasins for which climate data will be interpolated
-#% gisprompt: old,vector,vector
-#%end
-
-#%Option
-#% key: subbasins
-#% type: string
-#% multiple: no
-#% key_desc: name
-#% label: Subbasins raster
-#% description: Subbasins of grass project if gridded
 #% gisprompt: old,raster,raster
 #%end
 

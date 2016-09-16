@@ -391,14 +391,13 @@ class main:
         for i,si in enumerate(self.station_coor):
             # unpack station info
             cat,dist,x,y = si
-            s = (x,y)
             if 'catchmentprefix' in self.options:
                 name=self.catchmentprefix+'%s' %(cat)
             else:
                 name='watersheds__st%s' %(i+1)
             grass.message(('Calculating watershed for station %s' %(i+1)))
             g_run('r.water.outlet', input=self.drainage, overwrite=True,
-                  output=name+'__all1', coordinates='%s,%s' %tuple(s))
+                  output=name+'__all1', coordinates='%s,%s' %(x,y))
             # give watershed number and put 0 to null()
             grass.mapcalc(name+' = if('+name+'__all1'+' == 1,%s,null())' %(i+1),
                           overwrite=True)
