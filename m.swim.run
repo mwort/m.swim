@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 ############################################################################
 #
-# MODULE:       m.swim.run
+# MODULE:       m.swim.run v1.0
 # AUTHOR(S):    wortmann
 # PURPOSE:      GRASS frontend for the SWIMpy python classes and functions
-# COPYRIGHT:    (C) 2014 by M. Wortmann, and the GRASS Development Team
+# COPYRIGHT:    (C) 2014-2016 by M. Wortmann, and the GRASS Development Team
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by

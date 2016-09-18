@@ -2,10 +2,10 @@
 #
 ############################################################################
 #
-# MODULE:      m.swim.substats
+# MODULE:      m.swim.substats v1.0
 # AUTHOR(S):   Michel Wortmann, wortmann@pik-potsdam.de
 # PURPOSE:     Preprocessing suit for the Soil and Water Integrated Model (SWIM)
-# COPYRIGHT:   (C) 2012 by Wortmann/PIK
+# COPYRIGHT:   (C) 2012-2016 by Wortmann/PIK
 #
 #              This program is free software under the GNU General Public
 #              License (>=v2). Read the file COPYING that comes with GRASS
