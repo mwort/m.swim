@@ -1,0 +1,8 @@
+# all tests depend on the following maps in grassdb/utm32n/PERMANENT
+# vector: stations, rivers
+# raster: elevation, landuse, soil
+
+./test_subbasins.grass
+./test_routing.grass
+./test_substats.grass
+./test_hydrotopes.grass

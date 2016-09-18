@@ -1,0 +1,19 @@
+# allow overwriting
+export GRASS_OVERWRITE=1
+# create separate mapset
+g.mapset -c mapset=swim
+
+# depending on:
+# ./test_subbasins.grass
+g.findfile element=cell file=subbasins > /dev/null
+if [ $? -eq 1 ] ; then
+	./test_subbasins.grass
+fi
+
+# make project dir
+mkdir -p project/input
+   
+# hydrotopes
+m.swim.hydrotopes subbasins=subbasins landuse=landuse@PERMANENT soil=soil@PERMANENT \
+                  -c contours=200 elevation=elevation@PERMANENT \
+                  strfilepath=project/input/blank.str hydrotopes=hydrotopes

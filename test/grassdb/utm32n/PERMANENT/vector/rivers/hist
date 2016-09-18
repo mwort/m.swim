@@ -1,0 +1,7 @@
+COMMAND: v.in.ogr input="river.shp" min_area=0.0001 snap=-1
+GISDBASE: /data/sumario/wortmann/Methods/GRASS/mymodules/m.swim/test/grassdb
+LOCATION: tmp MAPSET: PERMANENT USER: wortmann DATE: Sun Sep 18 04:08:46 2016
+---------------------------------------------------------------------------------
+COMMAND: v.proj input="river" location="tmp" mapset="PERMANENT" smax=10000 output="rivers"
+GISDBASE: /data/sumario/wortmann/Methods/GRASS/mymodules/m.swim/test/grassdb
+LOCATION: utm32n MAPSET: PERMANENT USER: wortmann DATE: Sun Sep 18 04:19:32 2016

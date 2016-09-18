@@ -1,0 +1,7 @@
+COMMAND: v.in.ogr input="gauges.shp" min_area=0.0001 snap=-1 location="tmp"
+GISDBASE: /data/sumario/wortmann/Methods/GRASS/mymodules/m.swim/test/grassdb
+LOCATION: tmp MAPSET: PERMANENT USER: wortmann DATE: Sun Sep 18 04:07:43 2016
+---------------------------------------------------------------------------------
+COMMAND: v.proj input="gauges" location="tmp" mapset="PERMANENT" smax=10000 output="stations"
+GISDBASE: /data/sumario/wortmann/Methods/GRASS/mymodules/m.swim/test/grassdb
+LOCATION: utm32n MAPSET: PERMANENT USER: wortmann DATE: Sun Sep 18 04:20:10 2016
