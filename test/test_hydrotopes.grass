@@ -14,6 +14,6 @@ fi
 mkdir -p project/input
    
 # hydrotopes
-m.swim.hydrotopes subbasins=subbasins landuse=landuse@PERMANENT soil=soil@PERMANENT \
-                  -c contours=200 elevation=elevation@PERMANENT \
-                  strfilepath=project/input/blank.str hydrotopes=hydrotopes
+../m.swim.hydrotopes subbasins=subbasins landuse=landuse@PERMANENT soil=soil@PERMANENT \
+                     -c contours=200 elevation=elevation@PERMANENT \
+                     strfilepath=project/input/blank.str hydrotopes=hydrotopes

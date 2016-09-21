@@ -14,5 +14,5 @@ fi
 mkdir -p project/input
 
 # routing
-m.swim.routing subbasins=subbasins accumulation=accumulation \
-               figpath=project/input/blank.fig
+../m.swim.routing subbasins=subbasins accumulation=accumulation \
+                  figpath=project/input/blank.fig

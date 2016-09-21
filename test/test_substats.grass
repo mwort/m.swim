@@ -19,5 +19,5 @@ fi
 mkdir -p project/input
 
 # subbasin statistics
-m.swim.substats subbasins=subbasins projectname=blank projectpath=project/input elevation=elevation@PERMANENT \
-                mainstreams=mainstreams drainage=drainage accumulation=accumulation stp=slopesteepness sl=slopelength
+../m.swim.substats subbasins=subbasins projectname=blank projectpath=project/input elevation=elevation@PERMANENT \
+                   mainstreams=mainstreams drainage=drainage accumulation=accumulation stp=slopesteepness sl=slopelength
