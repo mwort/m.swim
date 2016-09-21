@@ -243,7 +243,7 @@ class main:
             # exchange contour column in strct with mean hydrotope elevation
             struct[self.contourrast] = mhe[:,1]
         # write structure file
-        writeStr(struct,self.strfilepath)
+        self.writeStr(struct)
         
         # report hydrotope count and check max number of hydrotopes in subbasins
         nmax = np.max(np.bincount(struct[self.subbasins].astype(int)))
@@ -256,15 +256,35 @@ number of hydrotopes per subbasin %i
     def addcovertostrfile(self,cover):
         '''Function to add additional columns to saved .str file'''
         # get old str file    
-        strf = np.loadtxt(self.strfilepath)[:-1,:]
+        strf = np.loadtxt(self.strfilepath)[1:-1,:]
         # get cover value for hydrotopes
         carray= hydrotopeQ(cover,self.hydrotopes)
         # assemble new str array
         newstrn=np.column_stack((strf[:,:-2],carray[:,1],strf[:,-2:]))
         # write new strfile
-        newname=self.strfilepath+'+'
-        writeStr(newstrn,newname)    
+        self.writeStr(newstrn)    
         return
+
+    def writeStr(self, array):
+        """Write the array into the structure file path given in strname"""
+        # formate for structure file
+        ncolumns=len(array[0])
+        colwidth=14
+        heacolfmt = ('%%-%ss '%colwidth)*ncolumns
+        datcolfmt = ('%%%si '%colwidth)*ncolumns
+        colnames= tuple([c.split('@')[0] for c in self.strcolumns]) + ('area','cells')
+        # write out structure file
+        strname = self.strfilepath
+        strf=file(strname,'w')
+        # header
+        strf.write( (heacolfmt + '\n')%colnames )
+        # data
+        np.savetxt(strf, array, fmt=datcolfmt)
+        # 0s as the last line
+        strf.write( datcolfmt%((0,)*ncolumns))
+        strf.close()
+        grass.message(('Wrote structure file %s' %strname))
+        return 
         
 def readinStr(hydrotopemap,strcolumns):
     """ Return subbasinID, landuseID, soilID, ..., area, cellcount from
@@ -289,19 +309,6 @@ def readinStr(hydrotopemap,strcolumns):
     struct = np.array(zip(*struct),dtype=dtype)
 
     return struct
-
-def writeStr(array,strname):
-    """Write the array into the structure file path given in strname"""
-    # formate for structure file
-    ncolumns=len(array[0])
-    formats='%14i'*ncolumns
-    # write out structure file
-    strf=file(strname,'w')
-    np.savetxt(strf, array, fmt=formats)
-    strf.write(formats %((0,)*ncolumns)) #not sure if SWIM needs that
-    strf.close()
-    grass.message(('Wrote structure file %s' %strname))
-    return strname
     
 def hydrotopeQ(cover,hydrotopemap):
     """Get mean values of the cover map for the hydrotopes"""
