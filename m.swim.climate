@@ -181,9 +181,8 @@
 #% multiple: no
 #% required: no
 #% key_desc: name
-#% label: Name of grid vector
-#% description: Resulting climate grid area vector with centroids and table
-#% gisprompt: new,vector,vector
+#% label: Name of new or old grid vector
+#% description: Resulting climate grid area vector with centroids and table or if -d existing grid vector with lon & lat columns
 #%end
 
 #%Option
@@ -206,6 +205,12 @@
 #% key_desc: path/myproj.dat
 #% description: path/name of the nc info file that will be written
 #% gisprompt: new,file,file
+#%end
+
+#%Flag
+#% guisection: Optional
+#% key: d
+#% label: Predefined grid, will be 'grown' onto subbasin area if smaller
 #%end
 
 #%Flag
@@ -445,6 +450,13 @@ class Grid:
         grass.run_command('v.to.rast',input=self.grid,output=self.grid+'__',
                           use='cat',type='area')
         
+        # grow grid if predefined
+        if self.d:
+            grass.run_command('r.grow.distance',input=self.grid+'__',
+                              value = self.grid+'__grown')
+            # make int and overwrite grid__
+            grass.mapcalc(exp='{0}=int({1})'.format(self.grid+'__',self.grid+'__grown'))
+            
         # cross subbasin raster and grid raster and get areas
         crossrast = self.subbasins+','+self.grid+'__'
         cross = grass.read_command('r.stats',flags='an',input=crossrast,
@@ -495,7 +507,8 @@ if __name__=='__main__':
         main=Grid(**keywords)
     
         # make grid
-        main.mkLonLatGrid()
+        if not main.d:
+            main.mkLonLatGrid()
         # calculate proportional coverage with subbasins
         tbl = main.getSubbasinGridProportions()
         
