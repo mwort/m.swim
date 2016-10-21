@@ -11,4 +11,7 @@ g.mapset -c mapset=swim
 # catchment 2 has very small catchment/no subbasins
 # m.swim.subbasins elevation=elevation@PERMANENT stations=stations@PERMANENT \
 #                 upthresh=30 lothresh=1 subbasins=subbasins streamcarve=rivers@PERMANENT
-                 
+
+
+# write subcatch.def
+v.db.select subbasins col=subbasinID,catchmentID sep=space > project/input/subcatch.def

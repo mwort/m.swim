@@ -30,3 +30,11 @@ Or test modules individually like:
 ./test_subbasins.grass
 ./test_routing.grass
 ```
+
+## TODO
+- adapt columns in structure file to include management, wetland, glaciers and elevations (not only when -d)
+- adapt header of file.cio
+- allow writeout of 3 subfiles only in m.swim.substats
+- soils need to be in sequential order
+- add lon/lat to subbasin table (centroids)
+- add simple grass output for additional files to tests

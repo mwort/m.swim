@@ -13,7 +13,13 @@ fi
 # make project dir
 mkdir -p project/input
    
-# hydrotopes
+# default
 ../m.swim.hydrotopes subbasins=subbasins landuse=landuse@PERMANENT soil=soil@PERMANENT \
                      -c contours=200 elevation=elevation@PERMANENT \
                      strfilepath=project/input/blank.str hydrotopes=hydrotopes
+
+# with management and wetland, no contours
+../m.swim.hydrotopes subbasins=subbasins landuse=landuse@PERMANENT soil=soil@PERMANENT \
+                     wetland=drainage management=catchments \
+                     strfilepath=project/input/blank.str hydrotopes=hydrotopes
+
