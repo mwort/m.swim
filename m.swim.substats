@@ -144,8 +144,8 @@
 #% required: no
 #% multiple: no
 #% key_desc: order
-#% description: Order of values in .sub file (; for linebreak, variables as given as arguments, flu=subbasin area fraction)
-#% answer: flu,dummy,salb,sno,chl,chs,chw,chk,chn,ovn;rt,css,ecp,sl,stp
+#% description: Order of values in .sub file (variables as given as arguments)
+#% answer: salb,sno,chl,chs,chw,chk,chn,ovn,rt,css,ecp,sl,stp
 #%end
 
 #%Option
@@ -290,7 +290,7 @@
 #% required: no
 #% multiple: no
 #% key_desc: order
-#% description: Order of values in .rte file (; for linebreak, see help for values)
+#% description: Order of values in .rte file (see help for values)
 #% answer: chw,chd,chs,chl,chn,chk,chxk,chc
 #%end
 
@@ -390,7 +390,7 @@
 #% required: no
 #% multiple: no
 #% key_desc: order
-#% description: Order of values in .gw file (; for linebreak, see help for values)
+#% description: Order of values in .gw file (see help for values)
 #% answer: gwht,gwq,abf,syld,delay,revapc,rchrgc,revapmn
 #%end
 
@@ -442,7 +442,7 @@ class main:
             # if not set at all
             if len(self.orders[f])==0: grass.fatal('%sorder not set!' %f)
             # make lists
-            self.orders[f] = re.split(',|;',self.orders[f])
+            self.orders[f] = self.orders[f].split(',')
             for p in self.orders[f]:
                 # skip flu, subbasin area fractions
                 if p=='flu': continue
@@ -742,35 +742,22 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
 
         return rasterout
         
-    def writeSubFiles(self,data,linebreak=';'):
+    def writeSubFiles(self,data):
         '''Creates or overwrites files in the subpath with the 
         .sub, .rte and .gw files from the data given and the structure given in parameters'''
-        # read orders with line breaks
-        orders = {'sub':self.suborder.split(linebreak),
-                  'gw' :self.gworder.split(linebreak),
-                  'rte':self.rteorder.split(linebreak)}
+
+        precision = '14.5'
+        cfmt = '%-'+precision.split('.')[0]+'s'
+        
         # build up formats
-        fmts = {}
-        for p in orders:
-            fmts[p] = 'SUBBasin %s DATA {id} {nextid}\n' %p
-            for l in orders[p]:
-                fmts[p] += ' '.join(['{%s:14.5f}' %s for s in l.split(',')])+'\n'
-            gm('Format for %s: \n%s' %(p,fmts[p]))
-        # make name
-        ilen = len(str(self.nsubbasins)) # integer length
-        fname = os.path.join(self.subpath,self.projectname+'%0'+str(ilen)+'i.%s') # file numbering
         grass.message('Writing .sub, .gw and .rte files to %s' %self.subpath)
-        # loop over number of subbasins and write out
-        for i in range(self.nsubbasins):
-            # make dict of values
-            inserter = {}
-            for e in data:
-                inserter[e]=data[e][i]
-            inserter.update({'id':i+1,'nextid':i+2})
-            for p in fmts:
-                fi = file(fname %(i+1,p),'w')
-                fi.write(fmts[p].format(**inserter))
-                fi.close()
+        for p in self.orders:
+            fname = os.path.join(self.subpath,'sub.'+p)
+            tbl = np.column_stack([np.arange(1,self.nsubbasins+1)]+[data[c] for c in self.orders[p]])
+            with file(fname,'w') as f:
+                f.write(' '.join([cfmt%s for s in ['sub']+self.orders[p]])+'\n')
+                fmts = '%14i'+ ' '.join(['%'+precision+'f']*len(self.orders[p]))
+                np.savetxt(f, tbl, fmt=fmts)
         return
     
     def writeFileCio(self):
