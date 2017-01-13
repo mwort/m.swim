@@ -23,3 +23,10 @@ mkdir -p project/input
                      wetland=drainage management=catchments \
                      strfilepath=project/input/blank.str hydrotopes=hydrotopes
 
+# with glaciers
+r.mapcalc exp='glaciers=if(elevation>800,elevation*1000,null())'
+../m.swim.hydrotopes subbasins=subbasins landuse=landuse@PERMANENT soil=soil@PERMANENT \
+                     -c contours=200 elevation=elevation@PERMANENT \
+                     glaciers=glaciers \
+                     strfilepath=project/input/blank.str hydrotopes=hydrotopes
+
