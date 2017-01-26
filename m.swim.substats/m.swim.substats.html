@@ -1,18 +1,6 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<html><head><title>GRASS GIS manual: m.swim.substats</title>
 
 
-
-
-
-
-<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-<link rel="stylesheet" href="grassdocs.css" type="text/css">
-<meta content="text/html; charset=ISO-8859-1" http-equiv="content-type"><meta name="qrichtext" content="1"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><style type="text/css">
-p, li { white-space: pre-wrap; }</style><meta name="qrichtext" content="1"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><style type="text/css">
-p, li { white-space: pre-wrap;</style></head><body bgcolor="white">
-
-<h2>DESCRIPTION<span style="font-style: italic;"></span></h2>The<span style="font-weight: bold;"> m.swim.substats</span>
+<h2>DESCRIPTION</h2>The m.swim.substats
 module creates the SWIM subbasin statistics input files (.sub, .rte,
 .gw) and the file.cio file. All parameters maybe given as either
 default value for all subbasins or as a raster map for which subbasin
@@ -22,28 +10,26 @@ m.swim.subbasins and m.swim.routing modules, it can also compute the
 main channel length, slope, depth and width. These four parameters are
 computed as follows:<br>
 <ul>
-  <li><span style="font-weight: bold;">Channel length</span>: The
+  <li>Channel length: The
 length is approximated from the mainstreams and drainage map and
 constrained to be at least one cell size long and not greater as the
 subbasins perimeter (this constraint allows for uncertainties in the
 mainstreams map).</li>
-  <li><span style="font-weight: bold;">Channel slope</span>: The slope is calculated from the elevation raster and then averaged over the mainstreams cells and reported for each subbasin.</li>
-  <li><span style="font-weight: bold;">Channel width</span>:
+  <li>Channel slope: The slope is calculated from the elevation raster and then averaged over the mainstreams cells and reported for each subbasin.</li>
+  <li>Channel width:
 Approximated using the drainage area calculated from the accumulation
-map through this empirical relationship (with an upper limit of 3000m):<span style="font-style: italic;"></span></li>
-  <ul>
-    <li><span style="font-style: italic;"></span><em>width[m] = 1.29 * darea[km2] ^ 0.6</em></li>
-  </ul>
-  <li><span style="font-weight: bold;">Channel depth</span>: Approximated using the drainage area calculated from the accumulation
-map through this empirical relationship (with an upper limit of 50m):<span style="font-style: italic;"></span></li>
-  <ul>
-    <li><span style="font-style: italic;"></span><em>depth[m] = 0.13 * darea[km2] ^ 0.4</em></li>
-  </ul>
+map through this empirical relationship (with an upper limit of 3000m):</li>
+
+    <li><em>width[m] = 1.29 * darea[km2] ^ 0.6</em></li>
+  <li>: Approximated using the drainage area calculated from the accumulation
+map through this empirical relationship (with an upper limit of 50m):</li>
+
+    <li><em>depth[m] = 0.13 * darea[km2] ^ 0.4</em></li>
 </ul>
 Raster maps with subbasin mean values are created implicitly and the
-values are uploaded to the subbasin table with the following names: <em>mainChannelLength, mainChannelSlope, channelDepth, channelWidth</em> This allows a faster recalculation by setting the arguments <span style="font-weight: bold;">chl, chs, chd, chw</span> to these names.<br>
+values are uploaded to the subbasin table with the following names: <em>mainChannelLength, mainChannelSlope, channelDepth, channelWidth</em> This allows a faster recalculation by setting the arguments chl, chs, chd, chw to these names.<br>
 <br>
-For <span style="font-weight: bold;">all other parameters</span> default values are given that apply to all subbasins, except for the <span style="font-weight: bold;">USLE slope length and steepness</span>, for which the output of the <span style="font-weight: bold;">m.swim.subbasins</span> or r.watershed is used to calculate average values for each subbasin.<br>
+For all other parameters default values are given that apply to all subbasins, except for the USLE slope length and steepness, for which the output of the m.swim.subbasins or r.watershed is used to calculate average values for each subbasin.<br>
 <em></em>
 <h2>NOTES</h2>All parameter arguments are the same as their variable names in the SWIM code.<br>
 <br>
@@ -75,13 +61,13 @@ mainstreams=mainstreams, routingnet=routingnetwork,
 outlets=subbasinoutlets, inlets=subbasininlets; which can also be set
 explicitly):<br>
 <pre>m.swim.routing subbasins=subbasins accumulation=accumulation mainstreams=mainstreams</pre>
-<h3>Subbasin statistics</h3>Create the subbasin statistics files in a Sub folder and the file.cio in the <span style="font-weight: bold;">projectpath</span>
+<h3>Subbasin statistics</h3>Create the subbasin statistics files in a Sub folder and the file.cio in the projectpath
 with all default input (mainstreams, drainage, accumulation,&nbsp; stp
 and sl also have default values but included here to emphasise that
 they are needed as input):<br>
 <pre>m.swim.substats subbasins=subbasins projectname=mypro projectpath=. elevation=elevation@PERMANENT \<br>                mainstreams=mainstreams drainage=drainage accumulation=accumulation stp=slopesteepness sl=slopelength</pre>
 
-When recalculating or changing parameters, the calculation can be accelerated by setting <span style="font-weight: bold;">chl, chs, chd, chw </span>explicitly:<br>
+When recalculating or changing parameters, the calculation can be accelerated by setting chl, chs, chd, chw explicitly:<br>
 <pre>m.swim.substats subbasins=subbasins projectname=mypro projectpath=. elevation=elevation@PERMANENT \<br>                delay=geology@PERMANENT chl=mainChannelLength chs=mainChannelSlope chd=channelDepth chw=channelWidth<br></pre>
 
 
@@ -89,21 +75,17 @@ When recalculating or changing parameters, the calculation can be accelerated by
 <h2>SEE ALSO</h2>
 
 
-<a href="m.swim.subbasins.html">m.swim.subbasins</a>, 
+<a href="m.swim.subbasins.html">m.swim.subbasins</a>,
 <a href="r.watershed.html">r.watershed</a>, <a href="m.swim.hydrotopes.html">m.swim.hydrotopes</a>, <a href="m.swim.routing.html">m.swim.routing</a><br>
 <br>
 Documentation [external]:&nbsp;<a href="http://www.pik-potsdam.de/%7Ewortmann/m.swim/doc/">m.swim</a>
 <a href="m.swim.routing.html">
 
-</a> 
+</a>
 
 <h2>AUTHORS</h2>
 Michel Wortmann, Potsdam Institute for Climate Impact Research (wortmann@pik-potsdam.de)<br>
- 
+
 <p><i>Last changed: $Date: 2013-07-31 10:45:15 -0700 (Wed, 31 Jul 2013) $</i>
 
 </p>
-
-  
-
-</body></html>
