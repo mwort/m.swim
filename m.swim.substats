@@ -12,7 +12,7 @@
 #              for details.
 #
 #############################################################################
- 
+
 #%Module
 #% description: Soil and Water Integrated Model (SWIM) preprocessor: subbasin statistics
 #%End
@@ -434,8 +434,8 @@ class main:
                           'chw':self.channelWidth,      ### MAIN CHANNEL WIDTH
                           'chd':self.channelDepth}      ### MAIN CHANNEL DEPTH
         self.functionrasts = ['elevation','drainage','accumulation','mainstreams']
-        
-        # get needed parameters for the three files        
+
+        # get needed parameters for the three files
         self.orders = {'sub':self.suborder,'gw' :self.gworder,'rte':self.rteorder}
         # check if set properly
         for f in self.orders:
@@ -458,7 +458,7 @@ class main:
         # check if project dir exists
         if not os.path.exists(self.projectpath):
                 grass.fatal('projectpath %s doesnt exists.' %self.projectpath)
-        
+
         ### .sub, .rte, .gw files location
         path=os.path.join(self.projectpath,'Sub')
         # check if Sub directory exists
@@ -466,12 +466,12 @@ class main:
             grass.message('%s doesnt exist and will be created.' %path)
             os.mkdir(path)
         self.subpath = path
-        
+
         # make rast from subbasin vector
         self.subbasinrast='subbasin__rast'
         grun('v.to.rast',input=self.subbasins,output=self.subbasinrast,
               use='cat', overwrite=True, quiet=True)
-             
+
         # mask only subbasins
         grun('r.mask',rast=self.subbasinrast,quiet=True,overwrite=True)
 
@@ -488,29 +488,29 @@ class main:
                 grass.fatal('If chl is empty, drainag needs to be set.')
             if 'chs' not in self.options and 'elevation' not in self.options:
                 grass.fatal('If chs is empty, elevation needs to be set.')
-            
+
             # only if chl and chs is empty, make proper mainstream rast
             self.mainstreamrast = self.makeMainStreamRast()
-        
+
         # get current maps and environment
         self.maps = {t:grass.list_grouped(t) for t in ['rast','vect']}
         self.env  = grass.gisenv()
         return
-        
+
     def subbasinStats(self):
         '''Calculate all subbasin stats for the Sub/ files, defaults and list of
         parameters given in 'swim_defaults.py that needs to be importable,
         all listed parameters can also be given as grass rasters, for each subbasin
         one value, e.g. a reclass of the subbasin map.
         Returns the dataframe compiled with named columns'''
-        
+
         # get subbasin area fractions to initialise
         subbfractions   = self.areaFractions()
         self.nsubbasins = len(subbfractions)
-        
+
         params = {'flu':subbfractions} # will be filled with all others
         for f in ['sub','gw','rte']:
-            for p in self.orders[f]:            
+            for p in self.orders[f]:
                 # get each parameter
                 if p not in params:
                     par = self.getParam(p)
@@ -518,18 +518,18 @@ class main:
                     if len(par)!=self.nsubbasins:
                         grass.fatal("""
 Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(par),p,self.nsubbasins))
-                    # save for later writing                    
+                    # save for later writing
                     params[p] = par
-        
+
         return params
 
 
     def getParam(self, param):
         '''Check if param is given as default, needs to be calculated or is a map'''
-        
+
         # check if parameter given as input
-        if param in self.options:  
-            # then its either a float or a map            
+        if param in self.options:
+            # then its either a float or a map
             try: # default value given
                 stats = float(self.options[param])*np.ones(self.nsubbasins)
                 grass.message( 'Using default value for %s = %s' %(param,stats[0]))
@@ -539,18 +539,18 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
                 if rast not in self.maps['rast'][maps]:
                     grass.fatal('%s not found.' %self.options[param])
                 grass.message( 'Will use average subbasin values of %s for %s.' %(self.options[param],param))
-                # upload mean values to subbasins table                
+                # upload mean values to subbasins table
                 rastname = self.meanSubbasin(self.options[param])
                 stats    = self.upload2Subbasins(rastname,
                                 column=self.options[param].split('@')[0])
-                
+
         else: # try to calculate it
             raster = self.functions[param]() # call the respective function
             stats  = self.upload2Subbasins(raster,column=raster)
             # correct channelLength
             if param=='chl': stats = self.correctChannelLength()
         return stats
-    
+
     def meanSubbasin(self,raster, method='average'):
         '''Upload mean value of raster to the table of self.subbasins and return
         values as array.
@@ -562,7 +562,7 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
              output=tmpname,overwrite=True,quiet=True)
         grass.message('%s of %s over each %s saved in %s' %(method,raster,base,tmpname))
         return tmpname
-    
+
     def upload2Subbasins(self, raster, column):
         '''Upload the values given in raster at the centroids to the subbasins
         table and return them as array (sorted by subbasins cats/subbasinID'''
@@ -570,17 +570,17 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
         grun('v.db.addcolumn',map=self.subbasins,columns=column+' double precision')
         grun('v.what.rast', map=self.subbasins, raster=raster, column=column,
              type='centroid',quiet=True)
-        
-        # get column out of table        
+
+        # get column out of table
         stats=getTable(self.subbasins,dtype=float,
                        columns='subbasinID,%s' %column)[column]
-        
+
         # report statistics
         nans=np.isnan(stats)
         gm("%s statistics:" %raster)
         gm("min: %s mean: %s max: %s number of nans: %s" %(np.min(stats[~nans]),np.mean(stats[~nans]),np.max(stats[~nans]),len(np.where(nans)[0])))
         return stats
-        
+
     def makeMainStreamRast(self):
         # make stream rast with subbasin categories
         streamrast='%s__rast' %self.mainstreams.split('@')[0]
@@ -588,33 +588,33 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
              overwrite=True, quiet=True)
         grass.mapcalc("'{0}'=if(isnull('{1}'),null(),'{2}')".format(streamrast,streamrast+'__1','subbasin__rast'),
                       overwrite=True)
-        
+
         # check if it has same number of categories than subbasins
         sbstats=rstats('subbasin__rast')
         strstats=rstats(streamrast)
         if len(sbstats)!=len(strstats):
             self.nostreams = [sb for sb in sbstats['id'] if sb not in strstats['id']]
             gm('''These subbasins dont seem to have a mainstream:''')
-            gm(','.join(map(str,self.nostreams))) 
+            gm(','.join(map(str,self.nostreams)))
             gm('''I will assume they have at least one stream cell.''')
         return streamrast
-    
+
     def areaFractions(self):
-        '''Calculate the fractions for each subbasin of the entire catchment'''        
+        '''Calculate the fractions for each subbasin of the entire catchment'''
         subbcells=rstats(self.subbasinrast,flags='cn')
         fraction = np.float64(subbcells['value'])/np.sum(subbcells['value'])
-        # report stats        
+        # report stats
         v = fraction
         grass.message('''Subbasin fraction statistics:
         min: %s mean: %s max: %s n: %s''' %(v.min(),v.mean(),v.max(),len(v)))
-        
+
         return fraction
-        
+
     def mainChannelLength(self,rasterout='mainChannelLength'):
         '''Calculate the main channel length from the main channel vector
         for the subbasins'''
         grass.message('Calculating main channel length...')
-        
+
         # make drainage direction weighted cell length
         streaminfo = rinfo(self.mainstreamrast)
         ewres, nsres = streaminfo['ewres'],streaminfo['nsres']
@@ -624,7 +624,7 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
         exp = exp.format(d=self.drainage,streams=self.mainstreamrast,ew=ewres,ns=nsres,
                          dia=np.sqrt(float(ewres)**2+float(nsres)**2))
         grass.mapcalc(exp, overwrite=True)
-        
+
         # report the sum of the cell length in the subbasins
         grun('r.stats.zonal',base=self.mainstreamrast,cover='cell__len',
              method='sum',output='cell__len__mainstreams__m',overwrite=True,quiet=True)
@@ -638,9 +638,9 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
         grun('g.rename',rast=lengthrast+','+rasterout,quiet=True,overwrite=True)
         # set attributed for correction
         self.chl = rasterout
-        
+
         return rasterout
-    
+
     def correctChannelLength(self):
         '''Constrain channel length by subbasin perimeter and set nans to cell
         size, assuming that those without calculated chl have at least one cell as channel'''
@@ -660,7 +660,7 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
                  value=res, where=where,quiet=True)
             gm('%s subbasins have a minimum main channel length of %skm:' %(len(nolength),res))
             gm(','.join(map(str,nolength)))
-            
+
         # too large
         toolong = tbl[tbl[self.chl]>tbl['perim__']]['subbasinID']
         if len(toolong)>0:
@@ -669,7 +669,7 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
             where  = 'subbasinID IN (%s)' %(','.join(map(str,toolong)))
             grun('v.db.update', map=self.subbasins, column=self.chl,
                  qcolumn='perim__', where=where,quiet=True)
-        
+
             # remove perimeter column
             grun('v.db.dropcolumn',map=self.subbasins,column='perim__',quiet=True)
         # make raster again if needed
@@ -679,16 +679,16 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
         # return array of corrected lengths
         tbl=getTable(self.subbasins,dtype=[int,float],columns='subbasinID,%s' %self.chl)
         return tbl[self.chl]
-        
+
     def mainChannelSlope(self,rasterout='mainChannelSlope'):
         '''Calculate main channel slope from the DEM and the streams'''
         grass.message('Calculating main channel slope...')
-        
+
         # make slope
         sloperast='%s__slope' %self.elevation.split('@')[0]
         grun('r.slope.aspect',elevation=self.elevation,slope=sloperast,
              format='degrees',overwrite=True)
-        
+
         # get mean values over main channels
         srast=sloperast+'__mainstreams'
         grun('r.stats.zonal',base=self.mainstreamrast,cover=sloperast,
@@ -696,20 +696,20 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
         # convert degrees to m/m and minimum slope=0.0001 degrees
         grass.mapcalc(exp='%s=tan(max(%s,0.0001))' %('mainstream__slope__tan',srast),
                       overwrite=True)
-            
+
         # mean over subbasins
         sloperastsubbasins = self.meanSubbasin('mainstream__slope__tan')
         # fill no data subbasins with minumum value
         exp='{0}=if(isnull({1}) & ~isnull({2}),0.0001,{1})'.format(rasterout,
              sloperastsubbasins,self.subbasinrast)
         grass.mapcalc(exp,overwrite=True)
-        
+
         return rasterout
-        
+
     def channelWidth(self,maxwidth = 3000,rasterout='channelWidth'):
         '''Calculate the mean channel width for each subbasin given with the drainage
         area / max accumulation according to an empirical approach:
-        
+
         width = 1.29 * darea[km2] ^ 0.6
         maximum width = 3000m
         '''
@@ -723,11 +723,11 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
         grass.mapcalc(exp, overwrite=True)
 
         return rasterout
-        
+
     def channelDepth(self,maxdepth = 50, rasterout='channelDepth'):
         '''Calculate the mean channel depth for each subbasin given with the drainage
         area / max accumulation according to an empirical approach:
-        
+
         depth = 0.13 * darea[km2] ^ 0.4 [m]
         maximum depth = 50m
         '''
@@ -741,14 +741,14 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
         grass.mapcalc(exp,overwrite=True)
 
         return rasterout
-        
+
     def writeSubFiles(self,data):
-        '''Creates or overwrites files in the subpath with the 
+        '''Creates or overwrites files in the subpath with the
         .sub, .rte and .gw files from the data given and the structure given in parameters'''
 
         precision = '14.5'
         cfmt = '%-'+precision.split('.')[0]+'s'
-        
+
         # build up formats
         grass.message('Writing .sub, .gw and .rte files to %s' %self.subpath)
         for p in self.orders:
@@ -759,9 +759,9 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
                 fmts = '%14i'+ ' '.join(['%'+precision+'f']*len(self.orders[p]))
                 np.savetxt(f, tbl, fmt=fmts)
         return
-    
+
     def writeFileCio(self):
-        '''Write the file.cio file for the SWIM input, subbasins should be 
+        '''Write the file.cio file for the SWIM input, subbasins should be
         array with subbasinIDs'''
         outname = os.path.join(self.projectpath,'file.cio')
         # file.cio filename length in file list
@@ -773,14 +773,17 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
         f = file(outname,'w')
         # needed files / header
         fmt = lambda l: '%13s'*len(l)+'\n'
-        headerlines = [[]]*3 + [  # number of empty lines at start
-                       [self.projectname+ex for ex in ['.cod','.fig','.str','.bsn']]+['CNtab.dat'],
+        named = ['.cod', '.fig', '.str', '.bsn', '.lut']
+        headerlines = [  # number of empty lines at start
+                       [self.projectname+ex for ex in named],
                        ('crop.dat','agman.dat','wgen.dat'),
                        ('soil.cio','str.cio'),
                        ('prec.dat',),
                        ('temp.dat',),
                        ('radi.dat',),
-                       ('runoff.dat',) ] + [[]]*4 # number of empty lines at end
+                       ('runoff.dat',),
+                       ('clim1.dat',),
+                       ('clim2.dat',)] + [[]]*2  # number of empty lines at end
         # write header
         for l in headerlines: f.write(fmt(l) %tuple(l))
         # columns
@@ -812,7 +815,7 @@ def runivar(rast):
     return grass.parse_command('r.univar',map=rast,flags='g')
 
 def getTable(vector,dtype='S250',**kw):
-    '''Get a vector table into a numpy field array, dtype can either be one 
+    '''Get a vector table into a numpy field array, dtype can either be one
     for all or a list for each column'''
     tbl = grass.vector_db_select(vector,**kw)
     cols = tbl['columns']
@@ -824,7 +827,7 @@ def getTable(vector,dtype='S250',**kw):
         raise IOError('count of dtype doesnt match the columns!')
     else:
         dtypes.update(dict(zip(cols,dtype)))
-    
+
     # first check for empty entries
     tbl = np.array(values,dtype=zip(cols,['S250']*len(cols)))
     convertedvals = []
@@ -842,14 +845,14 @@ def getTable(vector,dtype='S250',**kw):
     # now set nans
     #for c in ix: tbl[c][ix[c]]=np.nan
     return tbl
-    
+
 if __name__=='__main__':
     st = dt.datetime.now()
     # get options and flags
     o, f = grass.parser()
     grass.message(('GIS Environment:',grass.gisenv()))
     grass.message(('Parameters:',o,f))
-    
+
     # send all to main
     keywords = o; keywords.update(f)
     main=main(**keywords)
@@ -857,13 +860,13 @@ if __name__=='__main__':
     # execute
     # calculate statistics and write .sub/.gw/.rte files
     data = main.subbasinStats()
-    
+
     # Write to files
     main.writeSubFiles(data)
-    
+
     ### file.cio
     main.writeFileCio()
-    
+
     # clean
     grun('r.mask',flags='r')
     if not main.k:
