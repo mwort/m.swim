@@ -5,7 +5,7 @@ Version v1.1
 ## Version history
 
 *Version v1.1* - 2017-01-27:
-Some adjustments made to align output with current SWIM version (but not yet fully synchronised) and compatibility with g.extension (GRASS 7.2) for convenient installation.
+Some adjustments made to align output with current SWIM version (but not yet fully synchronised) including a small test suite and compatibility with g.extension (GRASS 7.2) for convenient installation.
 
 *Version v1.0* - 2016-09-18:
 First version develped between 2012-2016 producing a fully functional SWIM project but not sychronised with the development of the SWIM code.
