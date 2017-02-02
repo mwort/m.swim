@@ -12,12 +12,12 @@
 #              for details.
 #
 #############################################################################
- 
+
 #%Module
 #% description: Soil and Water Integrated Model (SWIM) climate input preprocessor
 #% keywords: hydrological modelling, SWIM, climate interpolation
 #%End
- 
+
 #%Option
 #% guisection: Subbasins
 #% key: subbasins
@@ -241,9 +241,9 @@ class Interpolation:
         self.__dict__.update(self.options)
         # save region for convenience
         self.region = grass.region()
-        
+
         # INPUT CHECK
-        
+
         # input dir
         if not os.path.exists(self.datadir): grass.fatal('%s doesnt exisist!' %self.datadir)
 
@@ -257,16 +257,16 @@ class Interpolation:
 
         # no extension
         if 'ext' not in self.options: self.ext=''
-        
+
         # check if INTERPOL.PAR can be written
         self.par = True
         parneeded = ['method','start','end','minnb','maxnb','maxdist','nodata']
         if any([e not in self.options for e in parneeded]):
-            grass.warning('''Won't write INTERPOL.PAR as any of these arguments 
+            grass.warning('''Won't write INTERPOL.PAR as any of these arguments
             is not set %s''' %(parneeded,))
             self.par = False
         return
-        
+
     def writeClimStationfile(self):
         # get coordinates and table
         coor, a = vectCoordsTbl(self.climstations)
@@ -287,14 +287,14 @@ class Interpolation:
         f.write('ID  FILE                       POINT_X     POINT_Y            ELEV\n')
         np.savetxt(f, cols, fmt='%6i  %-'+str(len(self.datadir)+32)+'s%12.1f%12.1f%10.1f')
         gm( 'Saved climate stations to %s' %sfpath)
-        
+
         return
-    
+
     def writeVirtualStationfile(self):
         # get coordinates and table
         coor, a = vectCoordsTbl(self.subbasins)
         coor['z'] = a[self.elevation]
-        
+
         # save to file
         sfpath = os.path.join(self.outdir,'virtualstationfile.dat')
         f = file(sfpath,'w')
@@ -303,7 +303,7 @@ class Interpolation:
         gm( 'Saved virtual stations to %s' %sfpath)
         self.vstfile=sfpath
         return
-    
+
     def stationDistance(self):
         '''Calculate distances from all virtualstations to all climate stations
         within the max distance threshold'''
@@ -338,11 +338,11 @@ class Interpolation:
         for i,u in zip(['n','min','mean','max'],['stations']+3*['km']):
             gm(('%-4s'+3*' %7.1f'+' %s')%(i,aggregated[i].min(),aggregated[i].mean(),
                                     aggregated[i].max(),u))
-            
+
         return aggregated
-        
+
     def writePARfile(self):
-        
+
         f = file(os.path.join(self.outdir,'INTERPOL.PAR'),'w')
         f.write('ClimateStationFile %r \n' %self.stfile)
         f.write('VirtualStations %r \n' %self.vstfile)
@@ -358,10 +358,10 @@ class Interpolation:
         f.write('NumNeighboursMax %s \n' %self.maxnb)
         f.write('NumNeighboursMin %s \n' %self.minnb)
         f.write('Maxdist %s \n' %(self.maxdist*1e3))
-        
+
         f.write('''distributed  FALSE \nSubbasinMap ""  \nDemMap ""''')
-        
-        
+
+
 def vectCoordsTbl(vect):
     '''Return the v.report table with coordinates as an array with
     column names in the entries for a point vector'''
@@ -396,16 +396,16 @@ class Grid:
         for o in optionsandflags:
             if optionsandflags[o]!='': self.options[o] = optionsandflags[o]
         self.__dict__.update(self.options)
-        
+
         # get some location infos
         self.env=grass.gisenv()
         self.region=grass.region()
         self.proj=grass.parse_command('g.proj',flags='g')
-        
+
         # convert res
         self.res = float(self.res)
         return
-    
+
     def mkLonLatGrid(self):
         # make temporary roi
         roi='roi__'
@@ -422,20 +422,20 @@ class Grid:
                           quiet=True)
         grass.run_command('g.region',vector=roi,quiet=True)
         llregion = grass.region()
-        
+
         # bounds to extend to next resolution break
         extent = {c:int(float(llregion[c])/self.res)*self.res for c in ('s','w')}
         extent.update({c:int((float(llregion[c])+self.res)/self.res)*self.res for c in ('n','e')})
         # set region
         grass.run_command('g.region',res=self.res,**extent)
         grass.message(('Lon/Lat extent of region:',extent))
-        
+
         # make grid
         grass.run_command('v.mkgrid',map=self.grid, type='area')
         grass.run_command('v.db.addcolumn',map=self.grid,columns='lon double,lat double')
         grass.run_command('v.to.db', map=self.grid, type='centroid',
                           option='coor', columns='lon,lat',quiet=True)
-        
+
         # back to origional location and reproj
         grass.run_command('g.mapset',mapset=self.env['MAPSET'],location=self.env['LOCATION_NAME'],
                           dbase=self.env['GISDBASE'],quiet=True)
@@ -443,20 +443,20 @@ class Grid:
                           location=tmploc,dbase=tmpdir,quiet=True,
                           smax=float(self.region['nsres'])+float(self.region['ewres']))
         return 0
-    
-    
+
+
     def getSubbasinGridProportions(self):
         # make raster
         grass.run_command('v.to.rast',input=self.grid,output=self.grid+'__',
                           use='cat',type='area')
-        
+
         # grow grid if predefined
         if self.d:
             grass.run_command('r.grow.distance',input=self.grid+'__',
                               value = self.grid+'__grown')
             # make int and overwrite grid__
             grass.mapcalc(exp='{0}=int({1})'.format(self.grid+'__',self.grid+'__grown'))
-            
+
         # cross subbasin raster and grid raster and get areas
         crossrast = self.subbasins+','+self.grid+'__'
         cross = grass.read_command('r.stats',flags='an',input=crossrast,
@@ -466,10 +466,10 @@ class Grid:
         tbl = np.array([tuple(l.split('|')) for l in cross],dtype=dtype)
         # sort by subbasin and area
         tbl.sort(order=('subbasinID','area'))
-    
+
         return tbl
 
-    def writeNCInfo(self,tbl):    
+    def writeNCInfo(self,tbl):
 
         # get lon,lats (ditionary with cell ids as keys and [lon,lat] as entry
         lonlatmap = grass.vector_db_select(self.grid,columns='lon,lat')['values']
@@ -477,13 +477,13 @@ class Grid:
         # pickout lonlats for gridids
         lons = np.array([lonlatmap[i][0] for i in tbl['gridID']],float)
         lats = np.array([lonlatmap[i][1] for i in tbl['gridID']],float)
-        
+
         # get proportions in each subbasin
         props = np.zeros(len(tbl))
         for sb in np.unique(tbl['subbasinID']):
             isb = tbl['subbasinID']==sb
             props[isb] = tbl['area'][isb]/tbl['area'][isb].sum()
-        
+
         # make out array
         outtbl = np.column_stack((tbl['subbasinID'],lons,lats,props))
         # write out
@@ -498,20 +498,21 @@ if __name__=='__main__':
     st = dt.datetime.now()
     # get options and flags
     o, f = grass.parser()
-    grass.message(('GIS Environment:',grass.gisenv()))
-    grass.message(('Parameters:',o,f))
+    fmt = lambda d: '\n'.join(['%s: %s' % (k, v) for k, v in d.items()])+'\n'
+    grass.message('GIS Environment:\n'+fmt(grass.gisenv()))
+    grass.message('Parameters:\n'+fmt(o)+fmt(f))
     keywords = o; keywords.update(f)
-  
+
     # decide what climate module
     if 'grid'!='':
         main=Grid(**keywords)
-    
+
         # make grid
         if not main.d:
             main.mkLonLatGrid()
         # calculate proportional coverage with subbasins
         tbl = main.getSubbasinGridProportions()
-        
+
         if 'ncinfopath' in main.options:
             main.writeNCInfo(tbl)
 
@@ -528,7 +529,7 @@ if __name__=='__main__':
             main.writePARfile()
         if 'maxdist' in main.options:
             stats = main.stationDistance()
-    
+
     # report time it took
     delta = dt.datetime.now()-st
     grass.message('Execution took %s hh:mm:ss' %delta)

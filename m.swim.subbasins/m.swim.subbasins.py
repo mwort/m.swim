@@ -12,7 +12,7 @@
 #              for details.
 #
 #############################################################################
- 
+
 #%Module
 #% description: Soil and Water Integrated Model (SWIM) subbasin preprocessor
 #% keywords: hydrological modelling, SWIM, subbasins
@@ -260,11 +260,11 @@ class main:
         self.region = grass.region()
         self.region['kmtocell'] = lambda km: int(round(np.mean(km)*10**6/(self.region['ewres']*self.region['nsres'])))
         self.region['celltokm'] = lambda c: c*(self.region['ewres']*self.region['nsres'])*1e-6
-        
+
         # check if DEM to processed or if all inputs set
         if not ('accumulation' in self.options and 'drainage' in self.options and 'streams' in self.options):
             grass.fatal('Either of these not set: accumulation, drainage, streams.')
-        
+
         # what to do with upthresh
         if 'upthreshcolumn' in self.options:
             gm('Will look for upper thresholds in the %s column.' %self.upthreshcolumn)
@@ -274,11 +274,11 @@ class main:
                 self.upthresh = np.array(threshs.values(),dtype=float)[:,0]
             except:
                 grass.fatal('Cant read the upper threshold from the column %s' %self.upthreshcolumn)
-        
+
         # lothresh default
         if 'lothresh' not in self.options:
             self.lothresh = np.mean(self.upthresh)*0.05
-            
+
         # streamthresh
         if 'streamthresh' in self.options:
             # convert to cells
@@ -288,10 +288,10 @@ class main:
             if fract > 0.5 or fract < 0.01: grass.warning('streamthresh is %s percent of the region size!' %(fract*100))
         else:
             self.streamthresh = int(self.region['cells']*0.02)
-         
+
         # if no r.watershed flags given
         if 'rwatershedflags' not in self.options: self.rwatershedflags='s'
-        
+
         # check input for stats print
         if self.s:
             for o in ['streams','stations','catchmentprefix']:
@@ -302,23 +302,23 @@ class main:
             # calculate station topology
             self.station_coor = snappoints(self.stations, self.streams)
             self.stationtopology = self.getTopology()
-        
+
         # initialise subbasinsdone
         self.subbasinsdone={}
 
         return
-        
+
     def procDEM(self):
         """Make drainage, accumulation and stream raster"""
 
         ######### decide on input arguments #######
-        
+
         # from km2 to cells
         if type(self.upthresh) in [int,float]:
             uthresh=self.upthresh
         else: # take most common one in upthresh column
             uthresh = max(set(self.upthresh), key=list(self.upthresh).count)
-            
+
         thresh = self.region['kmtocell'](uthresh)
 
         kwargs = {'elevation'   : self.elevation,
@@ -333,22 +333,22 @@ class main:
                   'flags'       : self.rwatershedflags}
         # check if depressions
         if 'depression' in self.options: kwargs['depression']=self.depression
-        
+
         # carve streams
         if 'streamcarve' in self.options: kwargs['elevation'] = self.carvedelevation
-            
+
         # run r.watershed command and show progress
         #environ=os.environ.copy()
         #environ['GRASS_MESSAGE_FORMAT'] = 'gui'
         grass.message(kwargs)
         g_run('r.watershed',overwrite=True,**kwargs) # the other keyword arguments
-        
+
         # save subbasins in dictionary
         self.subbasinsdone[thresh] = 'standard__subbasins'
-        
+
         # postprocess accumulation map
         grass.mapcalc("%s=int(if(accum__float <= 0,null(),accum__float))" %self.accumulation,
-                      overwrite=True)          
+                      overwrite=True)
         # make river network to vector
         grass.message('Making vector river network...')
         # stream condition
@@ -360,9 +360,9 @@ class main:
         grass.mapcalc(self.streams+"__thick = if(%s, %s, null())" %(scon,self.accumulation))
         g_run('r.thin',input=self.streams+'__thick',output=self.streams,quiet=True)
         g_run('r.to.vect', flags='s', input=self.streams, output=self.streams,type='line')
-        
+
         return
-    
+
     def carveStreams(self):
         '''Carve vector streams into the DEM, i.e. setting those cells =0'''
         # stream vector to raster cells
@@ -375,8 +375,8 @@ class main:
                       self.streamrastcarved,self.elevation), overwrite=True)
         gm('Carved %s into the elevation %s' %(self.streamcarve,self.elevation))
         return
-        
-        
+
+
     def makeCatchments(self):
         '''Make catchment raster and if catchmentprefix is set also vectors
         for all stations'''
@@ -384,7 +384,7 @@ class main:
         ####### snap stations to network #######
         gm('Snap stations to streams...')
         self.station_coor = snappoints(self.stations, self.streams)
-            
+
         ######### WATERSHEDS #################
         gm('Creating station catchments...')
         # create watersheds for stations
@@ -409,7 +409,7 @@ class main:
             self.allcatchments +=[name]
 
         return self.allcatchments
-    
+
     def getTopology(self):
         '''Return a dictionary with staions as keys and lists of watershed ids
         as values'''
@@ -424,12 +424,12 @@ class main:
             topo+=[s]
         topology = dict(zip(range(1,len(topo)+1),topo))
         return topology
-        
+
     def makeSubbasins(self):
         """Create subbasins with corrected stations shape file
         with maximum threshold in square km from the maps processed in procDEM
         """
-    
+
         out={} # for output maps
         # calculate station topology from individual watershed rasters
         self.stationtopology = self.getTopology()
@@ -465,13 +465,13 @@ class main:
                 subareas+=[watersheds[i]]
             #### MASK SUBAREA #####
             #g_run('r.mask', rast=subareas[i], overwrite=True, quiet=True)
-                              
+
             # prepare inputs for the subbasins
             subbasins_name='subbasins__'+subareas[i]
             # calculate threshold from sq km to cells
             thresh = int(round(self.upthresh[i]*1000**2/(self.region['ewres']*self.region['nsres'])))
             grass.message('Subbasin threshold: %s km2, %s cells' %(self.upthresh[i],thresh))
-            
+
             # check if already calculated with that threshold
             if thresh in self.subbasinsdone:
                 subbasins_uncut = self.subbasinsdone[thresh]
@@ -485,25 +485,25 @@ class main:
                 # carved elevation
                 if 'streamcarve' in self.options:
                     kwargs['elevation']=self.carvedelevation
-                    
-                ##### r.watershed            
+
+                ##### r.watershed
                 g_run('r.watershed', overwrite=True, quiet=True, **kwargs)
-                
+
                 # add to done subbasins list
                 self.subbasinsdone[thresh] = subbasins_uncut
-                
+
             # cut out subbasins for subarea
             exp = subbasins_name + '=if(isnull(%s), null(), %s)' %(subareas[i],subbasins_uncut)
             grass.mapcalc(exp)
-           
+
             # g_run('r.mask',flags='r',quiet=True) #remove mask
             subbasins+=[subbasins_name]
-            
+
         #update maps dictionary
         out['subbasins']= subbasins
         out['subareas'] = subareas
-    
-    
+
+
         ### Make sure no subbasins have the same cat
         lastmax = 0 # in case only 1 station is used
         for i,s in enumerate(out['subbasins']):
@@ -518,7 +518,7 @@ class main:
                 gm( '%s has no subbasins and will be omitted (station too close to others?)' %s)
                 continue
             lastmax =classes.max()
-        
+
         ### PREDEFINED
         if 'predefined' in self.options:
             gm('Including predefined subbasins %s' %self.predefined)
@@ -528,7 +528,7 @@ class main:
             grass.mapcalc('%s=%s+%s' %(predef,self.predefined,lastmax),overwrite=True)
             # add to beginning of out subbasins
             out['subbasins'] = [predef]+out['subbasins']
-            
+
         ### PATCHING
         grass.message('Patching catchments and subbasins')
         # subbasins maps
@@ -543,13 +543,13 @@ class main:
         self.cleanSubbasins()
         ### make continuous subbasinIDs
         self.continousCats()
-        
+
         gm('Uploading catchmentID, elevation statistics, centroid coordinates, size to the subbasin attribute table...')
         # assign catchment id
         g_run('v.db.addcolumn', map=self.subbasins, column='catchmentID int',quiet=True)
         g_run('v.what.rast', map=self.subbasins, raster=self.catchments,
               column='catchmentID',quiet=True,type='centroid')
-        
+
         # mean,min,max and centroid elevation and subbasin size
         cols = ['%s_elevation double' %s for s in ['average','max','min','centroid']]
         cols += ['size double','centroid_x double','centroid_y double']
@@ -565,23 +565,23 @@ class main:
         # size
         g_run('v.to.db',map=self.subbasins,option='area',units='kilometers',
               columns='size',quiet=True)
-        
+
         # centroid x,y
         g_run('v.to.db',map=self.subbasins,option='coor',units='meters',
               columns='centroid_x,centroid_y',quiet=True)
-        
+
         # random colormap
         g_run('r.colors', quiet=True, map=self.subbasins, color='random')
         g_run('r.colors', quiet=True, map=self.catchments, color='random')
-        
+
         grass.message('''Created %s and %s as raster and vector maps.
         ''' %(self.subbasins,self.catchments))
-        
+
         return
-        
+
     def cleanSubbasins(self):
         '''Make vector and remove areas smaller than lothresh'''
-        
+
         #### clean subbasins
         grass.message('Clean subbasin map...')
         # add little areas of watershed to subbasin map that arent covered
@@ -604,13 +604,13 @@ class main:
                           thresh='%s,%s' %(self.lothresh*1000**2,prunedist))
         gm("Don't worry about these warnings!")
         g_run('v.build',map=self.subbasins,overwrite=True, quiet=True)
-        
+
         return
-        
+
     def continousCats(self):
         '''Make continous vector subbasin numbering with the outlet as 1, and update raster,
         in the process, also assigns drainage areas to subbasin table'''
-        
+
         # TODO, not optimal: make raster and then vector again to have continuous cats
         g_run('v.to.rast', input=self.subbasins,output=self.subbasins,type='area',
               use='cat', overwrite=True, quiet=True)
@@ -621,8 +621,8 @@ class main:
         # add separate subbasinID column
         g_run('v.db.addcolumn', map=self.subbasins, columns='subbasinID int', quiet=True)
         g_run('v.db.update', map=self.subbasins, column='subbasinID', qcol='cat', quiet=True)
-        
-        
+
+
         # get drainage area via accumulation map in sq km
         g_run('r.stats.zonal', base=self.subbasins,cover=self.accumulation, method='max',
              output='max__accum__cells', overwrite=True)
@@ -633,17 +633,17 @@ class main:
         g_run('v.db.addcolumn', map=self.subbasins, column='darea double',quiet=True)
         g_run('v.what.rast', map=self.subbasins,raster='max__accum',column='darea',
               type='centroid',quiet=True)
-        
+
         # change subbasin with the greatest drainage area (=outlet subbasin) to 1
         tbl = getTable(self.subbasins, dtype=(int,float),columns='subbasinID,darea')
         # get max cat and old 1 cat
         catmax = np.argmax(tbl['darea'])+1
-        
+
         # swap both values
         g_run('v.db.update',map=self.subbasins, column='subbasinID',
                       where='cat=%s' %catmax, value=1)
         g_run('v.db.update',map=self.subbasins, column='subbasinID',
-                      where='cat=1', value=catmax)        
+                      where='cat=1', value=catmax)
         # reclass to subbasinID via copy
         g_run('g.copy',vect=self.subbasins+',unreclassed__subbasins',quiet=True)
         g_run('v.reclass', input='unreclassed__subbasins', output=self.subbasins,
@@ -665,10 +665,10 @@ class main:
         # subbasin sizes
         sbs = getTable(self.subbasins,dtype=(int,int,float),
                        columns='subbasinID,catchmentID,size')
-        
+
         gm('-----------------------------------------------------------------')
         print( '''Catchment sizes :
-ID  excl. upstream   incl. upstream  outlet subbasin  upstream stations''')        
+ID  excl. upstream   incl. upstream  outlet subbasin  upstream stations''')
         outletsb = rwhat([self.subbasins],self.station_coor[['x','y']])
         for i,a in enumerate(scs):
             upstsize = np.sum(scs[self.stationtopology[a[0]],1])+a[1]
@@ -687,7 +687,7 @@ ID  excl. upstream   incl. upstream  outlet subbasin  upstream stations''')
             sub['min']  += '%8.2f ' %np.min(subs)
             sub['mean'] += '%8.2f ' %np.mean(subs)
             sub['max']  += '%8.2f ' %np.max(subs)
-        
+
         print( '''
 Subbasin statistics (km2):
 Station: {st}
@@ -695,8 +695,8 @@ Station: {st}
     Min: {min}
    Mean: {mean}
     Max: {max}'''.format(**sub))
-        
-        print('-----------------------------------------------------------------')        
+
+        print('-----------------------------------------------------------------')
         return scs,sbs
 
 
@@ -704,7 +704,7 @@ def rreclass(in_raster, in_list, out_list, proper=True):
     """Reclass a GRASS raster map from via an in list and outlist \n
     Patches together the rules, writes it to file, performs r.reclass,
     deletes in_raster and rules file and renames the outraster"""
-    
+
     # temporary rules file
     temp_rules=grass.tempfile()
     # put lists in easy writable numpy array
@@ -722,7 +722,7 @@ def rreclass(in_raster, in_list, out_list, proper=True):
         g_run('g.remove', type='rast', name=in_raster+'__,'+in_raster,flags='f', quiet=True)
         g_run('g.rename', rast='__temp,'+in_raster, quiet=True)
     return
-    
+
 def rwhat(rasters,coordinates):
     '''Get point values of rasters [list] at the coordinates [list of tuple pairs]
     '''
@@ -735,12 +735,12 @@ def rwhat(rasters,coordinates):
                              separator=',').split('\n')[:-1]
     # put category values into numpy array of integers
     what_array=np.array([map(int,l.split(',')[-len(rasters):]) for l in what])
-    
+
     return what_array
-    
+
 def getPoints(vector):
     '''Get point coordinates from point vector'''
-    
+
     if vector==False:
         print 'Stations not defined!'
         return -1
@@ -751,7 +751,7 @@ def getPoints(vector):
                               option='coor').split('\n')[1:-1]
     #put coordinates into list of double tuples
     station_coor=[]
-    for cs in coords: 
+    for cs in coords:
         cs=cs.split('|')
         station_coor+=[(float(cs[-3]),float(cs[-2]))]
     return station_coor
@@ -774,7 +774,7 @@ def snappoints(points, lines):
         gm('%10s %12.1f %12.1f %12.1f' %tuple(d))
 
     return snapped_coor
-        
+
 def patchbasins(rastlist, outname):
     #patch all subbs together if more than one station
     sb_len=len(rastlist)
@@ -801,10 +801,10 @@ def getAreas(raster):
                                   input=raster).split()
     subs=np.array(subb_sizes, dtype=float).reshape((-1,2))
     subs[:,1] = subs[:,1]*10**-6
-    return subs    
+    return subs
 
 def getTable(vector,dtype='S250',**kw):
-    '''Get a vector table into a numpy field array, dtype can either be one 
+    '''Get a vector table into a numpy field array, dtype can either be one
     for all or a list for each column'''
     tbl = grass.vector_db_select(vector,**kw)
     cols = tbl['columns']
@@ -816,7 +816,7 @@ def getTable(vector,dtype='S250',**kw):
         raise IOError('count of dtype doesnt match the columns!')
     else:
         dtypes.update(dict(zip(cols,dtype)))
-    
+
     # first check for empty entries
     tbl = np.array(values,dtype=zip(cols,['S250']*len(cols)))
     convertedvals = []
@@ -834,45 +834,47 @@ def getTable(vector,dtype='S250',**kw):
     # now set nans
     #for c in ix: tbl[c][ix[c]]=np.nan
     return tbl
-    
+
 if __name__=='__main__':
     # start time
     st = dt.datetime.now()
     # get options and flags
     o, f = grass.parser()
-    grass.message(('GIS Environment:',grass.gisenv()))
-    grass.message(('Parameters:',o,f))
+    fmt = lambda d: '\n'.join(['%s: %s' % (k, v) for k, v in d.items()])+'\n'
+    grass.message('GIS Environment:\n'+fmt(grass.gisenv()))
+    grass.message('Parameters:\n'+fmt(o)+fmt(f))
+
     # warn if MASKED
     if 'MASK' in grass.list_grouped('rast')[grass.gisenv()['MAPSET']]:
         maskcells=grass.read_command('r.stats',input='MASK',flags='nc').split()[1]
         grass.message('!!! MASK active with %s cells, will only process those !!!'%maskcells)
-    
+
     # send all to main
     keywords = o; keywords.update(f)
     main=main(**keywords)
-    
+
     # execute
     if main.s:
         main.statistics()
         sys.exit()
-        
+
     # carve streams
     if 'streamcarve' in main.options:
         gm('Carving streams...')
         main.carveStreams()
-        
+
     # process DEM if need be
     if not main.d:
         gm('Will process DEM first to derive accumulation, drainage and streams.')
         main.procDEM()
-    
+
     # make catchments
     main.makeCatchments()
     # make subbasins
     main.makeSubbasins()
     #### write some statistics
     substats = main.statistics()
-    
+
     # clean
     if not main.k:
         grass.run_command('g.remove',type='raster,vector',pattern='*__*',flags='fb',quiet=True)

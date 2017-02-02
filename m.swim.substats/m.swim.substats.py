@@ -850,8 +850,9 @@ if __name__=='__main__':
     st = dt.datetime.now()
     # get options and flags
     o, f = grass.parser()
-    grass.message(('GIS Environment:',grass.gisenv()))
-    grass.message(('Parameters:',o,f))
+    fmt = lambda d: '\n'.join(['%s: %s' % (k, v) for k, v in d.items()])+'\n'
+    grass.message('GIS Environment:\n'+fmt(grass.gisenv()))
+    grass.message('Parameters:\n'+fmt(o)+fmt(f))
 
     # send all to main
     keywords = o; keywords.update(f)

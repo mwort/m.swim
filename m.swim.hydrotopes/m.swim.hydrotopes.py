@@ -12,7 +12,7 @@
 #              for details.
 #
 #############################################################################
- 
+
 #%Module
 #% description: Soil and Water Integrated Model (SWIM) preprocessor: hydrotopes
 #%End
@@ -47,7 +47,7 @@
 #% gisprompt: old,cell,raster
 #%end
 #%Option
-#% guisection: Required    
+#% guisection: Required
 #% key: strfilepath
 #% type: string
 #% required: yes
@@ -108,7 +108,7 @@
 #% required: no
 #% multiple: no
 #% key_desc: name
-#% description: Raster name
+#% description: Raster name (if not given, column is filled with default)
 #% gisprompt: old,cell,raster
 #%end
 #%Option
@@ -118,7 +118,7 @@
 #% required: no
 #% multiple: no
 #% key_desc: name
-#% description: Raster name
+#% description: Raster name (if not given, column is filled with default)
 #% gisprompt: old,cell,raster
 #%end
 #%Option
@@ -128,7 +128,7 @@
 #% required: no
 #% multiple: no
 #% key_desc: name
-#% description: Raster name
+#% description: Raster name (if not given, column is filled with default)
 #% gisprompt: old,cell,raster
 #%end
 #%Option
@@ -169,9 +169,9 @@ class main:
             if optionsandflags[o]!='': self.options[o] = optionsandflags[o]
         self.__dict__.update(self.options)
 
-        # dictionary of maps where the value will be averaged over all hydrotopes        
+        # dictionary of maps where the value will be averaged over all hydrotopes
         self.floatmaps = {}
-        
+
         # default columns
         self.strcolumns = [self.subbasins,self.landuse, self.soil]
 
@@ -196,22 +196,22 @@ class main:
             # add to columns
             self.strcolumns += [self.contourrast]
             self.floatmaps[self.contourrast] = self.elevation
-        
+
         # glaciers
         self.glaciers = self._maskOrBlank('glaciers')
         self.strcolumns += [self.glaciers]
-        
+
         # other raster to include?
         if 'more' in self.options:
             self.more = self.more.split(',')
             self.strcolumns += self.more
-        
+
         # check if all input maps are int/CELL maps
         gm('Check if all input are integer raster...')
         for m in self.strcolumns:
             if grass.raster_info(m)['datatype']!='CELL':
                 grass.fatal('%s is not an integer/CELL raster, convert using int() in r.mapcalc' %m)
-            
+
         # check that all input maps have no NULLs in catchment over subbasins area
         g_run('r.mask',raster=self.subbasins,overwrite=True)
 
@@ -221,7 +221,7 @@ class main:
         grass.mapcalc('null__areas=%s' %ifnull, overwrite=True)
         g_run('r.null',map='null__areas',setnull=0,quiet=True)
         null = grass.parse_command('r.stats',input='null__areas',flags='aN',separator='=')
-        
+
         if len(null)>0:
             gm("In any of the input maps are NULL/no data values over the subbasins area.")
             gm(" See the null__area raster with this legend including their combinations.")
@@ -232,9 +232,9 @@ class main:
             gm("Set them with r.null")
             grass.fatal('Exiting!')
         g_run('r.mask', flags='r', quiet=True)
-        
+
         return
-    
+
     def _maskOrBlank(self, name):
         '''Check if name option is given, if yes make a mask,
         if not make a blank map out of the default value.'''
@@ -254,10 +254,10 @@ class main:
             grass.mapcalc(exp=outname+'=%s'%self.DEFAULTS[name])
 
         return outname
-        
+
     def mkContours(self):
         """Make a contour map of the given DEM, in the given catchment"""
-        
+
         # check what breaks to take, if int find nice breaks, if list take as breaks
         if type(self.contours) is int:
             interval = self.contours
@@ -278,7 +278,7 @@ class main:
         grass.mapcalc(exp, overwrite=True)
 
         grass.message(('Calculated contourmap: %s' %self.contourrast))
-        
+
         return
 
     def mkHydrotopes(self):
@@ -293,10 +293,10 @@ class main:
         # take cross product of maps
         g_run('r.cross', overwrite=True, flags='z',
               input=ml, output=self.hydrotopes)
-        
+
         # read basic structure file info from hydrotope map
         struct = readinStr(self.strcolumns)
-        
+
         # replace all float maps with float values
         for intmap,floatmap in self.floatmaps.items():
             # get mean hydrotope array with columns: hydrotope cats, mean
@@ -306,7 +306,7 @@ class main:
 
         # write structure file
         self.writeStr(struct)
-        
+
         # report hydrotope count and check max number of hydrotopes in subbasins
         nmax = np.max(np.bincount(struct[self.subbasins].astype(int)))
         grass.message('''%s hydrotopes created, %5.2f per subbasin on average, max.
@@ -334,8 +334,8 @@ number of hydrotopes per subbasin %i
         strf.write( datcolfmt%((0,)*ncolumns))
         strf.close()
         grass.message(('Wrote structure file %s' %strname))
-        return 
-        
+        return
+
 def readinStr(strcolumns):
     """ Return subbasinID, landuseID, soilID, ..., area, cellcount from
     hydrotope map as an numpy array"""
@@ -346,36 +346,37 @@ def readinStr(strcolumns):
                                   [np.int64]*len(strcolumns) + [np.float,np.int64]))
 
     return tbl
-    
+
 def hydrotopeQ(cover,hydrotopemap):
     """Get mean values of the cover map for the hydrotopes"""
     grass.message(('Get mean hydrotope values for %s' %cover))
-    
+
     tbl = grass.read_command('r.univar', map=cover, zones=hydrotopemap,
                            flags='gt').split('\n')[:-1] #:-1 as last line hast line break]
     tbl = [tuple(l.split('|')) for l in tbl]
-    tbl = np.array(tbl[1:],dtype=zip(tbl[0],['S250']*len(tbl[0])))    
+    tbl = np.array(tbl[1:],dtype=zip(tbl[0],['S250']*len(tbl[0])))
 
     return np.array(zip(tbl['zone'],tbl['mean']),dtype=[('cat',np.int64),('mean',np.float64)])
-    
 
-    
+
+
 if __name__=='__main__':
     st = dt.datetime.now()
     # get options and flags
     o, f = grass.parser()
-    grass.message(('GIS Environment:',grass.gisenv()))
-    grass.message(('Parameters:',o,f))
-    
+    fmt = lambda d: '\n'.join(['%s: %s' % (k, v) for k, v in d.items()])+'\n'
+    grass.message('GIS Environment:\n'+fmt(grass.gisenv()))
+    grass.message('Parameters:\n'+fmt(o)+fmt(f))
+
     # send all to main
     keywords = o; keywords.update(f)
     main=main(**keywords)
-    
+
     ### EXECUTION OPTIONS
     # include or make contours
     if main.c and 'contours' in main.options:
         main.mkContours()
-    
+
     # calculate hydrotopes
     grass.message(('Calculating hydrotopes with: %s...' %main.strcolumns))
     main.mkHydrotopes()
@@ -384,9 +385,7 @@ if __name__=='__main__':
     g_run('r.mask', flags='r', quiet=True)
     if not main.k:
         grass.run_command('g.remove',type='raster,vector', pattern='*__*',flags='fb',quiet=True)
-    
+
     # report time it took
     delta = dt.datetime.now()-st
     grass.message('Execution took %s hh:mm:ss' %delta)
-    
-
