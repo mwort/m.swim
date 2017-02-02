@@ -2,14 +2,15 @@
 export GRASS_OVERWRITE=1
 # create separate mapset
 g.mapset -c mapset=swim
+module=../m.swim.subbasins/m.swim.subbasins.py 
 
 # basic subbasins
-../m.swim.subbasins elevation=elevation@PERMANENT stations=stations@PERMANENT \
+$module elevation=elevation@PERMANENT stations=stations@PERMANENT \
                  upthresh=40 lothresh=11 subbasins=subbasins
 
 # subbasins with carved streams 
 # catchment 2 has very small catchment/no subbasins
-# m.swim.subbasins elevation=elevation@PERMANENT stations=stations@PERMANENT \
+# $module elevation=elevation@PERMANENT stations=stations@PERMANENT \
 #                 upthresh=30 lothresh=1 subbasins=subbasins streamcarve=rivers@PERMANENT
 
 

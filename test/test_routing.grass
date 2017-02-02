@@ -2,7 +2,7 @@
 export GRASS_OVERWRITE=1
 # create separate mapset
 g.mapset -c mapset=swim
-
+module=../m.swim.routing/m.swim.routing.py
 # depending on:
 # ./test_subbasins.grass
 g.findfile element=cell file=subbasins > /dev/null
@@ -14,5 +14,5 @@ fi
 mkdir -p project/input
 
 # routing
-../m.swim.routing subbasins=subbasins accumulation=accumulation \
+$module subbasins=subbasins accumulation=accumulation \
                   figpath=project/input/blank.fig
