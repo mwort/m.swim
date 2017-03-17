@@ -1,23 +1,25 @@
-import os,sys
+import os
+import sys
 import numpy as np
 import grass.script as grass
+import grass.script.core as gcore
 import mygrass as mg
-import pandas as pa
 import datetime as dt
 
-grun=grass.run_command
-gm  =grass.message
+grun = grass.run_command
+gm = grass.message
+
 
 def routing(units, accumulation, outname, searchradius=1.5):
     grun('r.mask',raster=units,overwrite=True)
-    
+
     # make outlet raster points, border subbasins with neg accumul. not correct
     grass.message('Searching outlets...')
     grun('r.statistics', base=units,cover=accumulation, method='max',
          output='maxaccum__')
     exp = "outlets__=if('%s' == @maxaccum__,%s,null())" %(accumulation,units)
     grass.mapcalc(exp)
-    
+
     grass.message('Growing outlets...')
     # join outlets (set all to 1) and then grow outlets
     grass.mapcalc("outlets1__=if(isnull(outlets__),null(),1)",overwrite=True)
@@ -40,7 +42,7 @@ def routing(units, accumulation, outname, searchradius=1.5):
     grun('r.stats.zonal', base=units, cover='next__unitID__outlets',
          method='max', output='nextID__units__float')
     grass.mapcalc(outname+'=int(nextID__units__float)')
-    
+
     return
 
 def valley(slope, output, thresh=15, filter=300):
@@ -52,10 +54,10 @@ def valley(slope, output, thresh=15, filter=300):
     grun('r.resamp.filter', input='valleys__', output='valleys__smooth',
          filter='box', radius=filter)
     grass.mapcalc(exp='%s=int(round(valleys__smooth))'%output)
-    
+
     return output
 
-    
+
 def cleanRast(input,output,areathresh,fill=True,lenthresh=None,quiet=False):
 
     # RASTER BASED ONLY
@@ -68,7 +70,7 @@ def cleanRast(input,output,areathresh,fill=True,lenthresh=None,quiet=False):
     print 'Removing all units with less than %s cells'%mincells
     interout = output+'__filtered'
     grass.mapcalc(exp='%s=if(n__cells>=%s,%s,null())'%(interout,mincells,input))
-    
+
     if fill:
         # close/fill gaps
         grun('r.grow', input=interout, output=output+'__float', radius=mincells,
@@ -76,7 +78,7 @@ def cleanRast(input,output,areathresh,fill=True,lenthresh=None,quiet=False):
         interout = output+'__float'
     # make int
     grass.mapcalc(output+'=int(%s)'%interout)
-    
+
 #    # VECTOR BASED, v.clean
 #    grun('r.to.vect', input=input, type='area', output=input+'__',#flags='t',
 #         quiet=quiet,overwrite=True)
@@ -91,7 +93,7 @@ def cleanRast(input,output,areathresh,fill=True,lenthresh=None,quiet=False):
     return
 
 def cleanGunits(gunits,subbasins,outname,smallarea):
-    
+
     # get area and subbasins
     print 'Reading gunits for all subbasins...'
     gu = mg.zonalStats(subbasins,gunits)
@@ -111,23 +113,23 @@ def cleanGunits(gunits,subbasins,outname,smallarea):
         grun('v.extract',input=subbasins,cats=s,output='sb__region',quiet=True)
         grun('g.region',vect='sb__region')
         grun('r.mask',raster=subbasins,maskcats=s)
-        
+
         outn = 'clean__gu__%04i' %s
-        
+
         cleanRast(gunits,'first__iteration',smallarea,quiet=True)
         # second iteration
         cleanRast('first__iteration','second__iteration',smallarea,quiet=True)
-        
+
         # add maxid to avoid neighbouring merge when patching
         grass.mapcalc('{0}=second__iteration+{1}'.format(outn,maxn))
         # save for patching
         cunits+=[outn]
         maxn = max(map(int,grass.read_command('r.stats',input=outn,flags='n').split()))+1
         grun('r.mask',flags='r')
-        
+
         grun('g.region',flags='d')
         print 'Subbasin %s done!' %s
-        
+
     # patch together
     if len(cunits)<500:
         grun('r.patch',input=','.join(cunits),output=outname)
@@ -141,10 +143,11 @@ def cleanGunits(gunits,subbasins,outname,smallarea):
             patched+=[n]
         grun('r.patch',input=','.join(patched),output=outname)
     grass.mapcalc(exp='%s=int(%s)'%(outname,outname))
-    
+
     return
-        
+
 def checkRouting(nextID,gunits,outname):
+    import pandas as pa
     tbl=grass.read_command('r.univar',map=nextID,zones=gunits,flags='t').split('\n')
     cols = tbl[0].split('|')
     tbl=pa.DataFrame([tuple(l.split('|')) for l in tbl[1:-1]],columns=cols)
@@ -159,43 +162,43 @@ def checkRouting(nextID,gunits,outname):
     mg.areclass(gunits,np.array(zip(routratio.index,routratio)),outname)
 
     return 0
-    
-    
+
+
 def aspect(elevation,output,nclasses):
     '''Make nice aspect classes: 360 should be devisible by nclasses'''
     ### ASPECT
     grun('r.slope.aspect', elevation=elevation, aspect='aspect__', precision='CELL')
     # resulting map: degrees from E ccw, ie. E=0, N=270
-    
+
     # make aspect classes
     step=360/nclasses
     start=270+(step/2) # centered around north
-    
+
     # from start to 0 (-1 for python)
     breaks=range(start,-1,-step)
     exp=['if(aspect__ <= %s & aspect__ > %s,%s,0)' %(breaks[i],breaks[i]-step,i+1) for i in range(len(breaks))][:-1]
-    
+
     # from start to 360
     breaks2=range(start,360,step)[::-1]
     # if not breaking at 0deg/E, add class going across 0
     if breaks[-1]!=0:
         exp+=['if(aspect__ <= %s | aspect__ > %s,%s,0)' %(breaks[i],360-breaks[i],i+1)]
         breaks2 = breaks2[1:]
-    
+
     exp+=['if(aspect__ <= %s & aspect__ > %s,%s,0)' %(breaks2[i]+step,breaks2[i],len(exp)+i+1) for i in range(len(breaks2))]
-    
+
     # add all rules together
     exp = output+'='+('+'.join(exp))
     gm(exp)
     grass.mapcalc(exp=exp,overwrite=True)
-    
+
     return output
 
 def hydAddressRast(hydrotopes,subbasins,output):
     '''Create a hydrotope address map, i.e. the n'th hydrotope for each subbasin
     as they appear in the structure file.
     '''
-    # get subbasin for each hydrotope 
+    # get subbasin for each hydrotope
     tbl=grass.read_command('r.univar', map=subbasins,zones=hydrotopes,
                            flags='gt').split('\n')[:-1] #:-1 as last line hast line break]
     tbl = [tuple(l.split('|')) for l in tbl]
@@ -216,22 +219,22 @@ def hydAddressRast(hydrotopes,subbasins,output):
     grass.run_command('g.remove',type='rast',name='subbasins__cumfreq',flags='f')
     grass.message('Created hydrotope address raster: %s' %output)
     return
-    
+
 def classedContours(elevation,valleys, output,valinter=40, slopeinter=400):
     '''Make nice aspect classes: 360 should be devisible by nclasses'''
     val = valleys
-    
+
     # get stats of DEM for nice breaks
     stats=grass.parse_command('r.univar',map=elevation,flags='g')
     # function to return the r.mapcalc condition with nice elevation breaks
-    def niceBreaks(interval,last):  
+    def niceBreaks(interval,last):
         # make expression
         exp = 'int({elev}/{interval})+{last}'.format(elev=elevation,last=last,
                                                      interval=interval)
         # calculate next last/highest value
         last = int(float(stats['max'])/interval)+last
         return exp, last
-        
+
 #    # make classed condition
 #    exp = []
 #    last=1
@@ -239,7 +242,7 @@ def classedContours(elevation,valleys, output,valinter=40, slopeinter=400):
 #        con,last = niceBreaks(c,last)
 #        condi = 'if({sl} >= {lo} & {sl} < {up}, {contours})'
 #        exp += [condi.format(sl='slope__',lo=classes[n],up=classes[n+1],contours=con)]
-#    
+#
     # valleys
     vcon,last = niceBreaks(valinter,0)
     scon,last = niceBreaks(slopeinter,last)
@@ -248,7 +251,7 @@ def classedContours(elevation,valleys, output,valinter=40, slopeinter=400):
 #    exp = output+'='+('+'.join(exp))
     print(exp)
     grass.mapcalc(exp=exp,overwrite=True)
-    
+
     return output
 
 def writeStr(outname, unitmap, subbasins, hydAddress, nextID, *othercols):
@@ -257,14 +260,14 @@ def writeStr(outname, unitmap, subbasins, hydAddress, nextID, *othercols):
     subbasins = subbasins.split('@')[0]
     hydAdd = meanUnit(unitmap,hydAddress,int)
     nxt    = meanUnit(unitmap,nextID,int)
-    
+
     # make sure none are flowing to unit 0
     nxt[nextID][nxt[nextID]==0] = nxt['id'][nxt[nextID]==0]
-    
+
     # get other columns
-    ocols = ()  
+    ocols = ()
     for c in othercols: ocols += (meanUnit(unitmap, c, float)[c.split('@')[0]],)
-    
+
     # get all columns
     data = zip(subb['id'],subb[subbasins],hydAdd[hydAddress],
                nxt[nextID],*ocols)
@@ -279,12 +282,12 @@ def writeStr(outname, unitmap, subbasins, hydAddress, nextID, *othercols):
     f.close()
     print 'Wrote %s' %outname
     return data
-    
+
 def meanUnit(units,rast,outtype=str):
     '''Get mean values over units and return as array with two column
     (units int, rast with outtype type)
     '''
-    tbl=grass.read_command('r.univar', map=rast,zones=units,flags='gt') 
+    tbl=grass.read_command('r.univar', map=rast,zones=units,flags='gt')
     tbl   = [tuple(l.split('|')) for l in tbl.split('\n')[:-1]]#:-1 as last line hast line break]
     array = np.array(tbl[1:],dtype=zip(tbl[0],['S250']*len(tbl[0])))
     out   =  np.array(zip(array['zone'],array['mean'],
@@ -312,12 +315,12 @@ def loadGWE(file, prefix, reclassrast):
     dom = [31,28,31,30,31,30,31,31,30,31,30,31]
     outmaps = []
     for l1,l2 in np.unique(gla.index.values):
-        outname = prefix+'_%04i-%02i'%(l1,l2)       
+        outname = prefix+'_%04i-%02i'%(l1,l2)
         grass.message('Processing %s '%(outname))
         print gla.ix[l1,l2].as_matrix().shape
         mg.areclass(reclassrast,gla.ix[l1,l2].as_matrix(),outname)
         # nice colour map
-        grass.write_command('r.colors',map=outname,rules='-',stdin=colormap)   
+        grass.write_command('r.colors',map=outname,rules='-',stdin=colormap)
         # timestamp
         grass.run_command('r.timestamp',map=outname,
                           # get last date of month by month+1-1day
@@ -329,17 +332,133 @@ def loadGWE(file, prefix, reclassrast):
     return
 
 
-    
-    
-if __name__=='__main__':
-    # get names of locally defined functions/objects and pick the one given as first commandline arguement
-    funct=locals()[sys.argv[1]]
-    # try to convert arguments to int/float
-    args=[]
-    for a in sys.argv[2:]: # only those given after the function name
-        try: args+=[int(a)]
-        except:
-            try: args+=[float(a)]
-            except: args+=[a]
-    # execute function
-    funct(*args)
+if __name__ == '__main__':
+    st = dt.datetime.now()
+    # get options and flags
+    o, f = parser()
+    fmt = lambda d: '\n'.join(['%s: %s' % (k, v) for k, v in d.items()])+'\n'
+    grass.message('GIS Environment:\n'+fmt(grass.gisenv()))
+    grass.message('Parameters:\n'+fmt(o)+fmt(f))
+
+
+    # Parameters
+    glacierarea = 'glacierarea'  # existing raster
+    minarea = 100000  # m2
+    # all hydrotope inputs are needed including elevation and contours
+    # could maybe be parsed through grass.script.core._parse_opts(lines)
+
+    valleythreshold = 19  # dg
+    valleysmoothing = 200  # some sort of radius
+    countoursvalley = 30  # m
+    countoursslopes = 200  # m (maybe make dependent on mean valley/slope slopes?)
+    naspectclasses = 4  # number of aspect classes
+    hemisphere = 'N'  # N | S for summer/winter
+
+    ## Output
+    d = False  # skip recreating slope_dg, aspect and sunhours
+    gunits = 'gunits'  # glacier units raster
+    slope_dg = 'slope_dg'  # slope in degrees
+    aspect = 'aspect'  # aspect CELL precision
+    sunhoursprefix = 'sun_hr'  # prefix for r.sun Output
+    valleys = 'valleys'  # valley/slope raster
+    glaciercontours = 'glaciercontours'  # valley/slope classed contours
+    slopeaspect = 'slope_aspect'  # slope aspects in naspectclasses
+    routingratio = 'routingratio'  # optional: number of cells upstream/downstream
+    gunitssoils = 'gunitssoils'  # soils mapped onto glacier units
+    gunitslanduse = 'gunitslanduse'  # landuse mapped onto glacier units
+
+    ############################################################
+
+    # mask entire catchment
+    r.mask subbasins@subbasins
+
+    # clean small bits from garea
+    cleanRast glacierarea garea $minarea False
+
+    r.mask garea --o
+    # reduce region to garea
+
+    ### some DEM derived maps
+    # make slope and aspect raster
+    r.slope.aspect elevation=aster_iclean@DEM slope=slope_dg aspect=aspect precision=CELL
+    # calculate sun hours on June 21 and Dec 21
+    r.sun elevation=aster_iclean@DEM day=172 insol_time=sun_hr_doy172
+    r.sun elevation=aster_iclean@DEM day=355 insol_time=sun_hr_doy355
+
+    # distinguish valleys and slopes (with smoothing)
+    valley() slope_dg valleys_smooth 19 200
+    # clean
+    cleanRast valleys_smooth valleys $minarea
+
+    # make contours (also writes slope and valleys)
+    classedContours aster_iclean@DEM valleys contours_classed 30 200
+    # clean
+    cleanRast contours_classed contours_clean $minarea
+
+    # make aspect classes (only on slopes)
+    aspect aster_iclean@DEM aspect_classed 4
+    # only take those not in valleys and rest null
+    r.mapcalc exp='aspect_slopes=int(if(!valleys,aspect_classed,0))'
+    # filter out small slopes and add them to neighbouring slopes
+    cleanRast aspect_slopes aspect_clean $minarea
+
+    # make raw glacier units
+    r.cross input=subbasins@subbasins,contours_clean,aspect_clean out=gunits_raw
+    # spatially explicit
+    r.clump input=gunits_raw output=gunits_clumped
+
+    ### clean gunits and spatially explicit
+    # then clean each subbasin individually to fill each subbasin
+    cleanGunits gunits_clumped subbasins@subbasins gunits_clean $minarea
+
+    # remove small overspilled units at glacierarea fringes and reduce glacierarea accordingingly
+    r.mask garea
+    cleanRast gunits_clean gunits_cleaner $minarea 0
+    r.mapcalc exp='garea=if(!isnull(gunits_cleaner),1,null())' --o
+    r.mask garea --o
+    # clump again to renumber (enhancing performance, would also work without)
+    r.clump -d input=gunits_cleaner output=gunits
+
+    # routing
+    routing gunits accumulation@subbasins nextID
+    # double check
+    checkRouting nextID gunits routing_ratio
+
+    # make glacier units part of hydrotope map and include contours outside of glacier area
+    r.mask raster=subbasins@subbasins --o
+    r.mapcalc exp='gcontours=if(isnull(gunits),int(aster_iclean@DEM/200),gunits)'
+
+    # Prepare hydrotope maps
+    # get valley/slope glacier units
+    r.statistics base=gunits cover=valleys method=mode output=gunits_valleys
+    r.mapcalc exp='gunits_valleys=int(@gunits_valleys)' --o
+
+    # map soils to gunits with additional slope soil unit
+    r.statistics base=gunits@glaciers cover=HWSD@soil method=mode output=gunits_soils
+    r.mapcalc exp='gunits_soils=int(@gunits_soils)' --o
+    r.mapcalc exp='soils_HWSD=if(isnull(gunits_valleys@glaciers),HWSD@soil,if(gunits_valleys@glaciers,gunits_soils,null()))'
+
+    # map landuse to gunits
+    r.statistics base=gunits@glaciers cover=GLC_EUv2@landuse method=mode output=gunits_landuse
+    r.mapcalc exp='GLC_gunits=if(!isnull(garea@glaciers),int(@gunits_landuse),GLC_EUv2@landuse)'
+
+    # make hydrotopes and write str file
+    m.swim.hydrotopes subbasins=subbasins@subbasins landuse=landuse@landuse \
+                        soil=soils_SWIM@soil -c contourrast=gcontours elevation=aster_iclean@DEM \
+                        hydrotopes=hydrotopes strfilepath=proSWIM/Input/rhone.str
+
+    # hydrotope addresses
+    hydAddressRast hydrotopes@hydrotopes subbasins@subbasins hydAddress
+
+    # write glacier str file (with 0 glacier height, 0 debris cover (cant have the same null0 name))
+    r.mask --o garea
+    writeStr ~/wortmann/Alps/proSWIM/Input/glaciers.str gunits \
+                        subbasins@subbasins hydAddress nextID gla0 slope_dg \
+                        sun_hr_doy172 sun_hr_doy355 debris0
+
+    ############################################################
+
+
+    # report time it took
+    delta = dt.datetime.now()-st
+    grass.message('Execution took %s hh:mm:ss' %delta)
