@@ -370,73 +370,77 @@ def grun(*args, **kwargs):
 
 
 def routing(units, accumulation, outname, searchradius=1.5):
-    grun('r.mask',raster=units,overwrite=True)
+    grun('r.mask', raster=units, overwrite=True)
 
     # make outlet raster points, border subbasins with neg accumul. not correct
     grass.message('Searching outlets...')
-    grun('r.statistics', base=units,cover=accumulation, method='max',
+    grun('r.statistics', base=units, cover=accumulation, method='max',
          output='maxaccum__')
-    exp = "outlets__=if('%s' == @maxaccum__,%s,null())" %(accumulation,units)
+    exp = "outlets__=if('%s' == @maxaccum__,%s,null())" % (accumulation, units)
     grass.mapcalc(exp)
 
     grass.message('Growing outlets...')
     # join outlets (set all to 1) and then grow outlets
-    grass.mapcalc("outlets1__=if(isnull(outlets__),null(),1)",overwrite=True)
+    grass.mapcalc("outlets1__=if(isnull(outlets__),null(),1)", overwrite=True)
     # grow to all 8 neighbours (1.5 times cell size)
-    grun('r.grow', input='outlets1__', output='outlets__grown', radius=searchradius)
+    grun('r.grow', input='outlets1__',
+         output='outlets__grown', radius=searchradius)
     grun('r.clump', input='outlets__grown', output='outlets__grown__clumped')
 
     # make inlets
     grass.message('Searching inlets...')
     grun('r.statistics', base='outlets__grown__clumped', cover=accumulation,
          method='max', output='maxoutlet__clumps')
-    grass.mapcalc("inlets__=if(%s == @maxoutlet__clumps,%s,null())" %(accumulation,units))
+    grass.mapcalc("inlets__=if(%s == @maxoutlet__clumps,%s,null())" %
+                  (accumulation, units))
 
     # transfer inlet units to clumps
     grun('r.stats.zonal', base='outlets__grown__clumped', cover='inlets__',
          method='max', output='clumps__unitID')
     # transfer to original units again (if n outlets >1, take largest inlet ID)
     grun('r.stats.zonal', base='outlets__', cover='clumps__unitID',
-        method='max', output='next__unitID__outlets')
+         method='max', output='next__unitID__outlets')
     grun('r.stats.zonal', base=units, cover='next__unitID__outlets',
          method='max', output='nextID__units__float')
-    grass.mapcalc(outname+'=int(nextID__units__float)')
+    grass.mapcalc(outname + '=int(nextID__units__float)')
 
     return
+
 
 def valley(slope, output, thresh=15, filter=300):
     '''Make a clean valley=1 and slope/rockface=0 raster'''
     # make valley 1/0 raster
-    grass.mapcalc(exp='valleys__=%s<=%s'%(slope,thresh))
+    grass.mapcalc(exp='valleys__=%s<=%s' % (slope, thresh))
     # clean
     print 'Cleaning...'
     grun('r.resamp.filter', input='valleys__', output='valleys__smooth',
          filter='box', radius=filter)
-    grass.mapcalc(exp='%s=int(round(valleys__smooth))'%output)
+    grass.mapcalc(exp='%s=int(round(valleys__smooth))' % output)
 
     return output
 
 
-def cleanRast(input,output,areathresh,fill=True,lenthresh=None,quiet=False):
+def cleanRast(input, output, areathresh, fill=True, lenthresh=None, quiet=False):
 
     # RASTER BASED ONLY
-    grun('r.clump', input=input,output=output+'__clumped',quiet=quiet)
+    grun('r.clump', input=input, output=output + '__clumped', quiet=quiet)
     grass.mapcalc('help__1=1')
-    grun('r.stats.zonal',base=output+'__clumped',cover='help__1',method='sum',
-         output='n__cells',quiet=quiet)
+    grun('r.stats.zonal', base=output + '__clumped', cover='help__1', method='sum',
+         output='n__cells', quiet=quiet)
     # output by thresholding cells
-    mincells=int(areathresh/float(grass.region()['nsres'])**2)
-    print 'Removing all units with less than %s cells'%mincells
-    interout = output+'__filtered'
-    grass.mapcalc(exp='%s=if(n__cells>=%s,%s,null())'%(interout,mincells,input))
+    mincells = int(areathresh / float(grass.region()['nsres'])**2)
+    print 'Removing all units with less than %s cells' % mincells
+    interout = output + '__filtered'
+    grass.mapcalc(exp='%s=if(n__cells>=%s,%s,null())' %
+                  (interout, mincells, input))
 
     if fill:
         # close/fill gaps
-        grun('r.grow', input=interout, output=output+'__float', radius=mincells,
+        grun('r.grow', input=interout, output=output + '__float', radius=mincells,
              quiet=quiet)
-        interout = output+'__float'
+        interout = output + '__float'
     # make int
-    grass.mapcalc(output+'=int(%s)'%interout)
+    grass.mapcalc(output + '=int(%s)' % interout)
 
 #    # VECTOR BASED, v.clean
 #    grun('r.to.vect', input=input, type='area', output=input+'__',#flags='t',
@@ -451,37 +455,43 @@ def cleanRast(input,output,areathresh,fill=True,lenthresh=None,quiet=False):
 #         use='attr', attrcolumn='value',overwrite=True,quiet=quiet)
     return
 
-def zonalStats(rast,zones,**runivarargs):
+
+def zonalStats(rast, zones, **runivarargs):
     '''Copied from mwpy.grass !!!
     Return statistics of the raster for the given zones as a pa.Dataframe.
     '''
     # make flags
-    if 'flags' in runivarargs: runivarargs['flags'] += 't'
-    else: runivarargs['flags']='t'
+    if 'flags' in runivarargs:
+        runivarargs['flags'] += 't'
+    else:
+        runivarargs['flags'] = 't'
     # call r.univar
-    lines=grass.read_command('r.univar', map=rast, zones=zones,**runivarargs).split('\n')
+    lines = grass.read_command(
+        'r.univar', map=rast, zones=zones, **runivarargs).split('\n')
     # convert to str array
-    stats=np.array([tuple(s.split('|')) for s in lines[1:-1]],dtype=str)
+    stats = np.array([tuple(s.split('|')) for s in lines[1:-1]], dtype=str)
     colnames = lines[0].split('|')
     # parse cols as either int,float or str
-    cols     = []
+    cols = []
     for c in stats.T:
-        try: cols += [map(int,c)]
+        try:
+            cols += [map(int, c)]
         except:
-            try: cols += [map(float,c)]
+            try:
+                cols += [map(float, c)]
             except:
                 cols += [c]
     # make dataframe and set index to zone
     df = pa.DataFrame(zip(*cols), columns=colnames)
-    df.set_index('zone',inplace=True)
+    df.set_index('zone', inplace=True)
     # convert cells to area
     reg = grass.region()
-    df['non_null_area'] = df['non_null_cells']*reg['ewres']*reg['nsres']
-    df['null_area'] = df['null_cells']*reg['ewres']*reg['nsres']
+    df['non_null_area'] = df['non_null_cells'] * reg['ewres'] * reg['nsres']
+    df['null_area'] = df['null_cells'] * reg['ewres'] * reg['nsres']
     return df
 
 
-def cleanGunits(gunits,subbasins,outname,smallarea):
+def cleanGunits(gunits, subbasins, outname, smallarea):
 
     # get area and subbasins
     print 'Reading gunits for all subbasins...'
@@ -489,140 +499,155 @@ def cleanGunits(gunits,subbasins,outname,smallarea):
     # largest gunit
     maxu = gu['non_null_cells'].max()
 
-    print 'Largest unit: %s cells' %maxu
+    print 'Largest unit: %s cells' % maxu
 
     # subbasins
     sbs = np.unique(gu['mean'])
-    print len(sbs),'subbasins found'
+    print len(sbs), 'subbasins found'
     cunits = []
     maxn = 0
     print 'Looping over each subbasin...'
     for s in sbs:
         print 'Setting region and mask...'
-        grun('v.extract',input=subbasins,cats=s,output='sb__region',quiet=True)
-        grun('g.region',vect='sb__region')
-        grun('r.mask',raster=subbasins,maskcats=s)
+        grun('v.extract', input=subbasins, cats=s,
+             output='sb__region', quiet=True)
+        grun('g.region', vect='sb__region')
+        grun('r.mask', raster=subbasins, maskcats=s)
 
-        outn = 'clean__gu__%04i' %s
+        outn = 'clean__gu__%04i' % s
 
-        cleanRast(gunits,'first__iteration',smallarea,quiet=True)
+        cleanRast(gunits, 'first__iteration', smallarea, quiet=True)
         # second iteration
-        cleanRast('first__iteration','second__iteration',smallarea,quiet=True)
+        cleanRast('first__iteration', 'second__iteration',
+                  smallarea, quiet=True)
 
         # add maxid to avoid neighbouring merge when patching
-        grass.mapcalc('{0}=second__iteration+{1}'.format(outn,maxn))
+        grass.mapcalc('{0}=second__iteration+{1}'.format(outn, maxn))
         # save for patching
-        cunits+=[outn]
-        maxn = max(map(int,grass.read_command('r.stats',input=outn,flags='n').split()))+1
-        grun('r.mask',flags='r')
+        cunits += [outn]
+        maxn = max(map(int, grass.read_command(
+            'r.stats', input=outn, flags='n').split())) + 1
+        grun('r.mask', flags='r')
 
-        grun('g.region',flags='d')
-        print 'Subbasin %s done!' %s
+        grun('g.region', flags='d')
+        print 'Subbasin %s done!' % s
 
     # patch together
-    if len(cunits)<500:
-        grun('r.patch',input=','.join(cunits),output=outname)
+    if len(cunits) < 500:
+        grun('r.patch', input=','.join(cunits), output=outname)
     else:
-    # patch in batches due to open files limit of r.patch
-        patched=[]
-        batches=range(0,len(cunits),500)+[len(cunits)]
-        for i in range(len(batches)-1):
-            n = outname+'__%s'%i
-            grun('r.patch',input=','.join(cunits[batches[i]:batches[i+1]]),output=n)
-            patched+=[n]
-        grun('r.patch',input=','.join(patched),output=outname)
-    grass.mapcalc(exp='%s=int(%s)'%(outname,outname))
+        # patch in batches due to open files limit of r.patch
+        patched = []
+        batches = range(0, len(cunits), 500) + [len(cunits)]
+        for i in range(len(batches) - 1):
+            n = outname + '__%s' % i
+            grun('r.patch', input=','.join(
+                cunits[batches[i]:batches[i + 1]]), output=n)
+            patched += [n]
+        grun('r.patch', input=','.join(patched), output=outname)
+    grass.mapcalc(exp='%s=int(%s)' % (outname, outname))
 
     return
 
-def checkRouting(nextID,gunits,outname):
+
+def checkRouting(nextID, gunits, outname):
     import mygrass as mg
 
-    tbl=grass.read_command('r.univar',map=nextID,zones=gunits,flags='t').split('\n')
+    tbl = grass.read_command('r.univar', map=nextID,
+                             zones=gunits, flags='t').split('\n')
     cols = tbl[0].split('|')
-    tbl=pa.DataFrame([tuple(l.split('|')) for l in tbl[1:-1]],columns=cols)
-    tbl.set_index(tbl['zone'].astype(int),inplace=True)
-    tbl=tbl[['mean','non_null_cells']].astype(int)
+    tbl = pa.DataFrame([tuple(l.split('|')) for l in tbl[1:-1]], columns=cols)
+    tbl.set_index(tbl['zone'].astype(int), inplace=True)
+    tbl = tbl[['mean', 'non_null_cells']].astype(int)
     # group by 'inlet ids' and accum cells
     incells = tbl.groupby('mean').agg('sum')['non_null_cells']
-    receivingcells= tbl.ix[incells.index]['non_null_cells']
+    receivingcells = tbl.ix[incells.index]['non_null_cells']
     # ratio
-    routratio = incells/receivingcells
+    routratio = incells / receivingcells
     print routratio.describe()
-    mg.areclass(gunits,np.array(zip(routratio.index,routratio)),outname)
+    mg.areclass(gunits, np.array(zip(routratio.index, routratio)), outname)
 
     return 0
 
 
-def aspect(elevation,output,nclasses):
+def aspect(elevation, output, nclasses):
     '''Make nice aspect classes: 360 should be devisible by nclasses'''
-    ### ASPECT
-    grun('r.slope.aspect', elevation=elevation, aspect='aspect__', precision='CELL')
+    # ASPECT
+    grun('r.slope.aspect', elevation=elevation,
+         aspect='aspect__', precision='CELL')
     # resulting map: degrees from E ccw, ie. E=0, N=270
 
     # make aspect classes
-    step=360/nclasses
-    start=270+(step/2) # centered around north
+    step = 360 / nclasses
+    start = 270 + (step / 2)  # centered around north
 
     # from start to 0 (-1 for python)
-    breaks=range(start,-1,-step)
-    exp=['if(aspect__ <= %s & aspect__ > %s,%s,0)' %(breaks[i],breaks[i]-step,i+1) for i in range(len(breaks))][:-1]
+    breaks = range(start, -1, -step)
+    exp = ['if(aspect__ <= %s & aspect__ > %s,%s,0)' % (
+        breaks[i], breaks[i] - step, i + 1) for i in range(len(breaks))][:-1]
 
     # from start to 360
-    breaks2=range(start,360,step)[::-1]
+    breaks2 = range(start, 360, step)[::-1]
     # if not breaking at 0deg/E, add class going across 0
-    if breaks[-1]!=0:
-        exp+=['if(aspect__ <= %s | aspect__ > %s,%s,0)' %(breaks[i],360-breaks[i],i+1)]
+    if breaks[-1] != 0:
+        exp += ['if(aspect__ <= %s | aspect__ > %s,%s,0)' %
+                (breaks[i], 360 - breaks[i], i + 1)]
         breaks2 = breaks2[1:]
 
-    exp+=['if(aspect__ <= %s & aspect__ > %s,%s,0)' %(breaks2[i]+step,breaks2[i],len(exp)+i+1) for i in range(len(breaks2))]
+    exp += ['if(aspect__ <= %s & aspect__ > %s,%s,0)' % (breaks2[i] +
+                                                         step, breaks2[i], len(exp) + i + 1) for i in range(len(breaks2))]
 
     # add all rules together
-    exp = output+'='+('+'.join(exp))
+    exp = output + '=' + ('+'.join(exp))
     gm(exp)
-    grass.mapcalc(exp=exp,overwrite=True)
+    grass.mapcalc(exp=exp, overwrite=True)
 
     return output
 
-def hydAddressRast(hydrotopes,subbasins,output):
+
+def hydAddressRast(hydrotopes, subbasins, output):
     '''Create a hydrotope address map, i.e. the n'th hydrotope for each subbasin
     as they appear in the structure file.
     '''
     # get subbasin for each hydrotope
-    tbl=grass.read_command('r.univar', map=subbasins,zones=hydrotopes,
-                           flags='gt').split('\n')[:-1] #:-1 as last line hast line break]
+    tbl = grass.read_command('r.univar', map=subbasins, zones=hydrotopes,
+                             flags='gt').split('\n')[:-1]  # :-1 as last line hast line break]
     tbl = [tuple(l.split('|')) for l in tbl]
-    tbl = np.array(tbl[1:],dtype=zip(tbl[0],['S250']*len(tbl[0])))
-    sub = np.array(tbl['mean'],dtype=int)
+    tbl = np.array(tbl[1:], dtype=zip(tbl[0], ['S250'] * len(tbl[0])))
+    sub = np.array(tbl['mean'], dtype=int)
     subIDs = np.unique(sub)
     # get counts
-    freq,bins = np.histogram(sub,len(subIDs))
+    freq, bins = np.histogram(sub, len(subIDs))
     # cumulative and shift by one subbasin
-    cumfreq = np.array([subIDs,[0]+freq.cumsum().tolist()[:-1]]).T
+    cumfreq = np.array([subIDs, [0] + freq.cumsum().tolist()[:-1]]).T
     # reclass subbasin map to this count
     tmpf = grass.tempfile()
-    np.savetxt(tmpf,cumfreq,delimiter='=',fmt='%i')
-    grass.run_command('r.reclass',input=subbasins,output='subbasins__cumfreq',rules=tmpf)
+    np.savetxt(tmpf, cumfreq, delimiter='=', fmt='%i')
+    grass.run_command('r.reclass', input=subbasins,
+                      output='subbasins__cumfreq', rules=tmpf)
     # subtract from hydrotopes
-    grass.mapcalc('%s=%s - subbasins__cumfreq' %(output,hydrotopes))
+    grass.mapcalc('%s=%s - subbasins__cumfreq' % (output, hydrotopes))
     # remove help stuff
-    grass.run_command('g.remove',type='rast',name='subbasins__cumfreq',flags='f')
-    grass.message('Created hydrotope address raster: %s' %output)
+    grass.run_command('g.remove', type='rast',
+                      name='subbasins__cumfreq', flags='f')
+    grass.message('Created hydrotope address raster: %s' % output)
     return
 
-def classedContours(elevation,valleys, output,valinter=40, slopeinter=400):
+
+def classedContours(elevation, valleys, output, valinter=40, slopeinter=400):
     '''Make nice aspect classes: 360 should be devisible by nclasses'''
     val = valleys
 
     # get stats of DEM for nice breaks
-    stats=grass.parse_command('r.univar',map=elevation,flags='g')
+    stats = grass.parse_command('r.univar', map=elevation, flags='g')
     # function to return the r.mapcalc condition with nice elevation breaks
-    def niceBreaks(interval,last):
+
+    def niceBreaks(interval, last):
         # make expression
-        exp = 'int({elev}/{interval})+{last}'.format(elev=elevation,last=last,
+        exp = 'int({elev}/{interval})+{last}'.format(elev=elevation, last=last,
                                                      interval=interval)
         # calculate next last/highest value
-        last = int(float(stats['max'])/interval)+last
+        last = int(float(stats['max']) / interval) + last
         return exp, last
 
 #    # make classed condition
@@ -634,96 +659,103 @@ def classedContours(elevation,valleys, output,valinter=40, slopeinter=400):
 #        exp += [condi.format(sl='slope__',lo=classes[n],up=classes[n+1],contours=con)]
 #
     # valleys
-    vcon,last = niceBreaks(valinter,0)
-    scon,last = niceBreaks(slopeinter,last)
-    exp = output+'=if(%s,%s,%s)'%(val,vcon,scon)
+    vcon, last = niceBreaks(valinter, 0)
+    scon, last = niceBreaks(slopeinter, last)
+    exp = output + '=if(%s,%s,%s)' % (val, vcon, scon)
 #    # add all rules together
 #    exp = output+'='+('+'.join(exp))
     print(exp)
-    grass.mapcalc(exp=exp,overwrite=True)
+    grass.mapcalc(exp=exp, overwrite=True)
 
     return output
 
+
 def writeStr(outname, unitmap, subbasins, hydAddress, nextID, *othercols):
     # get subbasin, hydAddress, nextID
-    subb   = meanUnit(unitmap,subbasins,int)
+    subb = meanUnit(unitmap, subbasins, int)
     subbasins = subbasins.split('@')[0]
-    hydAdd = meanUnit(unitmap,hydAddress,int)
-    nxt    = meanUnit(unitmap,nextID,int)
+    hydAdd = meanUnit(unitmap, hydAddress, int)
+    nxt = meanUnit(unitmap, nextID, int)
 
     # make sure none are flowing to unit 0
-    nxt[nextID][nxt[nextID]==0] = nxt['id'][nxt[nextID]==0]
+    nxt[nextID][nxt[nextID] == 0] = nxt['id'][nxt[nextID] == 0]
 
     # get other columns
     ocols = ()
     for c in othercols:
         if type(c) in [int, float]:
-            ocols += (np.ones((len(subb),))*c,)
+            ocols += (np.ones((len(subb),)) * c,)
         else:
             ocols += (meanUnit(unitmap, c, float)[c.split('@')[0]],)
 
     # get all columns
-    data = zip(subb['id'],subb[subbasins],hydAdd[hydAddress],
-               nxt[nextID],*ocols)
+    data = zip(subb['id'], subb[subbasins], hydAdd[hydAddress],
+               nxt[nextID], *ocols)
     columnnames = ['gunitID', 'subbasinID', 'hydrotopeID', 'nextID']
     columnnames += [c.split('@')[0] if type(c) == str else 'raster_%s' % i
-                    for i,c in enumerate(othercols)]
-    data = np.array(data, dtype=zip(columnnames,4*[int]+len(othercols)*[float]))
+                    for i, c in enumerate(othercols)]
+    data = np.array(data, dtype=zip(columnnames, 4 *
+                                    [int] + len(othercols) * [float]))
 #    # dont take those that are outflows
 #    data = data[nxt['id']!=nxt[nextID]]
     # save to txt file
-    f = file(outname,'w')
-    f.write((4*'%-10s '+len(othercols)*'%-14s '+'\n')%tuple(columnnames))
-    np.savetxt(f,data,fmt=4*'%10i '+len(othercols)*'%16.6f ')
+    f = file(outname, 'w')
+    f.write((4 * '%-10s ' + len(othercols) * '%-14s ' + '\n') %
+            tuple(columnnames))
+    np.savetxt(f, data, fmt=4 * '%10i ' + len(othercols) * '%16.6f ')
     f.close()
-    print 'Wrote %s' %outname
+    print 'Wrote %s' % outname
     return data
 
-def meanUnit(units,rast,outtype=str):
+
+def meanUnit(units, rast, outtype=str):
     '''Get mean values over units and return as array with two column
     (units int, rast with outtype type)
     '''
-    tbl=grass.read_command('r.univar', map=rast,zones=units,flags='gt')
-    tbl   = [tuple(l.split('|')) for l in tbl.split('\n')[:-1]]#:-1 as last line hast line break]
-    array = np.array(tbl[1:],dtype=zip(tbl[0],['S250']*len(tbl[0])))
-    out   =  np.array(zip(array['zone'],array['mean'],
-                          array['non_null_cells'],array['null_cells']),
-                      dtype=[('id',int),(rast.split('@')[0],outtype),
-                             ('non_null_cells',int),('null_cells',int)])
-    print 'Got %r x %s' %(out.dtype.names,out.shape[0])
+    tbl = grass.read_command('r.univar', map=rast, zones=units, flags='gt')
+    # :-1 as last line hast line break]
+    tbl = [tuple(l.split('|')) for l in tbl.split('\n')[:-1]]
+    array = np.array(tbl[1:], dtype=zip(tbl[0], ['S250'] * len(tbl[0])))
+    out = np.array(zip(array['zone'], array['mean'],
+                       array['non_null_cells'], array['null_cells']),
+                   dtype=[('id', int), (rast.split('@')[0], outtype),
+                          ('non_null_cells', int), ('null_cells', int)])
+    print 'Got %r x %s' % (out.dtype.names, out.shape[0])
     return out
 
 
 def loadGWE(file, prefix, reclassrast):
     # load gla file
-    gla=pa.read_table(file,index_col=[0,1],names=['id','value'],delim_whitespace=True)
-    styear=1979
+    gla = pa.read_table(file, index_col=[0, 1], names=[
+                        'id', 'value'], delim_whitespace=True)
+    styear = 1979
     # colormap
     max = 2100
-    colormap='''-%s   magenta
+    colormap = '''-%s   magenta
                  -200 red
                    -1 orange
                     0 yellow
                     1 green
                   200 blue
-                 %s   cyan''' %(max,max)
+                 %s   cyan''' % (max, max)
     # loop over indeces (year,index) and reclass units raster
-    dom = [31,28,31,30,31,30,31,31,30,31,30,31]
+    dom = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
     outmaps = []
-    for l1,l2 in np.unique(gla.index.values):
-        outname = prefix+'_%04i-%02i'%(l1,l2)
-        grass.message('Processing %s '%(outname))
-        print gla.ix[l1,l2].as_matrix().shape
-        mg.areclass(reclassrast,gla.ix[l1,l2].as_matrix(),outname)
+    for l1, l2 in np.unique(gla.index.values):
+        outname = prefix + '_%04i-%02i' % (l1, l2)
+        grass.message('Processing %s ' % (outname))
+        print gla.ix[l1, l2].as_matrix().shape
+        mg.areclass(reclassrast, gla.ix[l1, l2].as_matrix(), outname)
         # nice colour map
-        grass.write_command('r.colors',map=outname,rules='-',stdin=colormap)
+        grass.write_command('r.colors', map=outname, rules='-', stdin=colormap)
         # timestamp
-        grass.run_command('r.timestamp',map=outname,
+        grass.run_command('r.timestamp', map=outname,
                           # get last date of month by month+1-1day
-                          date=dt.date(styear-1+l1,l2,dom[l2-1]).strftime('%d %b %Y'))
+                          date=dt.date(styear - 1 + l1, l2, dom[l2 - 1]).strftime('%d %b %Y'))
         outmaps += [outname]
     # make nice timeseries out of it
-    grass.run_command('t.create', output=prefix, title=prefix, description=prefix)
+    grass.run_command('t.create', output=prefix,
+                      title=prefix, description=prefix)
     grass.run_command('t.register', input=prefix, maps=','.join(outmaps))
     return
 
@@ -799,12 +831,12 @@ class Main:
         # mask entire catchment
         self.mask(self.subbasins)
         # clean small bits from garea
-        garea_clean = self.gunitsglacierarea+'__clean'
+        garea_clean = self.gunitsglacierarea + '__clean'
         cleanRast(self.glacierarea, garea_clean, self.minarea, fill=False)
         grun('g.region', zoom=garea_clean)
         self.mask(garea_clean)
-        self.glacierarea_clean = garea_clean+'__zoomed'
-        grass.mapcalc(self.glacierarea_clean+'='+garea_clean)
+        self.glacierarea_clean = garea_clean + '__zoomed'
+        grass.mapcalc(self.glacierarea_clean + '=' + garea_clean)
         return
 
     def process_dem(self):
@@ -834,7 +866,7 @@ class Main:
         every time.
         """
         # distinguish valleys and slopes (with smoothing)
-        valleys_smooth = self.valleys+'__smooth'
+        valleys_smooth = self.valleys + '__smooth'
         valley(self.slope_dg, valleys_smooth,
                self.valleythreshold, self.valleysmoothing)
         # clean
@@ -848,34 +880,34 @@ class Main:
         cleanRast(contours_classed, self.glaciercontours, self.minarea)
 
         # make aspect classes (only on slopes)
-        aspect_classed = self.slopeaspect+'__classed'
+        aspect_classed = self.slopeaspect + '__classed'
         aspect(self.elevation, aspect_classed, self.naspectclasses)
         # only take those not in valleys and rest null
-        aspect_slopes = aspect_classed+'__slopes'
-        grass.mapcalc(aspect_slopes+'=int(if(!%s,%s,0))' % (self.valleys,
-                                                            aspect_classed))
+        aspect_slopes = aspect_classed + '__slopes'
+        grass.mapcalc(aspect_slopes + '=int(if(!%s,%s,0))' % (self.valleys,
+                                                              aspect_classed))
         # filter out small slopes and add them to neighbouring slopes
         cleanRast(aspect_slopes, self.slopeaspect, self.minarea)
 
         # make raw glacier units
         gunits_maps = [self.subbasins, self.glaciercontours, self.slopeaspect]
-        gunits_raw = self.gunits+'__raw'
+        gunits_raw = self.gunits + '__raw'
         grun('r.cross', input=','.join(gunits_maps), output=gunits_raw)
         # spatially explicit
-        gunits_clumped = self.gunits+'__clumped'
+        gunits_clumped = self.gunits + '__clumped'
         grun('r.clump', input=gunits_raw, output=gunits_clumped)
 
         # clean gunits and make spatially explicit
         # then clean each subbasin individually to fill each subbasin
-        gunits_clean = self.gunits+'__clean'
+        gunits_clean = self.gunits + '__clean'
         cleanGunits(gunits_clumped, self.subbasins, gunits_clean, self.minarea)
 
         # remove small overspilled units at glacierarea fringes and reduce
         # glacierarea accordingingly
-        gunits_cleaner = self.gunits+'__cleaner'
+        gunits_cleaner = self.gunits + '__cleaner'
         cleanRast(gunits_clean, gunits_cleaner, self.minarea, fill=False)
         exp = 'if(!isnull(%s),1,null())' % self.glacierarea_clean
-        grass.mapcalc(self.gunitsglacierarea+'='+exp)
+        grass.mapcalc(self.gunitsglacierarea + '=' + exp)
         grun('r.mask', raster=self.gunitsglacierarea, overwrite=True)
         # clump again to renumber (enhancing performance, would also work w/o)
         grun('r.clump', flags='d', input=gunits_cleaner, output=self.gunits)
@@ -892,39 +924,40 @@ class Main:
 
     def map_gunits(self, inrast, outrast):
         grun('r.statistics', base=self.gunits, cover=inrast,
-             method='mode', output=outrast+'__labeled')
-        grass.mapcalc(outrast+'=int(@%s)' % (outrast+'__labeled'))
+             method='mode', output=outrast + '__labeled')
+        grass.mapcalc(outrast + '=int(@%s)' % (outrast + '__labeled'))
         return
 
     def create_hydrotopes(self):
         """
         Create hydrotopes that include the glacier units and get addresses.
         """
-        # make glacier units part of hydrotope map and include contours outside of glacier area
+        # make glacier units part of hydrotope map and include contours outside
+        # of glacier area
         self.mask(self.subbasins)
 
         # create contours with glacier units
         exp = 'if(isnull($gunits),int($elevation/$interval),$gunits)'
-        grass.mapcalc(self.contourrast+'='+exp, gunits=self.gunits,
+        grass.mapcalc(self.contourrast + '=' + exp, gunits=self.gunits,
                       elevation=self.elevation, interval=self.contours)
 
         # Prepare hydrotope maps
         # get valley/slope glacier units
-        gunits_valleys = self.gunits+'__valleys'
+        gunits_valleys = self.gunits + '__valleys'
         self.map_gunits(self.valleys, gunits_valleys)
 
         # map soils to gunits with additional slope soil unit
-        gunits_soil = self.gunits+'__soil'
+        gunits_soil = self.gunits + '__soil'
         self.map_gunits(self.soil, gunits_soil)
         exp = 'if(isnull($gvalleys),$soil,if($gvalleys,$gsoil,null()))'
-        grass.mapcalc(self.gunitssoil+'='+exp, gvalleys=gunits_valleys,
+        grass.mapcalc(self.gunitssoil + '=' + exp, gvalleys=gunits_valleys,
                       soil=self.soil, gsoil=gunits_soil)
 
         # map landuse to gunits
-        gunits_landuse = self.gunits+'__landuse'
+        gunits_landuse = self.gunits + '__landuse'
         self.map_gunits(self.landuse, gunits_landuse)
         exp = 'if(!isnull($garea),int($glanduse),$landuse)'
-        grass.mapcalc(self.gunitslanduse+'='+exp, garea=self.gunitsglacierarea,
+        grass.mapcalc(self.gunitslanduse + '=' + exp, garea=self.gunitsglacierarea,
                       glanduse=gunits_landuse, landuse=self.landuse)
 
         # make hydrotopes and write str file
@@ -941,13 +974,14 @@ class Main:
              **options)
 
         # hydrotope addresses
-        self.hydrotope_address = self.hydrotopes+'__address'
+        self.hydrotope_address = self.hydrotopes + '__address'
         hydAddressRast(self.hydrotopes, self.subbasins, self.hydrotope_address)
 
         return
 
     def write_glacier_structure(self):
-        # write glacier str file (with 0 glacier height, 0 debris cover (cant have the same null0 name))
+        # write glacier str file (with 0 glacier height, 0 debris cover (cant
+        # have the same null0 name))
         self.mask(self.gunitsglacierarea)
         columns = [self.gunits,
                    self.subbasins,
@@ -969,9 +1003,11 @@ if __name__ == '__main__':
     st = dt.datetime.now()
     # get options and flags
     o, f = grass.parser()
-    fmt = lambda d: '\n'.join(['%s: %s' % (k, v) for k, v in d.items()])+'\n'
-    grass.message('GIS Environment:\n'+fmt(grass.gisenv()))
-    grass.message('Parameters:\n'+fmt(o)+fmt(f))
+
+    def fmt(d): return '\n'.join(['%s: %s' % (k, v)
+                                  for k, v in d.items()]) + '\n'
+    grass.message('GIS Environment:\n' + fmt(grass.gisenv()))
+    grass.message('Parameters:\n' + fmt(o) + fmt(f))
 
     # Parameters
     # glacierarea = 'glacierarea'  # existing raster
@@ -1009,5 +1045,5 @@ if __name__ == '__main__':
     main.process()
 
     # report time it took
-    delta = dt.datetime.now()-st
+    delta = dt.datetime.now() - st
     grass.message('Execution took %s hh:mm:ss' % delta)
