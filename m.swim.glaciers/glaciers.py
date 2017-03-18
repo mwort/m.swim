@@ -349,18 +349,24 @@
 #%end
 
 import os
-import numpy as np
-import grass.script as grass
-import grass.script.core as gcore
 import datetime as dt
+import numpy as np
+
 
 try:
     import pandas as pa
 except ImportError:
     raise 'Cant import pandas. Is it installed?'
 
-grun = grass.run_command
+import grass.script as grass
+import grass.script.core as gcore
 gm = grass.message
+
+
+def grun(*args, **kwargs):
+    if 'quiet' not in kwargs:
+        kwargs['quiet'] = True
+    return grass.run_command(*args, **kwargs)
 
 
 def routing(units, accumulation, outname, searchradius=1.5):
@@ -774,6 +780,13 @@ class Main:
         if hasattr(self, 'strfilepath'):
             gm('Wrting glacier structure file...')
             self.write_glacier_structure()
+
+        # clean
+        grun('r.mask', flags='r')
+        if not main.k:
+            grass.run_command('g.remove', type='raster,vector', pattern='*__*',
+                              flags='fb', quiet=True)
+
         return
 
     def mask(self, raster):
@@ -922,7 +935,7 @@ class Main:
         options = {i: self.__dict__[i]
                    for i in optionkeys
                    if hasattr(self, i)}
-        grun('m.swim.hydrotopes',  flags='c',
+        grun('m.swim.hydrotopes',  flags='ck',
              contourrast=self.contourrast,  # contains gunits
              landuse=self.gunitslanduse, soil=self.gunitssoil,
              **options)
