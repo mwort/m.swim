@@ -1,0 +1,34 @@
+# allow overwriting
+export GRASS_OVERWRITE=1
+
+hydrotopemodule=../m.swim.hydrotopes/m.swim.hydrotopes.py
+module=../m.swim.glaciers/glaciers.py
+
+# depending on:
+# ./test_subbasins.grass
+g.findfile element=cell file=subbasins > /dev/null
+if [ $? -eq 1 ] ; then
+	./test_subbasins.grass
+fi
+
+# make project dir
+mkdir -p project/input
+
+g.mapset -c glaciers
+
+# without glacier module
+r.mapcalc exp='glaciers=if(elevation>800,elevation*1000,null())'
+$hydrotopemodule subbasins=subbasins@swim landuse=landuse@PERMANENT soil=soil@PERMANENT \
+                     -c contours=200 elevation=elevation@PERMANENT \
+                     glaciers=glaciers \
+                     strfilepath=project/input/blank.str hydrotopes=hydrotopes
+
+
+# with glacier module
+r.mapcalc exp='glacierarea=if(elevation>800,1,null())'
+
+$module subbasins=subbasins@swim accumulation=@swim \
+        landuse=landuse@PERMANENT soil=soil@PERMANENT \
+        elevation=elevation@PERMANENT \
+        glacierarea=glacierarea \
+        strfilepath=project/input/blank_glaciers.str

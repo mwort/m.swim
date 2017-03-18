@@ -1,10 +1,362 @@
+#!/usr/bin/env python
+#
+############################################################################
+#
+# MODULE:      m.swim.glaciers v1.0
+# AUTHOR(S):   Michel Wortmann, wortmann@pik-potsdam.de
+# PURPOSE:     Preprocessing suit for the Soil and Water Integrated Model
+#              Glacier dynamics (SWIM-G)
+# COPYRIGHT:   (C) 2012-2017 by Wortmann/PIK
+#
+#              This program is free software under the GNU General Public
+#              License (>=v2). Read the file COPYING that comes with GRASS
+#              for details.
+#
+#############################################################################
+
+#%Module
+#% description: preprocessor for the Soil and Water Integrated Model - Glacier dynamics (SWIM-G)
+#%End
+#%Option
+#% guisection: Required
+#% key: elevation
+#% type: string
+#% required: yes
+#% multiple: no
+#% key_desc: name
+#% description: Elevation raster
+#% gisprompt: old,cell,raster
+#%end
+#%Option
+#% guisection: Required
+#% key: accumulation
+#% type: string
+#% required: yes
+#% multiple: no
+#% key_desc: name
+#% description: Accumulation raster
+#% gisprompt: old,cell,raster
+#%end
+#%Option
+#% guisection: Required
+#% key: glacierarea
+#% type: string
+#% required: yes
+#% multiple: no
+#% key_desc: name
+#% description: Glacier modelling domain raster
+#% gisprompt: old,cell,raster
+#%end
+#%Option
+#% guisection: Required
+#% key: subbasins
+#% type: string
+#% required: yes
+#% multiple: no
+#% key_desc: name
+#% description: Subbasin raster map
+#% gisprompt: old,cell,raster
+#%end
+#%Option
+#% guisection: Required
+#% key: landuse
+#% type: string
+#% required: yes
+#% multiple: no
+#% key_desc: name
+#% description: Land use raster map in SWIM land use classification
+#% gisprompt: old,cell,raster
+#%end
+#%Option
+#% guisection: Required
+#% key: soil
+#% type: string
+#% required: yes
+#% multiple: no
+#% key_desc: name
+#% description: Soil raster map classified to SWIM soil files
+#% gisprompt: old,cell,raster
+#%end
+#%Option
+#% guisection: Glacier units
+#% key: minarea
+#% type: double
+#% answer: 100000
+#% multiple: no
+#% key_desc: sq. m
+#% description: Minimum unit area
+#%end
+#%Option
+#% guisection: Glacier units
+#% key: valleythreshold
+#% type: double
+#% answer: 19
+#% multiple: no
+#% key_desc: dg
+#% description: Valley slope threshold
+#%end
+#%Option
+#% guisection: Glacier units
+#% key: valleysmoothing
+#% type: double
+#% answer: 200
+#% multiple: no
+#% key_desc: m
+#% description: Valley smoothing radius
+#%end
+#%Option
+#% guisection: Glacier units
+#% key: contoursvalleys
+#% type: double
+#% answer: 30
+#% multiple: no
+#% key_desc: m
+#% description: Elevation contour intervals in valleys
+#%end
+#%Option
+#% guisection: Glacier units
+#% key: contoursslopes
+#% type: double
+#% answer: 200
+#% multiple: no
+#% key_desc: m
+#% description: Elevation contour intervals on slopes
+#%end
+#%Option
+#% guisection: Glacier units
+#% key: naspectclasses
+#% type: integer
+#% answer: 4
+#% multiple: no
+#% key_desc: n classes
+#% description: Number of aspect classes
+#%end
+#%Option
+#% guisection: Glacier units
+#% key: hemisphere
+#% type: string
+#% answer: N
+#% multiple: no
+#% key_desc: N|S
+#% description: Summer/winter differentiation
+#%end
+#%Flag
+#% guisection: Output
+#% key: d
+#% label: Skip recreating slope_dg, aspect and sunhours (must all exist)
+#%end
+#%Option
+#% guisection: Output
+#% key: gunits
+#% type: string
+#% required: yes
+#% multiple: no
+#% key_desc: name
+#% answer: gunits
+#% gisprompt: new,cell,raster
+#% description: Name of glacier units raster
+#%end
+#%Option
+#% guisection: Output
+#% key: downstreamgunits
+#% type: string
+#% required: yes
+#% multiple: no
+#% key_desc: name
+#% answer: downstreamgunits
+#% gisprompt: new,cell,raster
+#% description: Name of next downstream glacier unit ID raster
+#%end
+#%Option
+#% guisection: Output
+#% key: slope_dg
+#% type: string
+#% required: yes
+#% multiple: no
+#% key_desc: name
+#% answer: slope_dg
+#% description: Name of slope raster
+#%end
+#%Option
+#% guisection: Output
+#% key: aspect
+#% type: string
+#% required: yes
+#% multiple: no
+#% key_desc: name
+#% answer: aspect
+#% description: Name of aspect raster
+#%end
+#%Option
+#% guisection: Output
+#% key: gunitsglacierarea
+#% type: string
+#% required: yes
+#% multiple: no
+#% key_desc: name
+#% answer: gunitsglacierarea
+#% description: Cleaned glacier area raster fitting to gunits
+#%end
+#%Option
+#% guisection: Output
+#% key: sunhoursprefix
+#% type: string
+#% required: yes
+#% multiple: no
+#% key_desc: name
+#% answer: sun_hr
+#% description: Prefix for sun hours rasters *_summer and *_winter
+#%end
+#%Option
+#% guisection: Output
+#% key: valleys
+#% type: string
+#% required: yes
+#% multiple: no
+#% key_desc: name
+#% answer: valley
+#% gisprompt: new,cell,raster
+#% description: Name of valleys raster
+#%end
+#%Option
+#% guisection: Output
+#% key: glaciercontours
+#% type: string
+#% required: yes
+#% multiple: no
+#% key_desc: name
+#% answer: glaciercontours
+#% gisprompt: new,cell,raster
+#% description: Name of glacier vallley and slope classed contours raster
+#%end
+#%Option
+#% guisection: Output
+#% key: slopeaspect
+#% type: string
+#% required: yes
+#% multiple: no
+#% key_desc: name
+#% answer: slopeaspect
+#% gisprompt: new,cell,raster
+#% description: Name of slope aspect raster
+#%end
+#%Option
+#% guisection: Output
+#% key: gunitssoils
+#% type: string
+#% required: yes
+#% multiple: no
+#% key_desc: name
+#% answer: gunitssoils
+#% gisprompt: new,cell,raster
+#% description: Name of soils raster mapped to glacier units
+#%end
+#%Option
+#% guisection: Output
+#% key: gunitslanduse
+#% type: string
+#% required: yes
+#% multiple: no
+#% key_desc: name
+#% answer: gunitslanduse
+#% gisprompt: new,cell,raster
+#% description: Name of landuse raster mapped to glacier units
+#%end
+
+#%Option
+#% guisection: Hydrotopes
+#% key: hydrotopes
+#% type: string
+#% required: yes
+#% multiple: no
+#% key_desc: name
+#% answer: hydrotopes
+#% gisprompt: new,cell,raster
+#% description: Name of hydrotope raster to be created
+#%end
+#%Option
+#% guisection: Hydrotopes
+#% key: contours
+#% type: integer
+#% required: no
+#% multiple: no
+#% key_desc: int
+#% description: Elevation contour intervals outside of glacier area
+#%end
+#%Option
+#% guisection: Hydrotopes
+#% key: contourrast
+#% type: string
+#% required: no
+#% multiple: no
+#% key_desc: string
+#% answer: contours
+#% description: Elevation contours to be created with glacier units and contours outside of glacier area
+#%end
+#%Option
+#% guisection: Hydrotopes
+#% key: management
+#% type: string
+#% required: no
+#% multiple: no
+#% key_desc: name
+#% description: Management raster name (if not given, column is filled with default)
+#% gisprompt: old,cell,raster
+#%end
+#%Option
+#% guisection: Hydrotopes
+#% key: wetland
+#% type: string
+#% required: no
+#% multiple: no
+#% key_desc: name
+#% description: Wetlands raster name (if not given, column is filled with default)
+#% gisprompt: old,cell,raster
+#%end
+
+#%Option
+#% guisection: Optional
+#% key: strfilepath
+#% type: string
+#% multiple: no
+#% key_desc: path
+#% description: Path where structure file will be written if given, glacier input files will be created in the same directory as glaciers.str.
+#% gisprompt: new,file,file
+#%end
+#%Flag
+#% guisection: Optional
+#% key: k
+#% label: Keep intermediat files (include __ in names)
+#%end
+#%Option
+#% guisection: Optional
+#% key: initialdebris
+#% type: string
+#% multiple: no
+#% key_desc: name
+#% gisprompt: new,cell,raster
+#% description: Initial debris concentration, if not given set to 0
+#%end
+#%Option
+#% guisection: Optional
+#% key: routingratio
+#% type: string
+#% multiple: no
+#% key_desc: name
+#% gisprompt: new,cell,raster
+#% description: Create raster with number of cells upstream/downstream raster
+#%end
+
 import os
-import sys
 import numpy as np
 import grass.script as grass
 import grass.script.core as gcore
-import mygrass as mg
 import datetime as dt
+
+try:
+    import pandas as pa
+except ImportError:
+    raise 'Cant import pandas. Is it installed?'
 
 grun = grass.run_command
 gm = grass.message
@@ -92,11 +444,41 @@ def cleanRast(input,output,areathresh,fill=True,lenthresh=None,quiet=False):
 #         use='attr', attrcolumn='value',overwrite=True,quiet=quiet)
     return
 
+def zonalStats(rast,zones,**runivarargs):
+    '''Copied from mwpy.grass !!!
+    Return statistics of the raster for the given zones as a pa.Dataframe.
+    '''
+    # make flags
+    if 'flags' in runivarargs: runivarargs['flags'] += 't'
+    else: runivarargs['flags']='t'
+    # call r.univar
+    lines=grass.read_command('r.univar', map=rast, zones=zones,**runivarargs).split('\n')
+    # convert to str array
+    stats=np.array([tuple(s.split('|')) for s in lines[1:-1]],dtype=str)
+    colnames = lines[0].split('|')
+    # parse cols as either int,float or str
+    cols     = []
+    for c in stats.T:
+        try: cols += [map(int,c)]
+        except:
+            try: cols += [map(float,c)]
+            except:
+                cols += [c]
+    # make dataframe and set index to zone
+    df = pa.DataFrame(zip(*cols), columns=colnames)
+    df.set_index('zone',inplace=True)
+    # convert cells to area
+    reg = grass.region()
+    df['non_null_area'] = df['non_null_cells']*reg['ewres']*reg['nsres']
+    df['null_area'] = df['null_cells']*reg['ewres']*reg['nsres']
+    return df
+
+
 def cleanGunits(gunits,subbasins,outname,smallarea):
 
     # get area and subbasins
     print 'Reading gunits for all subbasins...'
-    gu = mg.zonalStats(subbasins,gunits)
+    gu = zonalStats(subbasins, gunits)
     # largest gunit
     maxu = gu['non_null_cells'].max()
 
@@ -147,7 +529,8 @@ def cleanGunits(gunits,subbasins,outname,smallarea):
     return
 
 def checkRouting(nextID,gunits,outname):
-    import pandas as pa
+    import mygrass as mg
+
     tbl=grass.read_command('r.univar',map=nextID,zones=gunits,flags='t').split('\n')
     cols = tbl[0].split('|')
     tbl=pa.DataFrame([tuple(l.split('|')) for l in tbl[1:-1]],columns=cols)
@@ -266,7 +649,11 @@ def writeStr(outname, unitmap, subbasins, hydAddress, nextID, *othercols):
 
     # get other columns
     ocols = ()
-    for c in othercols: ocols += (meanUnit(unitmap, c, float)[c.split('@')[0]],)
+    for c in othercols:
+        if type(c) in [int, float]:
+            ocols += (np.ones((len(subb),))*c,)
+        else:
+            ocols += (meanUnit(unitmap, c, float)[c.split('@')[0]],)
 
     # get all columns
     data = zip(subb['id'],subb[subbasins],hydAdd[hydAddress],
@@ -332,133 +719,276 @@ def loadGWE(file, prefix, reclassrast):
     return
 
 
+class Main:
+
+    def __init__(self, **optionsandflags):
+        '''Process all arguments and prepare processing'''
+        # add all options and flags as attributes (only nonempty ones)
+        self.options = {}
+        for o in optionsandflags:
+            if optionsandflags[o] != '':
+                self.options[o] = optionsandflags[o]
+        self.__dict__.update(self.options)
+
+        # input checking
+        assert self.hemisphere in ['N', 'S'], 'hemisphere must be N or S'
+
+        if hasattr(self, 'initialdebris'):
+            self.initialdebris = 0
+
+        convertnumber = ['minarea', 'naspectclasses', 'valleythreshold',
+                         'valleysmoothing', 'contoursvalleys',
+                         'contoursslopes']
+        for n in convernumber:
+            v = self.__dict__[n]
+            try:
+                self.__dict__[n] = int(v)
+            except ValueError:
+                try:
+                    self.__dict__[n] = float(v)
+                except ValueError:
+                    raise 'Cant convert %s to a number. %s' % (n, v)
+        return
+
+    def process(self):
+        gm('Cleaning and zooming to glacier area...')
+        self.create_garea()
+
+        if self.d:
+            gm('Deriving statistics from DEM...')
+            self.process_dem()
+
+        gm('Creating glacier units...')
+        self.create_units()
+
+        if hasattr(self, 'routingratio'):
+            gm('Calculating routing ratio...')
+            self.check_routing()
+
+        gm('Creating hydrotopes...')
+        self.create_hydrotopes()
+
+        if hasattr(self, 'strfilepath'):
+            gm('Wrting glacier structure file...')
+            self.write_glacier_structure()
+        return
+
+    def mask(self, raster):
+        # zoom to area and mask
+        grun('g.region', raster=raster)
+        grun('r.mask', raster=raster, overwrite=True)
+        return
+
+    def create_garea(self):
+        # mask entire catchment
+        self.mask(self.subbasins)
+        # clean small bits from garea
+        garea_clean = self.gunitsglacierarea+'__clean'
+        cleanRast(self.glacierarea, garea_clean, self.minarea, fill=False)
+        grun('g.region', zoom=garea_clean)
+        self.mask(garea_clean)
+        self.glacierarea_clean = garea_clean+'__zoomed'
+        grass.mapcalc(self.glacierarea_clean+'='+garea_clean)
+        return
+
+    def process_dem(self):
+        """Create some DEM derived maps."""
+        # make slope and aspect raster
+        grun('r.slope.aspect', elevation=self.elevation, precision=CELL,
+             slope=self.slope_dg, aspect=self.aspect)
+
+        if self.hemisphere == 'N':
+            doysummer, doywinter = 172, 355
+        else:
+            doysummer, doywinter = 355, 172
+
+        self.sunhours_summer = self.sunhoursprefix + '_summer'
+        self.sunhours_summer = self.sunhoursprefix + '_winter'
+
+        # calculate sun hours on June 21 and Dec 21
+        grun('r.sun', elevation=self.elevation, day=doysummer,
+             insol_time=self.sunhours_summer)
+        grun('r.sun', elevation=self.elevation, day=doywinter,
+             insol_time=self.doywinter)
+        return
+
+    def create_units(self):
+        """
+        Main processing function to create the glacier units. Will be run
+        every time.
+        """
+        # distinguish valleys and slopes (with smoothing)
+        valleys_smooth = self.valleys+'__smooth'
+        valley(self.slope_dg, valleys_smooth,
+               self.valleythreshold, self.valleysmoothing)
+        # clean
+        cleanRast(valleys_smooth, self.valleys, self.minarea)
+
+        # make contours (also writes slope and valleys)
+        contours_classed = self.glaciercontours + '__classed'
+        classedContours(self.elevation, self.valleys, contours_classed,
+                        self.valinter, self.slopeinter)
+        # clean
+        cleanRast(contours_classed, self.glaciercontours, self.minarea)
+
+        # make aspect classes (only on slopes)
+        aspect_classed = self.slopeaspect+'__classed'
+        aspect(self.elevation, aspect_classed, self.naspectclasses)
+        # only take those not in valleys and rest null
+        aspect_slopes = aspect_classed+'__slopes'
+        grass.mapcalc(aspect_slopes+'=int(if(!%s,%s,0))' % (self.valleys,
+                                                            aspect_classed))
+        # filter out small slopes and add them to neighbouring slopes
+        cleanRast(aspect_slopes, self.slopeaspect, self.minarea)
+
+        # make raw glacier units
+        gunits_maps = [self.subbasins, self.glaciercontours, self.slopeaspect]
+        gunits_raw = self.gunits+'__raw'
+        grun('r.cross', input=','.join(gunits_maps), output=gunits_raw)
+        # spatially explicit
+        gunits_clumped = self.gunis+'__clumped'
+        grun('r.clump', input=gunits_raw, output=gunits_clumped)
+
+        # clean gunits and make spatially explicit
+        # then clean each subbasin individually to fill each subbasin
+        gunits_clean = self.gunis+'__clean'
+        cleanGunits(gunits_clumped, self.subbasins, gunits_clean, self.minarea)
+
+        # remove small overspilled units at glacierarea fringes and reduce
+        # glacierarea accordingingly
+        gunits_cleaner = self.gunis+'__cleaner'
+        cleanRast(gunits_clean, gunits_cleaner, self.minarea, fill=False)
+        exp = 'if(!isnull(%s),1,null())' % self.glacierarea_clean
+        grass.mapcalc(self.gunitsglacierarea+'='+exp)
+        grun('r.mask', raster=self.gunitsglacierarea, overwrite=True)
+        # clump again to renumber (enhancing performance, would also work w/o)
+        grun('r.clump', flags='d', input=gunits_cleaner, output=self.gunits)
+
+        # routing
+        routing(self.gunits, self.accumulation, self.downstreamgunits)
+
+        return
+
+    def check_routing(self):
+        # double check
+        checkRouting(self.downstreamgunits, self.gunits, self.routingratio)
+        return
+
+    def create_hydrotopes(self):
+        """
+        Create hydrotopes that include the glacier units and get addresses.
+        """
+        # make glacier units part of hydrotope map and include contours outside of glacier area
+        self.mask(self.subbasins)
+
+        # create contours
+        exp = 'if(isnull($gunits),int($elevation/$interval),$gunits)'
+        grass.mapcalc(self.contourrast+'='+exp, gunits=self.gunits,
+                      elevation=self.elevation, interval=self.contours)
+
+        # Prepare hydrotope maps
+        # get valley/slope glacier units
+        gunits_valleys = self.gunits+'__valleys'
+        grun('r.stats.zonal', base=self.gunits, cover=self.valleys,
+             method='mode', output=gunits_valleys)
+
+        # map soils to gunits with additional slope soil unit
+        gunits_soils = self.gunits+'__soils'
+        grun('r.stats.zonal', base=self.gunits, cover=self.soils,
+             method='mode', output=gunits_soils)
+        exp = 'if(isnull($gvalleys),$soils,if($gvalleys,$gsoils,null()))'
+        grass.mapcalc(self.gunitssoils+'='+exp, gvalleys=gunits_valleys,
+                      soils=self.soils, gsoils=gunits_soils)
+
+        # map landuse to gunits
+        gunits_landuse = self.gunits+'__landuse'
+        grun('r.stats.zonal', base=self.gunits, cover=self.landuse,
+             method='mode', output=gunits_landuse)
+        exp = 'if(!isnull($garea),int($glanduse),$landuse)'
+        grass.mapcalc(self.gunitslanduse+'='+exp, garea=self.gunitsglacierarea,
+                      glanduse=gunits_landuse, landuse=self.landuse)
+
+        # make hydrotopes and write str file
+        # all these are options of this module that are parsed on to
+        # m.swim.hydrotopes if given
+        optionkeys = ['subbasins', 'elevation', 'hydrotopes', 'strfilepath',
+                      'wetland', 'managment']
+        options = {i: self.__dict__[i]
+                   for i in optionkeys
+                   if hasattr(self, i)}
+        grun('m.swim.hydrotopes',  flags='c',
+             contourrast=self.contourrast,  # contains gunits
+             landuse=self.gunitslanduse, soil=self.gunitssoils,
+             **options)
+
+        # hydrotope addresses
+        self.hydrotope_address = self.hydrotopes+'__address'
+        hydAddressRast(self.hydrotopes, self.subbasins, self.hydrotope_address)
+
+        return
+
+    def write_glacier_structure(self):
+        # write glacier str file (with 0 glacier height, 0 debris cover (cant have the same null0 name))
+        self.mask_garea()
+        columns = [self.gunits,
+                   self.subbasins,
+                   self.hydrotope_address,
+                   self.downstreamgunits,
+                   0,  # initial glacier thickness must be 0
+                   self.slope_dg,
+                   self.sunhours_summer,
+                   self.sunhours_winter,
+                   self.initialdebris]
+        op = os.path
+        self.glacier_structure_file = op.join(op.dirname(self.strfilepath),
+                                              'glaciers.str')
+        writeStr(self.glacier_structure_file, *columns)
+        return
+
+
 if __name__ == '__main__':
     st = dt.datetime.now()
     # get options and flags
-    o, f = parser()
+    o, f = grass.parser()
     fmt = lambda d: '\n'.join(['%s: %s' % (k, v) for k, v in d.items()])+'\n'
     grass.message('GIS Environment:\n'+fmt(grass.gisenv()))
     grass.message('Parameters:\n'+fmt(o)+fmt(f))
 
-
     # Parameters
-    glacierarea = 'glacierarea'  # existing raster
-    minarea = 100000  # m2
-    # all hydrotope inputs are needed including elevation and contours
-    # could maybe be parsed through grass.script.core._parse_opts(lines)
+    # glacierarea = 'glacierarea'  # existing raster
+    # accumulation = 'accumulation'  # input accumulation map
+    # minarea = 100000  # m2
+    # valleythreshold = 19  # dg
+    # valleysmoothing = 200  # some sort of radius
+    # contoursvalleys = 30  # m
+    # contoursslopes = 200  # m (maybe make dependent on mean valley/slope slopes?)
+    # naspectclasses = 4  # number of aspect classes
+    # hemisphere = 'N'  # N | S for summer/winter
+    # initialdebris = 0  # optional raster
 
-    valleythreshold = 19  # dg
-    valleysmoothing = 200  # some sort of radius
-    countoursvalley = 30  # m
-    countoursslopes = 200  # m (maybe make dependent on mean valley/slope slopes?)
-    naspectclasses = 4  # number of aspect classes
-    hemisphere = 'N'  # N | S for summer/winter
-
-    ## Output
-    d = False  # skip recreating slope_dg, aspect and sunhours
-    gunits = 'gunits'  # glacier units raster
-    slope_dg = 'slope_dg'  # slope in degrees
-    aspect = 'aspect'  # aspect CELL precision
-    sunhoursprefix = 'sun_hr'  # prefix for r.sun Output
-    valleys = 'valleys'  # valley/slope raster
-    glaciercontours = 'glaciercontours'  # valley/slope classed contours
-    slopeaspect = 'slope_aspect'  # slope aspects in naspectclasses
-    routingratio = 'routingratio'  # optional: number of cells upstream/downstream
-    gunitssoils = 'gunitssoils'  # soils mapped onto glacier units
-    gunitslanduse = 'gunitslanduse'  # landuse mapped onto glacier units
-
-    ############################################################
-
-    # mask entire catchment
-    r.mask subbasins@subbasins
-
-    # clean small bits from garea
-    cleanRast glacierarea garea $minarea False
-
-    r.mask garea --o
-    # reduce region to garea
-
-    ### some DEM derived maps
-    # make slope and aspect raster
-    r.slope.aspect elevation=aster_iclean@DEM slope=slope_dg aspect=aspect precision=CELL
-    # calculate sun hours on June 21 and Dec 21
-    r.sun elevation=aster_iclean@DEM day=172 insol_time=sun_hr_doy172
-    r.sun elevation=aster_iclean@DEM day=355 insol_time=sun_hr_doy355
-
-    # distinguish valleys and slopes (with smoothing)
-    valley() slope_dg valleys_smooth 19 200
-    # clean
-    cleanRast valleys_smooth valleys $minarea
-
-    # make contours (also writes slope and valleys)
-    classedContours aster_iclean@DEM valleys contours_classed 30 200
-    # clean
-    cleanRast contours_classed contours_clean $minarea
-
-    # make aspect classes (only on slopes)
-    aspect aster_iclean@DEM aspect_classed 4
-    # only take those not in valleys and rest null
-    r.mapcalc exp='aspect_slopes=int(if(!valleys,aspect_classed,0))'
-    # filter out small slopes and add them to neighbouring slopes
-    cleanRast aspect_slopes aspect_clean $minarea
-
-    # make raw glacier units
-    r.cross input=subbasins@subbasins,contours_clean,aspect_clean out=gunits_raw
-    # spatially explicit
-    r.clump input=gunits_raw output=gunits_clumped
-
-    ### clean gunits and spatially explicit
-    # then clean each subbasin individually to fill each subbasin
-    cleanGunits gunits_clumped subbasins@subbasins gunits_clean $minarea
-
-    # remove small overspilled units at glacierarea fringes and reduce glacierarea accordingingly
-    r.mask garea
-    cleanRast gunits_clean gunits_cleaner $minarea 0
-    r.mapcalc exp='garea=if(!isnull(gunits_cleaner),1,null())' --o
-    r.mask garea --o
-    # clump again to renumber (enhancing performance, would also work without)
-    r.clump -d input=gunits_cleaner output=gunits
-
-    # routing
-    routing gunits accumulation@subbasins nextID
-    # double check
-    checkRouting nextID gunits routing_ratio
-
-    # make glacier units part of hydrotope map and include contours outside of glacier area
-    r.mask raster=subbasins@subbasins --o
-    r.mapcalc exp='gcontours=if(isnull(gunits),int(aster_iclean@DEM/200),gunits)'
-
-    # Prepare hydrotope maps
-    # get valley/slope glacier units
-    r.statistics base=gunits cover=valleys method=mode output=gunits_valleys
-    r.mapcalc exp='gunits_valleys=int(@gunits_valleys)' --o
-
-    # map soils to gunits with additional slope soil unit
-    r.statistics base=gunits@glaciers cover=HWSD@soil method=mode output=gunits_soils
-    r.mapcalc exp='gunits_soils=int(@gunits_soils)' --o
-    r.mapcalc exp='soils_HWSD=if(isnull(gunits_valleys@glaciers),HWSD@soil,if(gunits_valleys@glaciers,gunits_soils,null()))'
-
-    # map landuse to gunits
-    r.statistics base=gunits@glaciers cover=GLC_EUv2@landuse method=mode output=gunits_landuse
-    r.mapcalc exp='GLC_gunits=if(!isnull(garea@glaciers),int(@gunits_landuse),GLC_EUv2@landuse)'
-
-    # make hydrotopes and write str file
-    m.swim.hydrotopes subbasins=subbasins@subbasins landuse=landuse@landuse \
-                        soil=soils_SWIM@soil -c contourrast=gcontours elevation=aster_iclean@DEM \
-                        hydrotopes=hydrotopes strfilepath=proSWIM/Input/rhone.str
-
-    # hydrotope addresses
-    hydAddressRast hydrotopes@hydrotopes subbasins@subbasins hydAddress
-
-    # write glacier str file (with 0 glacier height, 0 debris cover (cant have the same null0 name))
-    r.mask --o garea
-    writeStr ~/wortmann/Alps/proSWIM/Input/glaciers.str gunits \
-                        subbasins@subbasins hydAddress nextID gla0 slope_dg \
-                        sun_hr_doy172 sun_hr_doy355 debris0
+    # ## Output
+    # d = False  # skip recreating slope_dg, aspect and sunhours (must all exist)
+    # gunits = 'gunits'  # glacier units raster
+    # downstreamgunits = 'downstreamgunits'  # raster with downstream gunit id
+    # slope_dg = 'slope_dg'  # slope in degrees
+    # aspect = 'aspect'  # aspect CELL precision
+    # sunhoursprefix = 'sun_hr'  # prefix for r.sun Output
+    # gunitsglacierarea = 'gunitsglacierarea'  # glacier area raster fitting to gunits
+    # valleys = 'valleys'  # valley/slope raster
+    # glaciercontours = 'glaciercontours'  # valley/slope classed contours
+    # slopeaspect = 'slopeaspect'  # slope aspects in naspectclasses
+    # routingratio = 'routingratio'  # optional: number of cells upstream/downstream
+    # gunitssoils = 'gunitssoils'  # soils mapped onto glacier units
+    # gunitslanduse = 'gunitslanduse'  # landuse mapped onto glacier units
 
     ############################################################
 
+    keywords = o
+    keywords.update(f)
+    main = Main(**keywords)
+
+    main.process()
 
     # report time it took
     delta = dt.datetime.now()-st
-    grass.message('Execution took %s hh:mm:ss' %delta)
+    grass.message('Execution took %s hh:mm:ss' % delta)
