@@ -27,7 +27,7 @@ $hydrotopemodule subbasins=subbasins@swim landuse=landuse@PERMANENT soil=soil@PE
 # with glacier module
 r.mapcalc exp='glacierarea=if(elevation>800,1,null())'
 
-$module subbasins=subbasins@swim accumulation=@swim \
+$module subbasins=subbasins@swim accumulation=accumulation@swim \
         landuse=landuse@PERMANENT soil=soil@PERMANENT \
         elevation=elevation@PERMANENT \
         glacierarea=glacierarea \
