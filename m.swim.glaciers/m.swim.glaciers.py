@@ -214,7 +214,7 @@
 #% required: yes
 #% multiple: no
 #% key_desc: name
-#% answer: valley
+#% answer: valleys
 #% gisprompt: new,cell,raster
 #% description: Name of valleys raster
 #%end
@@ -348,6 +348,7 @@
 #% description: Create raster with number of cells upstream/downstream raster
 #%end
 
+from __future__ import print_function
 import os
 import datetime as dt
 import numpy as np
@@ -410,37 +411,41 @@ def routing(units, accumulation, outname, searchradius=1.5):
 def valley(slope, output, thresh=15, filter=300):
     '''Make a clean valley=1 and slope/rockface=0 raster'''
     # make valley 1/0 raster
-    grass.mapcalc(exp='valleys__=%s<=%s' % (slope, thresh))
+    grass.mapcalc(exp=output+'__=%s<=%s' % (slope, thresh))
     # clean
-    print 'Cleaning...'
-    grun('r.resamp.filter', input='valleys__', output='valleys__smooth',
+    print('Cleaning...')
+    grun('r.resamp.filter', input=output+'__', output=output+'__smooth',
          filter='box', radius=filter)
-    grass.mapcalc(exp='%s=int(round(valleys__smooth))' % output)
+    grass.mapcalc(exp=output+'=int(round(%s__smooth))' % output)
 
     return output
 
 
-def cleanRast(input, output, areathresh, fill=True, lenthresh=None, quiet=False):
-
+def cleanRast(input, output, areathresh, fill=True, lenthresh=None,
+              quiet=True):
     # RASTER BASED ONLY
-    grun('r.clump', input=input, output=output + '__clumped', quiet=quiet)
+    grun('r.clump', input=input, output=output + '__clumped')
     grass.mapcalc('help__1=1')
-    grun('r.stats.zonal', base=output + '__clumped', cover='help__1', method='sum',
-         output='n__cells', quiet=quiet)
+    grun('r.stats.zonal', base=output + '__clumped', cover='help__1',
+         method='sum', output='n__cells')
     # output by thresholding cells
     mincells = int(areathresh / float(grass.region()['nsres'])**2)
-    print 'Removing all units with less than %s cells' % mincells
+    if not quiet:
+        print('Removing all units with less than %s cells' % mincells)
     interout = output + '__filtered'
     grass.mapcalc(exp='%s=if(n__cells>=%s,%s,null())' %
                   (interout, mincells, input))
 
     if fill:
         # close/fill gaps
-        grun('r.grow', input=interout, output=output + '__float', radius=mincells,
-             quiet=quiet)
+        grun('r.grow', input=interout, output=output + '__float',
+             radius=mincells)
         interout = output + '__float'
     # make int
     grass.mapcalc(output + '=int(%s)' % interout)
+
+    tmprast = ['help__1', output + '__clumped', 'n__cells', interout]
+    grun('g.remove', type='rast', name=tmprast, flags='f')
 
 #    # VECTOR BASED, v.clean
 #    grun('r.to.vect', input=input, type='area', output=input+'__',#flags='t',
@@ -494,47 +499,45 @@ def zonalStats(rast, zones, **runivarargs):
 def cleanGunits(gunits, subbasins, outname, smallarea):
 
     # get area and subbasins
-    print 'Reading gunits for all subbasins...'
+    gm('Reading gunits for all subbasins...')
     gu = zonalStats(subbasins, gunits)
     # largest gunit
     maxu = gu['non_null_cells'].max()
 
-    print 'Largest unit: %s cells' % maxu
+    gm('Largest unit: %s cells' % maxu)
 
     # subbasins
     sbs = np.unique(gu['mean'])
-    print len(sbs), 'subbasins found'
+    nsb = len(sbs)
     cunits = []
     maxn = 0
-    print 'Looping over each subbasin...'
-    for s in sbs:
-        print 'Setting region and mask...'
-        grun('v.extract', input=subbasins, cats=s,
-             output='sb__region', quiet=True)
-        grun('g.region', vect='sb__region')
+    grun('r.mask', flags='r')
+    gm('Looping over %s subbasin...' % nsb)
+    for i, s in enumerate(sbs):
         grun('r.mask', raster=subbasins, maskcats=s)
+        grun('g.region', zoom='MASK')
 
         outn = 'clean__gu__%04i' % s
 
-        cleanRast(gunits, 'first__iteration', smallarea, quiet=True)
+        cleanRast(gunits, outn+'__first__iteration', smallarea)
         # second iteration
-        cleanRast('first__iteration', 'second__iteration',
-                  smallarea, quiet=True)
-
+        cleanRast(outn+'__first__iteration', outn+'__second__iteration',
+                  smallarea)
         # add maxid to avoid neighbouring merge when patching
-        grass.mapcalc('{0}=second__iteration+{1}'.format(outn, maxn))
+        grass.mapcalc('{0}={0}__second__iteration+{1}'.format(outn, maxn))
         # save for patching
         cunits += [outn]
-        maxn = max(map(int, grass.read_command(
-            'r.stats', input=outn, flags='n').split())) + 1
+        maxn = int(grass.raster_info(outn)['max']) + 1
+        # tidy
         grun('r.mask', flags='r')
-
-        grun('g.region', flags='d')
-        print 'Subbasin %s done!' % s
+        grun('g.region', raster=subbasins)
+        grun('g.remove', type='raster', flags='f',
+             name=[outn+'__first__iteration', outn+'__second__iteration'])
+        print('%s/%s' % (i+1, nsb))
 
     # patch together
     if len(cunits) < 500:
-        grun('r.patch', input=','.join(cunits), output=outname)
+        grun('r.patch', input=','.join(cunits), output=outname+'__patched')
     else:
         # patch in batches due to open files limit of r.patch
         patched = []
@@ -544,9 +547,12 @@ def cleanGunits(gunits, subbasins, outname, smallarea):
             grun('r.patch', input=','.join(
                 cunits[batches[i]:batches[i + 1]]), output=n)
             patched += [n]
-        grun('r.patch', input=','.join(patched), output=outname)
-    grass.mapcalc(exp='%s=int(%s)' % (outname, outname))
+        grun('r.patch', input=','.join(patched), output=outname+'__patched')
+    grass.mapcalc(exp='%s=int(%s)' % (outname, outname+'__patched'))
 
+    # tidy
+    grun('g.remove', type='raster', pattern='clean__gu__*', flags='f')
+    grun('g.remove', type='raster', name=outname+'__patched', flags='f')
     return
 
 
@@ -564,7 +570,7 @@ def checkRouting(nextID, gunits, outname):
     receivingcells = tbl.ix[incells.index]['non_null_cells']
     # ratio
     routratio = incells / receivingcells
-    print routratio.describe()
+    print(routratio.describe())
     mg.areclass(gunits, np.array(zip(routratio.index, routratio)), outname)
 
     return 0
@@ -664,7 +670,7 @@ def classedContours(elevation, valleys, output, valinter=40, slopeinter=400):
     exp = output + '=if(%s,%s,%s)' % (val, vcon, scon)
 #    # add all rules together
 #    exp = output+'='+('+'.join(exp))
-    print(exp)
+    gm(exp)
     grass.mapcalc(exp=exp, overwrite=True)
 
     return output
@@ -704,7 +710,7 @@ def writeStr(outname, unitmap, subbasins, hydAddress, nextID, *othercols):
             tuple(columnnames))
     np.savetxt(f, data, fmt=4 * '%10i ' + len(othercols) * '%16.6f ')
     f.close()
-    print 'Wrote %s' % outname
+    gm('Wrote %s' % outname)
     return data
 
 
@@ -720,7 +726,7 @@ def meanUnit(units, rast, outtype=str):
                        array['non_null_cells'], array['null_cells']),
                    dtype=[('id', int), (rast.split('@')[0], outtype),
                           ('non_null_cells', int), ('null_cells', int)])
-    print 'Got %r x %s' % (out.dtype.names, out.shape[0])
+    gm('Got %r x %s' % (out.dtype.names, out.shape[0]))
     return out
 
 
@@ -744,7 +750,7 @@ def loadGWE(file, prefix, reclassrast):
     for l1, l2 in np.unique(gla.index.values):
         outname = prefix + '_%04i-%02i' % (l1, l2)
         grass.message('Processing %s ' % (outname))
-        print gla.ix[l1, l2].as_matrix().shape
+        print(gla.ix[l1, l2].as_matrix().shape)
         mg.areclass(reclassrast, gla.ix[l1, l2].as_matrix(), outname)
         # nice colour map
         grass.write_command('r.colors', map=outname, rules='-', stdin=colormap)
@@ -789,10 +795,15 @@ class Main:
                     self.__dict__[n] = float(v)
                 except ValueError:
                     raise 'Cant convert %s to a number. %s' % (n, v)
+        # output maps
+        self.sunhours_summer = self.sunhoursprefix + '_summer'
+        self.sunhours_winter = self.sunhoursprefix + '_winter'
         return
 
     def process(self):
         gm('Cleaning and zooming to glacier area...')
+        gm('''Resolution of subbasins raster is used for all output with
+           minimal non-null extent of glacierarea raster.''')
         self.create_garea()
 
         if not self.d:
@@ -843,21 +854,15 @@ class Main:
         """Create some DEM derived maps."""
         # make slope and aspect raster
         grun('r.slope.aspect', elevation=self.elevation, precision='CELL',
-             slope=self.slope_dg, aspect=self.aspect)
+             slope=self.slope_dg, aspect=self.aspect, quiet=False)
 
-        if self.hemisphere == 'N':
-            doysummer, doywinter = 172, 355
-        else:
-            doysummer, doywinter = 355, 172
-
-        self.sunhours_summer = self.sunhoursprefix + '_summer'
-        self.sunhours_winter = self.sunhoursprefix + '_winter'
+        doysum, doywin = (172, 355) if self.hemisphere == 'N' else (355, 172)
 
         # calculate sun hours on June 21 and Dec 21
-        grun('r.sun', elevation=self.elevation, day=doysummer,
-             insol_time=self.sunhours_summer)
-        grun('r.sun', elevation=self.elevation, day=doywinter,
-             insol_time=self.sunhours_winter)
+        grun('r.sun', elevation=self.elevation, day=doysum,
+             insol_time=self.sunhours_summer, quiet=False)
+        grun('r.sun', elevation=self.elevation, day=doywin,
+             insol_time=self.sunhours_winter, quiet=False)
         return
 
     def create_units(self):
@@ -901,12 +906,14 @@ class Main:
         # then clean each subbasin individually to fill each subbasin
         gunits_clean = self.gunits + '__clean'
         cleanGunits(gunits_clumped, self.subbasins, gunits_clean, self.minarea)
-
+        # mask garea again (cleanGunits loses mask)
+        self.mask(self.glacierarea_clean)
         # remove small overspilled units at glacierarea fringes and reduce
         # glacierarea accordingingly
         gunits_cleaner = self.gunits + '__cleaner'
-        cleanRast(gunits_clean, gunits_cleaner, self.minarea, fill=False)
-        exp = 'if(!isnull(%s),1,null())' % self.glacierarea_clean
+        cleanRast(gunits_clean, gunits_cleaner, self.minarea,
+                  quiet=False, fill=False)
+        exp = 'if(!isnull(%s),1,null())' % gunits_cleaner
         grass.mapcalc(self.gunitsglacierarea + '=' + exp)
         grun('r.mask', raster=self.gunitsglacierarea, overwrite=True)
         # clump again to renumber (enhancing performance, would also work w/o)
@@ -949,15 +956,19 @@ class Main:
         # map soils to gunits with additional slope soil unit
         gunits_soil = self.gunits + '__soil'
         self.map_gunits(self.soil, gunits_soil)
-        exp = 'if(isnull($gvalleys),$soil,if($gvalleys,$gsoil,null()))'
+        # get next higher soil for slopes
+        ssid = int(grass.raster_info(self.soil)['max'])+1
+        gm('Assigning soilID=%s to slopes inside glacier area.' % ssid)
+        exp = 'if(isnull($gvalleys),$soil,if($gvalleys,$gsoil,$slopesoil))'
         grass.mapcalc(self.gunitssoil + '=' + exp, gvalleys=gunits_valleys,
-                      soil=self.soil, gsoil=gunits_soil)
+                      soil=self.soil, gsoil=gunits_soil, slopesoil=ssid)
 
         # map landuse to gunits
         gunits_landuse = self.gunits + '__landuse'
         self.map_gunits(self.landuse, gunits_landuse)
         exp = 'if(!isnull($garea),int($glanduse),$landuse)'
-        grass.mapcalc(self.gunitslanduse + '=' + exp, garea=self.gunitsglacierarea,
+        grass.mapcalc(self.gunitslanduse + '=' + exp,
+                      garea=self.gunitsglacierarea,
                       glanduse=gunits_landuse, landuse=self.landuse)
 
         # make hydrotopes and write str file
@@ -968,7 +979,8 @@ class Main:
         options = {i: self.__dict__[i]
                    for i in optionkeys
                    if hasattr(self, i)}
-        grun('m.swim.hydrotopes',  flags='ck',
+        gm('Running m.swim.hydrotopes...')
+        grun('m.swim.hydrotopes',  flags='ck', quiet=False,
              contourrast=self.contourrast,  # contains gunits
              landuse=self.gunitslanduse, soil=self.gunitssoil,
              **options)
