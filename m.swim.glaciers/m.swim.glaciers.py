@@ -665,8 +665,8 @@ def hydAddressRast(hydrotopes, subbasins, output):
     np.savetxt(tmpf, cumfreq, delimiter='=', fmt='%i')
     grass.run_command('r.reclass', input=subbasins,
                       output='subbasins__cumfreq', rules=tmpf)
-    # subtract from hydrotopes
-    grass.mapcalc('%s=%s - subbasins__cumfreq' % (output, hydrotopes))
+    # subtract from hydrotopes, +1 because hydrotope raster values start at 0
+    grass.mapcalc('%s=%s - subbasins__cumfreq + 1' % (output, hydrotopes))
     # remove help stuff
     grass.run_command('g.remove', type='rast',
                       name='subbasins__cumfreq', flags='f')
@@ -1076,8 +1076,11 @@ class Main:
     def glacier_structure(self):
         """Prepare all input and write the glacier.str file."""
 
+        # hydAddress needs to be for all subbasins
+        self.mask(self.subbasins)
         hydAddressRast(self.hydrotopes, self.subbasins, self.hydrotope_address)
 
+        self.mask(self.gunitsglacierarea)
         self.create_avalanche()
 
         # check if all input exists
@@ -1085,8 +1088,6 @@ class Main:
         for m in maps:
             if not self._raster_exists(m):
                 grass.fatal('%s does not exist to write structure file.' % m)
-
-        self.mask(self.gunitsglacierarea)
 
         writeStr(self.glacier_structure_file, *self.strcolumns)
         return
