@@ -213,16 +213,6 @@
 #%end
 #%Option
 #% guisection: Output
-#% key: avalanchefrac
-#% type: string
-#% required: yes
-#% multiple: no
-#% key_desc: raster
-#% answer: avalanchefrac
-#% description: Name of raster with avalanche area fraction.
-#%end
-#%Option
-#% guisection: Output
 #% key: gunitsglacierarea
 #% type: string
 #% required: yes
@@ -840,13 +830,14 @@ class Main:
         self.hydrotope_address = self.hydrotopes + '__address'
         self.sunhours_summer = self.sunhoursprefix + '_summer'
         self.sunhours_winter = self.sunhoursprefix + '_winter'
+        self.avalanchearea_frac = self.avalanchearea + '__frac'
         self.strcolumns = [self.gunits,
                            self.subbasins,
                            self.hydrotope_address,
                            self.downstreamgunits,
                            0,  # initial glacier thickness must be 0
                            self.slope_dg,
-                           self.avalanchefrac,
+                           self.avalanchearea_frac,
                            self.sunhours_summer,
                            self.sunhours_winter,
                            self.initialdebris,
@@ -1082,7 +1073,7 @@ class Main:
         grun('r.stats.zonal', base=self.gunits, cover='help__1', method='sum',
              output='n__cells', overwrite=True)
         grass.mapcalc(exp="$output=n__avalanche__cells/n__cells",
-                      output=self.avalanchefrac)
+                      output=self.avalanchearea_frac)
         return
 
     def glacier_structure(self):
