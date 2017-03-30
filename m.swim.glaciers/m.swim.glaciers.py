@@ -360,6 +360,11 @@
 #%end
 #%Flag
 #% guisection: Optional
+#% key: a
+#% label: Add new soil ID for slope soils (recommended)
+#%end
+#%Flag
+#% guisection: Optional
 #% key: k
 #% label: Keep intermediat files (include __ in names)
 #%end
@@ -1013,19 +1018,26 @@ class Main:
                       elevation=self.elevation, interval=self.contours)
 
         # Prepare hydrotope maps
-        # get valley/slope glacier units
-        gunits_valleys = self.gunits + '__valleys'
-        self.map_gunits(self.valleys, gunits_valleys)
-
-        # map soils to gunits with additional slope soil unit
+        # map soils to gunits
         gunits_soil = self.gunits + '__soil'
         self.map_gunits(self.soil, gunits_soil)
-        # get next higher soil for slopes
-        ssid = int(grass.raster_info(self.soil)['max'])+1
-        gm('Assigning soilID=%s to slopes inside glacier area.' % ssid)
-        exp = 'if(isnull($gvalleys),$soil,if($gvalleys,$gsoil,$slopesoil))'
-        grass.mapcalc(self.gunitssoil + '=' + exp, gvalleys=gunits_valleys,
-                      soil=self.soil, gsoil=gunits_soil, slopesoil=ssid)
+
+        if self.a:  # add slope soilID
+            # get valley/slope glacier units
+            gunits_soilslopes = gunits_soil + '__slopes'
+            gunits_valleys = self.gunits + '__valleys'
+            self.map_gunits(self.valleys, gunits_valleys)
+            # get next higher soil for slopes
+            ssid = int(grass.raster_info(self.soil)['max'])+1
+            gm('Assigning soilID=%s to slopes inside glacier area.' % ssid)
+            grass.mapcalc('$output=if($gvalleys,$gsoil,$slopesoil)',
+                          output=gunits_soilslopes, gvalleys=gunits_valleys,
+                          gsoil=gunits_soil, slopesoil=ssid)
+            gunits_soil = gunits_soilslopes
+
+        ex = '$output=if(isnull($garea),$soil,$gsoil)'
+        grass.mapcalc(ex, output=self.gunitssoil, garea=self.gunitsglacierarea,
+                      soil=self.soil, gsoil=gunits_soil)
 
         # map landuse to gunits
         gunits_landuse = self.gunits + '__landuse'
