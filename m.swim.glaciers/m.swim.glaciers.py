@@ -133,6 +133,15 @@
 #%end
 #%Option
 #% guisection: Glacier units
+#% key: avalanchethreshold
+#% type: double
+#% answer: 45
+#% multiple: no
+#% key_desc: degrees
+#% description: Slope threshold to delineate avalanche area. If not given, avalanchearea raster must exist.
+#%end
+#%Option
+#% guisection: Glacier units
 #% key: hemisphere
 #% type: string
 #% answer: N
@@ -144,6 +153,11 @@
 #% guisection: Output
 #% key: d
 #% label: Skip recreating slope_dg, aspect and sunhours (must all exist)
+#%end
+#%Flag
+#% guisection: Output
+#% key: s
+#% label: Only rewrite structure file, all maps must exist
 #%end
 #%Option
 #% guisection: Output
@@ -186,6 +200,26 @@
 #% key_desc: name
 #% answer: aspect
 #% description: Name of aspect raster
+#%end
+#%Option
+#% guisection: Output
+#% key: avalanchearea
+#% type: string
+#% required: yes
+#% multiple: no
+#% key_desc: name
+#% answer: avalanchearea
+#% description: Name of raster with avalanche area. Must exist if avalanchethreshold not given.
+#%end
+#%Option
+#% guisection: Output
+#% key: avalanchefrac
+#% type: string
+#% required: yes
+#% multiple: no
+#% key_desc: raster
+#% answer: avalanchefrac
+#% description: Name of raster with avalanche area fraction.
 #%end
 #%Option
 #% guisection: Output
@@ -785,7 +819,8 @@ class Main:
 
         convertnumber = ['minarea', 'naspectclasses', 'valleythreshold',
                          'valleysmoothing', 'contoursvalleys',
-                         'contoursslopes']
+                         'contoursslopes', 'avalanchethreshold']
+        convertnumber = [n for n in convertnumber if hasattr(self, n)]
         for n in convertnumber:
             v = self.__dict__[n]
             try:
@@ -795,34 +830,63 @@ class Main:
                     self.__dict__[n] = float(v)
                 except ValueError:
                     raise 'Cant convert %s to a number. %s' % (n, v)
-        # output maps
+
+        # defaults
+        self.hydrotope_address = self.hydrotopes + '__address'
         self.sunhours_summer = self.sunhoursprefix + '_summer'
         self.sunhours_winter = self.sunhoursprefix + '_winter'
+        self.strcolumns = [self.gunits,
+                           self.subbasins,
+                           self.hydrotope_address,
+                           self.downstreamgunits,
+                           0,  # initial glacier thickness must be 0
+                           self.slope_dg,
+                           self.avalanchefrac,
+                           self.sunhours_summer,
+                           self.sunhours_winter,
+                           self.initialdebris,
+                           0]  # initial snow
+        if hasattr(self, 'strfilepath'):
+            self.glacier_structure_file = os.path.join(
+                            os.path.dirname(self.strfilepath), 'glaciers.str')
         return
+
+    def _raster_exists(self, name):
+        if len(name.split('@')) == 1:
+            mapset = grass.gisenv()['MAPSET']
+        else:
+            name, mapset = name.split('@')
+
+        rasters = grass.read_command('g.list', type='raster', mapset=mapset)
+        return name in rasters.split()
 
     def process(self):
         gm('Cleaning and zooming to glacier area...')
         gm('''Resolution of subbasins raster is used for all output with
            minimal non-null extent of glacierarea raster.''')
-        self.create_garea()
 
-        if not self.d:
+        if not self.s:
+            self.create_garea()
+
+        if not self.d and not self.s:
             gm('Deriving statistics from DEM...')
             self.process_dem()
 
-        gm('Creating glacier units...')
-        self.create_units()
+        if not self.s:
+            gm('Creating glacier units...')
+            self.create_units()
 
         if hasattr(self, 'routingratio'):
             gm('Calculating routing ratio...')
             self.check_routing()
 
-        gm('Creating hydrotopes...')
-        self.create_hydrotopes()
+        if not self.s:
+            gm('Creating hydrotopes...')
+            self.create_hydrotopes()
 
         if hasattr(self, 'strfilepath'):
             gm('Wrting glacier structure file...')
-            self.write_glacier_structure()
+            self.glacier_structure()
 
         # clean
         grun('r.mask', flags='r')
@@ -985,29 +1049,46 @@ class Main:
              landuse=self.gunitslanduse, soil=self.gunitssoil,
              **options)
 
-        # hydrotope addresses
-        self.hydrotope_address = self.hydrotopes + '__address'
-        hydAddressRast(self.hydrotopes, self.subbasins, self.hydrotope_address)
-
         return
 
-    def write_glacier_structure(self):
-        # write glacier str file (with 0 glacier height, 0 debris cover (cant
-        # have the same null0 name))
+    def create_avalanche(self):
+        """
+        Create the avalanche area if necessary and the avalanche fraction.
+        """
+        if hasattr(self, 'avalanchethreshold'):
+            exp = '$output=if($slope >= $threshold, 1,null())'
+            grass.mapcalc(exp=exp, slope=self.slope_dg,
+                          output=self.avalanchearea,
+                          threshold=self.avalanchethreshold)
+        elif not self._raster_exists(self.avalanchearea):
+            grass.fatal('''avalanchearea raster must exist if
+                        avalanchethreshold is not given.''')
+        # make fraction
+        grun('r.stats.zonal', base=self.gunits, cover=self.avalanchearea,
+             method='sum', output='n__avalanche__cells')
+        grass.mapcalc(exp='help__1=1', overwrite=True)
+        grun('r.stats.zonal', base=self.gunits, cover='help__1', method='sum',
+             output='n__cells', overwrite=True)
+        grass.mapcalc(exp="$output=n__avalanche__cells/n__cells",
+                      output=self.avalanchefrac)
+        return
+
+    def glacier_structure(self):
+        """Prepare all input and write the glacier.str file."""
+
+        hydAddressRast(self.hydrotopes, self.subbasins, self.hydrotope_address)
+
+        self.create_avalanche()
+
+        # check if all input exists
+        maps = [i for i in self.strcolumns if type(i) == str]
+        for m in maps:
+            if not self._raster_exists(m):
+                grass.fatal('%s does not exist to write structure file.' % m)
+
         self.mask(self.gunitsglacierarea)
-        columns = [self.gunits,
-                   self.subbasins,
-                   self.hydrotope_address,
-                   self.downstreamgunits,
-                   0,  # initial glacier thickness must be 0
-                   self.slope_dg,
-                   self.sunhours_summer,
-                   self.sunhours_winter,
-                   self.initialdebris]
-        op = os.path
-        self.glacier_structure_file = op.join(op.dirname(self.strfilepath),
-                                              'glaciers.str')
-        writeStr(self.glacier_structure_file, *columns)
+
+        writeStr(self.glacier_structure_file, *self.strcolumns)
         return
 
 
