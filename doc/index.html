@@ -113,28 +113,16 @@ img.resize {
             <h2><a class="mozTocH2" name="mozTocId449479"></a>Download and installation<br></h2>
             The code is hosted both at <a href="https://gitlab.pik-potsdam.de/wortmann/m.swim">PIK's GitLab</a> and mirrored
             on <a href="https://github.com/mwort/m.swim">Github</a>.
-            Install all the module via GRASS' build-in extension manager:
+            With GRASS >=7.2, install all the module via the build-in extension manager:
             <pre>g.extension m.swim url=https://github.com/mwort/m.swim</pre>
-            <p>
-            The source code can also cloned from either repository and
+            For GRASS versions <7.2, download the modules and install them using "make" in an active GRASS session.
+            <br>
+            The source code can also be cloned from either repository and
             then installed locally using g.extension like this:
 <pre>git clone git@gitlab.pik-potsdam.de:wortmann/m.swim.git
 g.extension m.swim url=path/to/m.swim/directory</pre>
             The modules can also be manually installed or used as python scripts if all things (i.e. g.extension) fail.
-            </p>
 
-
-            <h3><a class="mozTocH3" name="mozTocId706779"></a>Using GRASS on the
-            PIK cluster</h3> If you don't want to use them locally, use the GRASS7 cluster version with the modules preinstalled. Use a direct connection to the cluster and make sure your X Window is set properly (otherwise don't expect any GUI windows to pop up). Then load the
-            environment variables like this:
-            <br>
-
-            <pre>source /home/wortmann/src/grass7/externalstart<br></pre>
-
-            ...and you are good to go.
-            <br>
-
-            <br>
 
             <h3><a class="mozTocH3" name="mozTocId920153"></a>Developing and
             debugging</h3> PIK cluster users can use the git repository on the cluster to make changes to the m.swim.* code. Here is a quick <a href="developing_debugging.html">HOWTO</a>.
