@@ -6,7 +6,7 @@ module=../m.swim.subbasins/m.swim.subbasins.py
 
 # basic subbasins
 $module elevation=elevation@PERMANENT stations=stations@PERMANENT \
-                 upthresh=40 lothresh=11 subbasins=subbasins
+                 upthresh=40 lothresh=11 subbasins=subbasins rwatershedmem=400
 
 # subbasins with carved streams 
 # catchment 2 has very small catchment/no subbasins

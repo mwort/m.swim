@@ -224,6 +224,17 @@
 #% answer: s
 #%end
 
+#%Option
+#% guisection: Optional
+#% key: rwatershedmem
+#% type: integer
+#% required: no
+#% multiple: no
+#% key_desc: integer
+#% description: Memory usage by r.watershed in MB
+#% answer: 1000
+#%end
+
 #%Flag
 #% guisection: Optional
 #% key: s
@@ -236,7 +247,7 @@
 #% label: Keep intermediat files (include __ in names)
 #%end
 
-import os, sys
+import sys
 import grass.script as grass
 g_run=grass.run_command
 gm   = grass.message
@@ -292,6 +303,9 @@ class main:
         # if no r.watershed flags given
         if 'rwatershedflags' not in self.options: self.rwatershedflags='s'
 
+        # if no r.watershed memory usage is given, set to default
+        if 'rwatershedmem' not in self.options: self.rwatershedmem=300
+
         # check input for stats print
         if self.s:
             for o in ['streams','stations','catchmentprefix']:
@@ -330,7 +344,8 @@ class main:
                   'basin'       : 'standard__subbasins',
                   'slope_steepness': self.slopesteepness,
                   'length_slope': self.slopelength,
-                  'flags'       : self.rwatershedflags}
+                  'flags'       : self.rwatershedflags, 
+                  'memory'      : self.rwatershedmem}
         # check if depressions
         if 'depression' in self.options: kwargs['depression']=self.depression
 
@@ -481,7 +496,8 @@ class main:
                 kwargs ={'elevation': self.elevation,
                          'basin'    : subbasins_uncut,
                          'threshold': thresh,
-                         'flags'    : self.rwatershedflags}
+                         'flags'    : self.rwatershedflags,
+                         'memory'   : self.rwatershedmem}
                 # carved elevation
                 if 'streamcarve' in self.options:
                     kwargs['elevation']=self.carvedelevation
