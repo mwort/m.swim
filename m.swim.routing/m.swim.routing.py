@@ -649,9 +649,9 @@ if __name__=='__main__':
     # clean
     if not main.k:
         grass.run_command('g.remove',type='raster,vector', pattern='*__*',flags='fb',quiet=True)
+        # remove mask
+        grun('r.mask',flags='r',quiet=True)
 
-    # remove mask
-    grun('r.mask',flags='r',quiet=True)
     # report time it took
     delta = dt.datetime.now()-st
     grass.message('Execution took %s hh:mm:ss' %delta)
