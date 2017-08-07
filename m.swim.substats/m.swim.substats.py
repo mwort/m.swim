@@ -413,7 +413,7 @@
 
 import grass.script as grass
 import numpy as np
-import sys, os, re
+import os
 import datetime as dt
 grun = grass.run_command
 gread= grass.read_command
@@ -433,7 +433,7 @@ class main:
                           'chs':self.mainChannelSlope,  ### MAIN CHANNEL SLOPE
                           'chw':self.channelWidth,      ### MAIN CHANNEL WIDTH
                           'chd':self.channelDepth}      ### MAIN CHANNEL DEPTH
-        self.functionrasts = ['elevation','drainage','accumulation','mainstreams']
+        self.functionsrasts = ['elevation','drainage','accumulation','mainstreams']
 
         # get needed parameters for the three files
         self.orders = {'sub':self.suborder,'gw' :self.gworder,'rte':self.rteorder}
@@ -449,7 +449,7 @@ class main:
                 # not in options
                 if p not in self.options:
                     if p in self.functions:
-                        if any([r not in self.options for r in self.functionrasts]):
+                        if any([r not in self.options for r in self.functionsrasts]):
                             grass.fatal('To calculate %s, %s must be given!' %(p,','.join(self.functionsrasts)))
                     else:
                         # if no function exists and not given as argument
