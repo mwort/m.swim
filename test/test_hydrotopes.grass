@@ -13,7 +13,7 @@ fi
 
 # make project dir
 mkdir -p project/input
-   
+
 # default
 $module subbasins=subbasins landuse=landuse@PERMANENT soil=soil@PERMANENT \
                      -c contours=200 elevation=elevation@PERMANENT \
@@ -21,7 +21,7 @@ $module subbasins=subbasins landuse=landuse@PERMANENT soil=soil@PERMANENT \
 
 # with management and wetland, no contours
 $module subbasins=subbasins landuse=landuse@PERMANENT soil=soil@PERMANENT \
-                     wetland=drainage management=catchments \
+                     wetland=drainage management=catchments elevation=elevation@PERMANENT \
                      strfilepath=project/input/blank.str hydrotopes=hydrotopes
 
 # with glaciers
@@ -30,4 +30,3 @@ $module subbasins=subbasins landuse=landuse@PERMANENT soil=soil@PERMANENT \
                      -c contours=200 elevation=elevation@PERMANENT \
                      glaciers=glaciers \
                      strfilepath=project/input/blank.str hydrotopes=hydrotopes
-
