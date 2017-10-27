@@ -777,10 +777,7 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
         headerlines = [  # number of empty lines at start
                        [self.projectname+ex for ex in named],
                        ('crop.dat','agman.dat','wgen.dat'),
-                       ('soil.cio','str.cio'),
-                       ('prec.dat',),
-                       ('temp.dat',),
-                       ('radi.dat',),
+                       ('soil.cio',),
                        ('runoff.dat',),
                        ('clim1.dat',),
                        ('clim2.dat',)] + [[]]*2  # number of empty lines at end
