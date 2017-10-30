@@ -26,18 +26,23 @@ grass70 grassdb/utm32n/PERMANENT
 ```
 Run all tests:
 ```
-./test_all.grass
+make
 ```
 Or test modules individually like:
 ```
-./test_subbasins.grass
-./test_routing.grass
+make subbasins
+make routing
 ```
+The non-grass output of tests is verified by a sha1sum comparison.
+Hash and paths are stored and committed to git in the file output.sha1 .
+To verify that the output is the same run:
+```
+make checkoutput
+```
+Checking the diff of the output.sha1 file will indicate output files that have changed (if any).
+
 
 ## TODO
-- adapt columns in structure file to include management, wetland, glaciers and elevations (not only when -d)
-- adapt header of file.cio
-- allow writeout of 3 subfiles only in m.swim.substats
 - soils need to be in sequential order
 - add lon/lat to subbasin table (centroids)
 - add simple grass output for additional files to tests
