@@ -40,9 +40,3 @@ To verify that the output is the same run:
 make checkoutput
 ```
 Checking the diff of the output.sha1 file will indicate output files that have changed (if any).
-
-
-## TODO
-- soils need to be in sequential order
-- add lon/lat to subbasin table (centroids)
-- add simple grass output for additional files to tests
