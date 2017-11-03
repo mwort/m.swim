@@ -18,4 +18,4 @@ $module elevation=elevation@PERMANENT stations=stations@PERMANENT \
 mkdir -p project/input
 
 # write subcatch.def
-v.db.select subbasins col=subbasinID,catchmentID sep=space > project/input/subcatch.def
+v.db.select subbasins col=subbasinID,catchmentID,catchmentID sep=space > project/input/subcatch.def
