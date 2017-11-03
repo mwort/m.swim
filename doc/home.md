@@ -21,10 +21,10 @@ PIK cluster users can use the git repository on the cluster to make changes to t
 ## Using the GUI
 The m.swim.\* modules (like any other GRASS module) can be either used as a script command or to open a GUI widget. On the GRASS command line, type the following to open them:
 ```
-m.swim.subbasin &
-m.swim.hydrotopes &
-m.swim.routing &
-m.swim.substats &
+m.swim.subbasin.md &
+m.swim.hydrotopes.md &
+m.swim.routing.md &
+m.swim.substats.md &
 ```
 If you want to also set arguments on the command line and still open the GUI, just add a --ui flag. E.g.:
 ```
@@ -35,15 +35,15 @@ Here are some screenshots of the GUI:
 
 The m.swim.subbasins GUI in the subbasin design tab.
 
-![routing network](routingnetwork_screenshot.png)
+![routing network](img/routingnetwork_screenshot.png)
 
 The routing network (red) plotted with the subbasins (black) and the mainstreams (blue).
 
 More screenshots:
-[m.swim.routing GUI](routing_screenshot.png)
-[subbasin table](subbasin_table_screenshot.png)
-[m.swim.substats GUI](substats_screenshot.png)
-[help page](help_screenshot.png)
+- [m.swim.routing GUI](routing_screenshot.png)
+- [subbasin table](subbasin_table_screenshot.png)
+- [m.swim.substats GUI](substats_screenshot.png)
+- [help page](help_screenshot.png)
 
 To view your output you will have to open the GRASS wxPython GUI if you havent already done so. Here is the manual: [GRASS70 GUI](http://grass.osgeo.org/grass70/manuals/wxGUI.html)
 
@@ -84,24 +84,29 @@ Or by using the `v.import` or `v.in.ogr` modules.
 ### Subbasins
 Make simple subbasins (default output arguments):
 ```
-m.swim.subbasins elevation=elevation@PERMANENT stations=stations upthresh=0.1 subbasins=subbasins
+m.swim.subbasins elevation=elevation@PERMANENT stations=stations \
+                 upthresh=0.1 subbasins=subbasins
 ```
 In addition to the subbasins vector and raster map, this also produces catchment raster and vector maps, accumulation, drainage, streams, slopesteepness and slopelength rasters (as needed by the subsequent m.swim.\* modules) by default.
 Subbasins with varying subbasin thresholds and defined lower threshold:
 ```
-m.swim.subbasins elevation=elevation@PERMANENT stations=stations upthreshcolumn=subbsize lothresh=0.001 subbasins=subbasins
+m.swim.subbasins elevation=elevation@PERMANENT stations=stations \
+                 upthreshcolumn=subbsize lothresh=0.001 subbasins=subbasins
 ```
 
 ### Hydrotopes
 
 Calculate hydrotopes with the subbasins, landuse and soil raster maps:
 ```
-m.swim.hydrotopes subbasins=subbasins landuse=landuse@PERMANENT soil=soils@PERMANENT strfilepath=mypro.str hydrotopes=hydrotopes
+m.swim.hydrotopes subbasins=subbasins landuse=landuse@PERMANENT \
+                  soil=soils@PERMANENT strfilepath=mypro.str hydrotopes=hydrotopes
 ```
 Alternatively, contours (either as interval or list of breaks through the `controus` argument; or as a raster map through the `contourrast` argument) and `more` maps can be used to further subdevide the hydrotopes:
 ```
-m.swim.hydrotopes subbasins=subbasins landuse=landuse@PERMANENT soil=soils@PERMANENT -c contours=50 \
-                  elevation=elevation@PERMANENT more=geology@PERMANENT strfilepath=Input/mypro.str
+m.swim.hydrotopes subbasins=subbasins landuse=landuse@PERMANENT \
+                  soil=soils@PERMANENT more=geology@PERMANENT \
+                  -c contours=50 elevation=elevation@PERMANENT \
+                  strfilepath=Input/mypro.str
 ```
 This implicitly creates a raster called contours and one called hydrotopes (as default names given for the `hydrotopes` and `contourrast` arguments).
 
@@ -121,43 +126,46 @@ m.swim.routing -r subbasins=subbasins figpath=mypro.fig --o
 ```
 Both these steps can also be executed at once (but may result in an error if the there are too many outlets):
 ```
-m.swim.routing subbasins=subbasins accumulation=accumulation figpath=Input/mypro.fig
+m.swim.routing subbasins=subbasins accumulation=accumulation \
+               figpath=Input/mypro.fig
 ```
 
 ### Subbasin statistics
 
 Create the subbasin statistics files in a Sub folder and the file.cio in the `projectpath` with all default input (`mainstreams, drainage, accumulation,  stp and sl` also have default values but included here to emphasise that they are needed as input):
 ```
-m.swim.substats subbasins=subbasins projectname=mypro projectpath=. elevation=elevation@PERMANENT \
-                mainstreams=mainstreams drainage=drainage accumulation=accumulation stp=slopesteepness sl=slopelength
+m.swim.substats subbasins=subbasins projectname=mypro projectpath=. \
+                elevation=elevation@PERMANENT mainstreams=mainstreams \
+                drainage=drainage accumulation=accumulation \
+                stp=slopesteepness sl=slopelength
 ```
 When recalculating or changing parameters, the calculation can be accelerated by setting `chl, chs, chd, chw` explicitly:
 ```
-m.swim.substats subbasins=subbasins projectname=mypro projectpath=. elevation=elevation@PERMANENT \
-                delay=geology@PERMANENT chl=mainChannelLength chs=mainChannelSlope chd=channelDepth chw=channelWidth
+m.swim.substats subbasins=subbasins projectname=mypro projectpath=. \
+                elevation=elevation@PERMANENT delay=geology@PERMANENT \
+                chl=mainChannelLength chs=mainChannelSlope \
+                chd=channelDepth chw=channelWidth
 ```
 
 ### Additional files
 
 The following files/folders are not written by any of the modules and will have to be copied into the `projdir` from elsewhere:
-
-| Path     |
-|:-------- |:---------
-| Input/   |  
-|          | clim1.dat, clim2.dat
-|          | mypro.bsn
-|          | mypro.cod
-|          | runoff.dat
-|          | wstor.dat
-|          | crop.dat
-|          | cntab.dat
-|          | Soil/soil\*.dat
-|          | soil.cio
-|          | wgen.dat
-| Output/
-|          | Res/
-|          | GIS/
-|          | Flo/
+* input/
+  * climate/clim1.dat
+  * climate/clim2.dat
+  * mypro.bsn
+  * mypro.cod
+  * runoff.dat
+  * wstor.dat
+  * crop.dat
+  * cntab.dat
+  * Soil/soil\*.dat
+  * soil.cio
+  * wgen.dat
+* output/
+  * Res/
+  * GIS/
+  * Flo/
 
 
 ## GRASS best practice
