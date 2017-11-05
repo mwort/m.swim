@@ -1,26 +1,27 @@
 # all tests depend on the following maps in grassdb/utm32n/PERMANENT
 # vector: stations, rivers
 # raster: elevation, landuse, soil
+GRASS ?= grass
 
-GRASSLOC=grassdb/utm32n
+GRASSTESTLOC=../test/grassdb/utm32n
 
 MODULES = subbasins routing substats hydrotopes
 
-OUTPUTDIRS = project
-GRASSOUTPUT = $(GRASSLOC)/swim
+TESTOUTPUTDIRS = project
+GRASSTESTOUTPUT = $(GRASSTESTLOC)/swim
 
 default: all
 
 all: $(MODULES) checkoutput
 
 checkoutput:
-	find $(OUTPUTDIRS) -type f -exec sha1sum {} + > output.sha1
+	find $(TESTOUTPUTDIRS) -type f -exec sha1sum {} + > output.sha1
 
 clean:
-	rm -r $(OUTPUTDIRS) $(GRASSOUTPUT)
+	rm -r $(TESTOUTPUTDIRS) $(GRASSTESTOUTPUT)
 
 
 
 $(MODULES):
-	GRASS_BATCH_JOB=./test_$@.grass GRASS_OVERWRITE=1 grass $(GRASSLOC)/PERMANENT
+	GRASS_BATCH_JOB=./test_$@.grass GRASS_OVERWRITE=1 $(GRASS) $(GRASSTESTLOC)/PERMANENT
 	echo Run make checkoutput to see if output differs!

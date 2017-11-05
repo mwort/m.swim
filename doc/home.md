@@ -21,10 +21,10 @@ PIK cluster users can use the git repository on the cluster to make changes to t
 ## Using the GUI
 The m.swim.\* modules (like any other GRASS module) can be either used as a script command or to open a GUI widget. On the GRASS command line, type the following to open them:
 ```
-m.swim.subbasin.md &
-m.swim.hydrotopes.md &
-m.swim.routing.md &
-m.swim.substats.md &
+m.swim.subbasin &
+m.swim.hydrotopes &
+m.swim.routing &
+m.swim.substats &
 ```
 If you want to also set arguments on the command line and still open the GUI, just add a --ui flag. E.g.:
 ```
@@ -40,10 +40,10 @@ The m.swim.subbasins GUI in the subbasin design tab.
 The routing network (red) plotted with the subbasins (black) and the mainstreams (blue).
 
 More screenshots:
-- [m.swim.routing GUI](routing_screenshot.png)
-- [subbasin table](subbasin_table_screenshot.png)
-- [m.swim.substats GUI](substats_screenshot.png)
-- [help page](help_screenshot.png)
+- [m.swim.routing GUI](img/routing_screenshot.png)
+- [subbasin table](img/subbasin_table_screenshot.png)
+- [m.swim.substats GUI](img/substats_screenshot.png)
+- [help page](img/help_screenshot.png)
 
 To view your output you will have to open the GRASS wxPython GUI if you havent already done so. Here is the manual: [GRASS70 GUI](http://grass.osgeo.org/grass70/manuals/wxGUI.html)
 
@@ -51,10 +51,10 @@ To view your output you will have to open the GRASS wxPython GUI if you havent a
 
 All GRASS manuals come with a manual page as the last tab in the GUI or you can find them here:
 
-- [m.swim.subbasins](m.swim.subbasins.html)
-- [m.swim.hydrotopes](m.swim.hydrotopes.html)
-- [m.swim.routing](m.swim.routing.html)
-- [m.swim.substats](m.swim.substats.html)
+- [m.swim.subbasins](m.swim.subbasins.md)
+- [m.swim.hydrotopes](m.swim.hydrotopes.md)
+- [m.swim.routing](m.swim.routing.md)
+- [m.swim.substats](m.swim.substats.md)
 
 ## Prerequisits
 -   the DEM must be slightly larger then the entire topographical catchment, by one cell in each direction to be precise. Using a precut DEM is therefore not advisable, but this can be overcome by adding an 'a' to the rwatershedflags in the m.swim.subbasins (this might lead to errors later on though).
