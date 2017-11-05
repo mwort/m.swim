@@ -62,7 +62,7 @@ All GRASS manuals come with a manual page as the last tab in the GUI or you can 
 -   the location's database should be SQLite (check with `db.connect -p`)
 
 ## Workflow and map dependencies
-![m.swim module dependencies](m.swim_workflow.png)
+![m.swim module dependencies](img/m.swim_workflow.png)
 
 ## Setting up a SWIM project
 Create a new mapset and set region:
@@ -77,7 +77,8 @@ Create a stations point vector map. E.g.:
 echo "x|y|name|subbsize
 640579|215607|outlet|0.1
 640388|216617|headwater|0.05" > stations.dat
-v.in.ascii input=stations.dat out=stations x=1 y=2 columns='x int, y int, name varchar(20), subbsize double' skip=1
+v.in.ascii input=stations.dat out=stations x=1 y=2 \
+           columns='x int, y int, name varchar(20), subbsize double' skip=1
 ```
 Or by using the `v.import` or `v.in.ogr` modules.
 
