@@ -318,8 +318,8 @@ class main:
             # check if reasonable
             fract = float(self.streamthresh)/self.region['cells']
             if fract > 0.5 or fract < 0.01:
-                grass.warning('streamthresh is %s percent of the region size!' %
-                              (fract*100))
+                gwarn('streamthresh is %s percent of the region size!' %
+                      (fract*100))
         else:
             self.streamthresh = int(self.region['cells']*0.02)
 
@@ -477,6 +477,11 @@ class main:
         self.stations_snapped_columns = OrderedDict(lo)
         lo = [(i, (x, y)) for i, x, y in snapped_coor[['stationID', 'x', 'y']]]
         self.stations_snapped_coor = OrderedDict(lo)
+
+        # add accummulation as darea
+        darea = self.region['celltokm'](rwhat([self.accumulation],
+                                self.stations_snapped_coor.values()).flatten())
+        self.stations_snapped_columns['darea'] = darea
         return
 
     def make_catchments(self):

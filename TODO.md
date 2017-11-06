@@ -8,6 +8,8 @@ Improvements
 ## m.swim.subbasins
 - add lon/lat to subbasin table (centroids)
 - tidy clean_subbasins method, maybe move some to postprocess_subbasins
+- convert accumulation cells to km2 and remove all kmtocell/celltokm conversions,
+  possible with routing?
 
 ## m.swim.substats
 - add lon, lat of subbasin centroids to table for stat-outdat, possibly add
