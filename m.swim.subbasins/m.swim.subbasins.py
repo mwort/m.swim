@@ -423,9 +423,6 @@ class main:
         gm('Making vector river network...')
         # stream condition
         scon = '{0} >= {1}'.format(self.accumulation, self.streamthresh)
-        # include those streams that were carved as well
-        if 'streamcarve' in self.options:
-            scon += ' | !isnull(%s)' % self.streamrastcarved
         # extract out of accumulation and make vector
         grass.mapcalc(self.streams+"__thick = if(%s, %s, null())" %
                       (scon, self.accumulation))
