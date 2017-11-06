@@ -418,9 +418,9 @@ class main:
 
         # postprocess accumulation map
         grass.mapcalc("%s=int(if(accum__float <= 0,null(),accum__float))" %
-                      self.accumulation, overwrite=True)
+                      self.accumulation)
         # make river network to vector
-        grass.message('Making vector river network...')
+        gm('Making vector river network...')
         # stream condition
         scon = '{0} >= {1}'.format(self.accumulation, self.streamthresh)
         # include those streams that were carved as well
@@ -541,7 +541,6 @@ class main:
                     break
             if i not in dsid:
                 dsid[i] = -1
-            gprogress(i+1, len(self.stations_topology), 1)
         dsid_ar = np.array([dsid[k] for k in sorted(dsid.keys())], dtype=int)
         self.stations_snapped_columns['ds_stationID'] = dsid_ar
         return
@@ -563,7 +562,7 @@ class main:
                 exp = (subarea_name + '=if(~isnull(' +
                        self.catchment_rasters[sid] + ') & ' +
                        ' & '.join(masked_waters) + ', %s, null())' % sid)
-                grass.mapcalc(exp, overwrite=True, quiet=True)
+                grass.mapcalc(exp, quiet=True)
                 self.subarea_rasters[sid] = subarea_name
                 # check if outlet, ie. if stations-1 are included no others are downstream
                 if len(included) == len(self.stations_topology) - 1:
