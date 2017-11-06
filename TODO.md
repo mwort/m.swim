@@ -7,7 +7,7 @@ Improvements
 ============
 ## m.swim.subbasins
 - add lon/lat to subbasin table (centroids)
-- add progress to all main functions
+- tidy clean_subbasins method, maybe move some to postprocess_subbasins
 
 ## m.swim.substats
 - add lon, lat of subbasin centroids to table for stat-outdat, possibly add
