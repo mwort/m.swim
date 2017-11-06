@@ -24,4 +24,4 @@ clean:
 
 $(MODULES):
 	GRASS_BATCH_JOB=./test_$@.grass GRASS_OVERWRITE=1 $(GRASS) $(GRASSTESTLOC)/PERMANENT
-	echo Run make checkoutput to see if output differs!
+	@echo Run make checkoutput to see if output differs!

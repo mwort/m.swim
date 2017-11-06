@@ -1,5 +1,4 @@
-# allow overwriting
-export GRASS_OVERWRITE=1
+
 # create separate mapset
 g.mapset -c mapset=swim
 module=../m.swim.hydrotopes/m.swim.hydrotopes.py
