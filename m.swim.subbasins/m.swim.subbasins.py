@@ -284,10 +284,8 @@ class main:
 
         # save region for convenience
         self.region = grass.region()
-        self.region['kmtocell'] = lambda km: (int(round(np.mean(km)*10**6 /
-                                  (self.region['ewres']*self.region['nsres']))))
-        self.region['celltokm'] = lambda c: c*(self.region['ewres']*
-                                               self.region['nsres'])*1e-6
+        self.region['kmtocell'] = 10**6 / (self.region['ewres'] * self.region['nsres'])
+        self.region['celltokm'] = self.region['ewres'] * self.region['nsres'] * 1e-6
 
         # check if DEM to processed or if all inputs set
         if not self.is_set('accumulation', 'drainage', 'streams'):
@@ -314,14 +312,13 @@ class main:
         # streamthresh
         if 'streamthresh' in self.options:
             # convert to cells
-            self.streamthresh = self.region['kmtocell'](self.streamthresh)
+            self.streamthresh = self.region['kmtocell'] * self.streamthresh
             # check if reasonable
-            fract = float(self.streamthresh)/self.region['cells']
+            fract = float(self.streamthresh) / self.region['cells']
             if fract > 0.5 or fract < 0.01:
-                gwarn('streamthresh is %s percent of the region size!' %
-                      (fract*100))
+                gwarn('streamthresh is %s percent of the region size!' % (fract*100))
         else:
-            self.streamthresh = int(self.region['cells']*0.02)
+            self.streamthresh = int(self.region['cells'] * 0.02)
 
         # if no r.watershed flags given
         if 'rwatershedflags' not in self.options:
@@ -388,10 +385,8 @@ class main:
         if type(self.upthresh) in [int, float]:
             uthresh = self.upthresh
         else:  # take most common one in upthresh column
-            uthresh = max(set(self.upthresh.values()),
-                          key=list(self.upthresh).count)
-
-        thresh = self.region['kmtocell'](uthresh)
+            uthresh = max(set(self.upthresh.values()), key=list(self.upthresh).count)
+        thresh = self.region['kmtocell'] * uthresh
 
         kwargs = {'elevation': self.elevation,
                   'threshold': thresh,
@@ -573,8 +568,7 @@ class main:
             # prepare inputs for the subbasins
             subbasins_name = 'subbasins__%s' % sid
             # calculate threshold from sq km to cells
-            thresh = int(round(self.upthresh[sid] * 1000**2 /
-                               (self.region['ewres']*self.region['nsres'])))
+            thresh = self.upthresh[sid] * self.region['kmtocell']
             gdebug('Subbasin threshold: %s km2, %s cells' %
                    (self.upthresh[sid], thresh))
 
@@ -744,8 +738,8 @@ class main:
         # get drainage area via accumulation map in sq km
         grun('r.stats.zonal', base=subbasins_continuous, cover=self.accumulation,
              method='max', output='max__accum__cells', quiet=True)
-        cellareakm = self.region['nsres']*self.region['ewres']*10**-6
-        grass.mapcalc("max__accum=max__accum__cells*%s" % cellareakm, quiet=True)
+        grass.mapcalc("max__accum=max__accum__cells*%s" % self.region['celltokm'],
+                      quiet=True)
 
         # upload to subbasin table
         grun('v.db.addcolumn', map=subbasins_continuous, column='darea double',
