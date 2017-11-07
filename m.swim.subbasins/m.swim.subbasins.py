@@ -532,6 +532,7 @@ class main:
         self.stations_topology = OrderedDict(zip(self.stations_snapped_coor.keys(), topo))
 
         # save downstream stationID
+        # get stationIDs sorted by number of upstream stations (ascending)
         ts = {k: len(v) for k, v in self.stations_topology.items() if len(v) > 0}
         ts = sorted(ts, key=ts.get)
         dsid = {}
@@ -551,28 +552,13 @@ class main:
         """Create catchment areas without headwater catchments."""
         gm('Creating catchment subareas...')
         self.subarea_rasters = OrderedDict()
-        for i, (sid, included) in enumerate(self.stations_topology.items()):
-            if len(included) > 0:
-                # subarea name
-                subarea_name = 'subareas__'+self.catchment_rasters[sid]
-                # make list of watersheds to exclude i.e. the ones that are included
-                masked_waters = ['isnull('+self.catchment_rasters[ii]+')'
-                                 for ii in included]
-                # make subarea excluding the upstream watersheds
-                # if primary watershed is not (~) null and (&) the masked_waters
-                # are null, i.e. the area downstream of the included watersheds
-                exp = (subarea_name + '=if(~isnull(' +
-                       self.catchment_rasters[sid] + ') & ' +
-                       ' & '.join(masked_waters) + ', %s, null())' % sid)
-                grass.mapcalc(exp, quiet=True)
-                self.subarea_rasters[sid] = subarea_name
-                # check if outlet, ie. if stations-1 are included no others are downstream
-                if len(included) == len(self.stations_topology) - 1:
-                    self.outletcoor = self.stations_snapped_coor[sid]
-            else:
-                self.subarea_rasters[sid] = self.catchment_rasters[sid]
-            # report progress
-            gprogress(i+1, len(self.stations_topology), 1)
+
+        # get stationIDs sorted by number of upstream stations (ascending)
+        ts = {k: len(v) for k, v in self.stations_topology.items() if len(v) > 0}
+        ts = sorted(ts, key=ts.get)
+        self.subarea_rasters = OrderedDict([(i, self.catchment_rasters[i])
+                                            for i in ts])
+
         # path watersheds/subareas
         patch_basins(self.subarea_rasters.values(), outname=self.catchments)
         return
@@ -618,8 +604,8 @@ class main:
                 self.subbasinsdone[thresh] = subbasins_uncut
 
             # cut out subbasins for subarea
-            exp = (subbasins_name + '=if(isnull(%s), null(), %s)' %
-                   (self.subarea_rasters[sid], subbasins_uncut))
+            exp = (subbasins_name + '=if(%s!=sid, null(), %s)' %
+                   (self.catchments, subbasins_uncut))
             grass.mapcalc(exp)
             self.subbasins_rasters[sid] = subbasins_name
             # report progress
@@ -758,8 +744,8 @@ class main:
         # add separate subbasinID column
         grun('v.db.addcolumn', map=subbasins_continuous, columns='subbasinID int',
              quiet=True)
-        grun('v.db.update', map=subbasins_continuous, column='subbasinID', qcol='cat',
-             quiet=True)
+        grun('v.db.update', map=subbasins_continuous, column='subbasinID',
+             qcol='cat', quiet=True)
 
         # get drainage area via accumulation map in sq km
         grun('r.stats.zonal', base=subbasins_continuous, cover=self.accumulation,
