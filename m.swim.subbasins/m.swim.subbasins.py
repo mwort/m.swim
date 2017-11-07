@@ -805,34 +805,33 @@ ID  excl. upstream   incl. upstream  outlet subbasin  upstream stations''')
             upix = [np.where(scs['catchmentID'] == c)[0][0]
                     for c in self.stations_topology[a[0]] if c in scs['catchmentID']]
             upstsize = np.sum(scs['catchmentID'][upix])+a[1]
+            upstst = map(str, self.stations_topology[a[0]])
+            upstststr = ', '.join(upstst) if len(upstst) <= 3 else '%s stations' % len(upstst)
             print('%3i %14.2f %16.2f %16i  %s' % (a[0], a[1], upstsize,
-                                                  outletsb[i], self.stations_topology[a[0]]))
+                                                  outletsb[i], upstststr))
 
         # compile nice rows with total in the first column (first initialise dict, then add a column for each station)
-        sub = {'st': '%8s ' % 'total',
-               'n': '%8i ' % len(sbs),
-               'min': '%8.2f ' % sbs['size'].min(),
-               'mean': '%8.2f ' % sbs['size'].mean(),
-               'max': '%8.2f ' % sbs['size'].max()}
+        sub = OrderedDict([('stationID', ['%9s' % 'total']),
+                           ('count', ['%8i' % len(sbs)]),
+                           ('min', ['%8.2f' % sbs['size'].min()]),
+                           ('mean', ['%8.2f' % sbs['size'].mean()]),
+                           ('max', ['%8.2f' % sbs['size'].max()])
+                          ])
         cols = np.unique(sbs['catchmentID'])
         for c in cols:
-            subs = sbs['size'][sbs['catchmentID']==c]
+            subs = sbs['size'][sbs['catchmentID'] == c]
             if len(subs) == 0:
                 continue  # in case sb outside catchments
-            sub['st']   += '%8i ' % c
-            sub['n']    += '%8i ' % len(subs)
-            sub['min']  += '%8.2f ' % np.min(subs)
-            sub['mean'] += '%8.2f ' % np.mean(subs)
-            sub['max']  += '%8.2f ' % np.max(subs)
-
-        print('''
-Subbasin statistics (km2):
-Station: {st}
-  Count: {n}
-    Min: {min}
-   Mean: {mean}
-    Max: {max}'''.format(**sub))
-
+            sub['stationID'] += ['%9i' % c]
+            sub['count'] += ['%8i' % len(subs)]
+            sub['min'] += ['%8.2f' % np.min(subs)]
+            sub['mean'] += ['%8.2f' % np.mean(subs)]
+            sub['max'] += ['%8.2f' % np.max(subs)]
+        print('-----------------------------------------------------------------')
+        print('Subbasin statistics (km2):')
+        print(' '.join(['%-8s' %c for c in sub.keys()]))
+        for i in range(len(self.stations_topology) + 1):
+            print(' '.join([sub[c][i] for c in sub]))
         print('-----------------------------------------------------------------')
         return scs, sbs
 
