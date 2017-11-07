@@ -472,8 +472,8 @@ class main:
         self.stations_snapped_coor = OrderedDict(lo)
 
         # add accummulation as darea
-        darea = self.region['celltokm'](rwhat([self.accumulation],
-                                self.stations_snapped_coor.values()).flatten())
+        darea = (rwhat([self.accumulation], self.stations_snapped_coor.values())
+                 .flatten() * self.region['celltokm'])
         self.stations_snapped_columns['darea'] = darea
         return
 
