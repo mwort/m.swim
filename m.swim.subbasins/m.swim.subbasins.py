@@ -365,8 +365,6 @@ class main:
         # always process
         self.snap_stations()
         self.make_catchments()
-        self.get_stations_topology()
-        self.make_subareas()
         self.make_subbasins()
         self.postprocess_catchments()
         self.postprocess_subbasins()
@@ -512,6 +510,17 @@ class main:
             self.catchment_rasters[si] = name
             # report progress
             gprogress(i+1, len(self.stations_snapped_coor), 1)
+
+        # check stations topology before patching basins
+        self.get_stations_topology()
+        # get stationIDs sorted by number of upstream stations (ascending)
+        ts = {k: len(v) for k, v in self.stations_topology.items()}
+        ts = sorted(ts, key=ts.get)
+        catchments_ordered = [self.catchment_rasters[i] for i in ts]
+        # patch catchments in order
+        gm('Patching catchments...')
+        patch_basins(catchments_ordered, outname=self.catchments)
+
         return
 
     def get_stations_topology(self):
@@ -548,25 +557,11 @@ class main:
         self.stations_snapped_columns['ds_stationID'] = dsid_ar
         return
 
-    def make_subareas(self):
-        """Create catchment areas without headwater catchments."""
-        gm('Creating catchment subareas...')
-        self.subarea_rasters = OrderedDict()
-
-        # get stationIDs sorted by number of upstream stations (ascending)
-        ts = {k: len(v) for k, v in self.stations_topology.items() if len(v) > 0}
-        ts = sorted(ts, key=ts.get)
-        self.subarea_rasters = OrderedDict([(i, self.catchment_rasters[i])
-                                            for i in ts])
-
-        # path watersheds/subareas
-        patch_basins(self.subarea_rasters.values(), outname=self.catchments)
-        return
-
     def make_subbasins(self):
         """Create subbasins with corrected stations shape file
         with maximum threshold in square km from the maps processed in process_DEM
         """
+        gm('Creating subbasins...')
         self.subbasins_rasters = OrderedDict()
 
         # use upthresh for all if self.upthresh not already converted to list in __init__
@@ -576,7 +571,7 @@ class main:
 
         for i, sid in enumerate(self.stations_topology.keys()):
             # prepare inputs for the subbasins
-            subbasins_name = 'subbasins__' + self.subarea_rasters[sid]
+            subbasins_name = 'subbasins__%s' % sid
             # calculate threshold from sq km to cells
             thresh = int(round(self.upthresh[sid] * 1000**2 /
                                (self.region['ewres']*self.region['nsres'])))
@@ -597,15 +592,15 @@ class main:
                 if 'streamcarve' in self.options:
                     kwargs['elevation'] = self.carvedelevation
 
-                # r.watershed
-                grun('r.watershed', overwrite=True, quiet=True, **kwargs)
+                # r.watershed to produce subbasins
+                grun('r.watershed', quiet=True, **kwargs)
 
                 # add to done subbasins list
                 self.subbasinsdone[thresh] = subbasins_uncut
 
             # cut out subbasins for subarea
-            exp = (subbasins_name + '=if(%s!=sid, null(), %s)' %
-                   (self.catchments, subbasins_uncut))
+            exp = ('%s=if(%s==%s, %s, null())' %
+                   (subbasins_name, self.catchments, sid, subbasins_uncut))
             grass.mapcalc(exp)
             self.subbasins_rasters[sid] = subbasins_name
             # report progress
@@ -642,8 +637,7 @@ class main:
                                                  self.subbasins_rasters.items())
 
         # PATCHING subbasins maps
-        patch_basins(self.subbasins_rasters.values(),
-                     outname=self.subbasins)
+        patch_basins(self.subbasins_rasters.values(), outname=self.subbasins)
 
         # clean subbasin raster and vector keeping the same name
         self.clean_subbasins()
@@ -897,11 +891,9 @@ def patch_basins(rastlist, outname):
     if sb_len == 1:
         grun('g.rename', quiet=True, rast=rastlist[0] + ',' + outname)
     elif sb_len > 1:
-        grun('r.patch',  input=','.join(rastlist),
-             output=outname,
-             overwrite=True, quiet=True)
+        grun('r.patch',  input=','.join(rastlist), output=outname, quiet=True)
     else:
-        grass.fatal('No maps in out[subbasins]')
+        grass.fatal('No maps to patch %r for %s' % (rastlist, outname))
     return
 
 
