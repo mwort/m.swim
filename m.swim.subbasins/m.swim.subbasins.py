@@ -660,7 +660,7 @@ class main:
         # add subbasinIDs to stations_snapped and write out stations_snapped
         ds_sbid = rwhat([self.subbasins],
                         self.stations_snapped_coor.values()).flatten()
-        self.stations_snapped_columns['outlet_subbasinID'] = ds_sbid
+        self.stations_snapped_columns['subbasinID'] = ds_sbid
 
         # assign catchment id
         grun('v.db.addcolumn', map=self.subbasins, column='catchmentID int',
@@ -788,6 +788,9 @@ class main:
         np.savetxt(p.stdin, data, delimiter='|', fmt=cols_fmt)
         p.stdin.close()
         p.wait()
+        # drop x y columns
+        grun('v.db.dropcolumn', map=self.stations_snapped, columns='x,y')
+        return
 
     def print_statistics(self):
         '''Output some statistics of the subbasin and subcatchment map'''
