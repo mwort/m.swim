@@ -509,8 +509,7 @@ class main:
         # check stations topology before patching basins
         self.get_stations_topology()
         # get stationIDs sorted by number of upstream stations (ascending)
-        ts = {k: len(v) for k, v in self.stations_topology.items()}
-        ts = sorted(ts, key=ts.get)
+        ts = sorted(self.stations_order, key=self.stations_order.get)
         catchments_ordered = [self.catchment_rasters[i] for i in ts]
         # patch catchments in order
         gm('Patching catchments...')
@@ -533,23 +532,37 @@ class main:
             d[i] = 0
             s = np.nonzero(d)[0]
             topo += [stationid_array[s]]
-        self.stations_topology = OrderedDict(zip(self.stations_snapped_coor.keys(), topo))
+        self.stations_upstream = OrderedDict(zip(self.stations_snapped_coor.keys(), topo))
 
         # save downstream stationID
         # get stationIDs sorted by number of upstream stations (ascending)
-        ts = {k: len(v) for k, v in self.stations_topology.items() if len(v) > 0}
-        ts = sorted(ts, key=ts.get)
-        dsid = {}
+        tslen = OrderedDict([(k, len(v)) for k, v in self.stations_upstream.items()])
+        ts = sorted(tslen, key=tslen.get)
+        dsid = OrderedDict()
         # find first occurence of id in length sorted downstream ids
-        for i in sorted(self.stations_topology.keys()):
+        for i in self.stations_upstream.keys():
             for ii in ts:
-                if i in self.stations_topology[ii] and i not in dsid:
+                if i in self.stations_upstream[ii] and i not in dsid:
                     dsid[i] = ii
                     break
             if i not in dsid:
                 dsid[i] = -1
-        dsid_ar = np.array([dsid[k] for k in sorted(dsid.keys())], dtype=int)
-        self.stations_snapped_columns['ds_stationID'] = dsid_ar
+        self.stations_snapped_columns['ds_stationID'] = np.array(dsid.values(),
+                                                                 dtype=int)
+        # create topology order
+        order = {}  # unsorted dictionary
+        for sid in tslen.keys():
+            if tslen[sid] == 0:
+                order[sid] = 1
+                ii, oi = sid, 1
+                while dsid[ii] > 0:
+                    ii = dsid[ii]
+                    oi += 1
+                    order[ii] = max(oi, order[ii]) if ii in order else oi
+        # order it again
+        self.stations_order = OrderedDict([(k, order[k]) for k in tslen.keys()])
+        oarr = np.array(self.stations_order.values(), dtype=int)
+        self.stations_snapped_columns['strahler_order'] = oarr
         return
 
     def make_subbasins(self):
@@ -562,9 +575,9 @@ class main:
         # use upthresh for all if self.upthresh not already converted to list in __init__
         if type(self.upthresh) in [int, float]:
             self.upthresh = OrderedDict([(i, self.upthresh)
-                                         for i in self.stations_topology])
+                                         for i in self.stations_upstream])
 
-        for i, sid in enumerate(self.stations_topology.keys()):
+        for i, sid in enumerate(self.stations_upstream.keys()):
             # prepare inputs for the subbasins
             subbasins_name = 'subbasins__%s' % sid
             # calculate threshold from sq km to cells
@@ -598,7 +611,7 @@ class main:
             grass.mapcalc(exp)
             self.subbasins_rasters[sid] = subbasins_name
             # report progress
-            gprogress(i+1, len(self.stations_topology), 1)
+            gprogress(i+1, len(self.stations_upstream), 1)
 
         # Make sure no subbasins have the same cat
         lastmax = 0  # in case only 1 station is used
@@ -806,9 +819,9 @@ class main:
 ID  excl. upstream   incl. upstream  outlet subbasin  upstream stations''')
         for i, a in enumerate(scs):
             upix = [np.where(scs['catchmentID'] == c)[0][0]
-                    for c in self.stations_topology[a[0]] if c in scs['catchmentID']]
+                    for c in self.stations_upstream[a[0]] if c in scs['catchmentID']]
             upstsize = np.sum(scs['catchmentID'][upix])+a[1]
-            upstst = map(str, self.stations_topology[a[0]])
+            upstst = map(str, self.stations_upstream[a[0]])
             upstststr = ', '.join(upstst) if len(upstst) <= 3 else '%s stations' % len(upstst)
             print('%3i %14.2f %16.2f %16i  %s' % (a[0], a[1], upstsize,
                                                   outletsb[i], upstststr))
@@ -833,7 +846,7 @@ ID  excl. upstream   incl. upstream  outlet subbasin  upstream stations''')
         print('-----------------------------------------------------------------')
         print('Subbasin statistics (km2):')
         print(' '.join(['%-8s' %c for c in sub.keys()]))
-        for i in range(len(self.stations_topology) + 1):
+        for i in range(len(self.stations_upstream) + 1):
             print(' '.join([sub[c][i] for c in sub]))
         print('-----------------------------------------------------------------')
         return scs, sbs
