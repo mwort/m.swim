@@ -5,7 +5,7 @@ GRASS ?= grass
 
 GRASSTESTLOC=../test/grassdb/utm32n
 
-MODULES = subbasins routing substats hydrotopes
+MODULES = subbasins routing substats hydrotopes climate
 
 TESTOUTPUTDIRS = project
 GRASSTESTOUTPUT = $(GRASSTESTLOC)/swim

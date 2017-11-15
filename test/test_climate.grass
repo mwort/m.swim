@@ -1,0 +1,18 @@
+
+# create separate mapset
+g.mapset -c mapset=swim
+module=../m.swim.climate/m.swim.climate.py
+
+# depending on:
+# ./test_subbasins.grass
+g.findfile element=cell file=subbasins > /dev/null
+if [ $? -eq 1 ] ; then
+	./test_subbasins.grass
+fi
+
+# make project dir
+mkdir -p project/input/climate
+
+# input for the ncdfclimate module
+$module subbasins=subbasins grid=grid_half_dg res=0.5 ncinfopath=project/input/climate/ncgrid.dat
+
