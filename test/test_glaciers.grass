@@ -2,7 +2,7 @@
 export GRASS_OVERWRITE=1
 
 hydrotopemodule=../m.swim.hydrotopes/m.swim.hydrotopes.py
-module=../m.swim.glaciers/glaciers.py
+module=../m.swim.glaciers/m.swim.glaciers.py
 
 # depending on:
 # ./test_subbasins.grass

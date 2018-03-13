@@ -4,5 +4,7 @@ fa4f66f529cb71c2dcc4dda250f949a16f138e39  project/input/Sub/routing.tab
 88f6d44609880a2defad6974e50eed4e33f4c3fb  project/input/Sub/subbasin.tab
 0a8ba82170bd64c017e8e20242e6af982bfc2be9  project/input/Sub/groundwater.tab
 2526fc60edddbedc48873c8e55921dcfeedcd495  project/input/file.cio
-e8e1a68c9a2200506ee8f27bf330f955742cad7c  project/input/blank.str
+73e962f893f47a96c697547002efcacca2127ac2  project/input/blank.str
 b38d0e0c4372d1fa14a25f2a743fec3f903e7ec7  project/input/climate/ncgrid.dat
+67cda5babe6a5013b49a1c9894901b3398c1ca22  project/input/blank_glaciers.str
+9a1fc41bdd4de69aaaad2c2c9a725d0fa1172e9c  project/input/glaciers.str
