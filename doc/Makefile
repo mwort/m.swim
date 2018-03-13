@@ -2,7 +2,7 @@
 # A Makefile to publish and convert the documentation
 include ../test/Makefile
 
-GITHUBWIKI = https://github.com/mwort/m.swim.wiki.git
+GITHUBWIKI = git@github.com:mwort/m.swim.wiki.git
 # GITLABWIKI = git@gitlab.pik-potsdam.de:wortmann/m.swim.wiki.git
 # git remote add gitlab $(GITLABWIKI); \
 
@@ -19,12 +19,13 @@ wiki: help_pages
 	cd wiki; \
 	cp -r ../*.md ../img . ; \
 	mv README.md _Sidebar.md ; \
-	find . -name "m.swim.*.md" -exec sed -i '' -e "s:grass_logo.png:img/grass_logo.png:g" '{}' + ; \
-	find . -name "*.md" -exec sed -i '' -e "s/.md//g" '{}' + ; \
-	find . -name "*.md" -exec sed -i '' -e "s/home//g" '{}' + ; \
+	find . -name "m.swim.*.md" -exec sed -i.backup -e "s:grass_logo.png:img/grass_logo.png:g" '{}' + ; \
+	find . -name "*.md" -exec sed -i.backup -e "s/.md//g" '{}' + ; \
+	find . -name "*.md" -exec sed -i.backup -e "s/home//g" '{}' + ; \
+	rm *.backup
 
 
-publish_wiki: wiki
+publish: wiki
 	cd wiki; \
 	git remote add github $(GITHUBWIKI); \
 	git add *; git commit -m 'Wiki files.' ; \

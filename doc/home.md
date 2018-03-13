@@ -2,7 +2,7 @@
 =======================================================
 
 ## Download and installation
-The code is hosted both at [PIK's GitLab](https://gitlab.pik-potsdam.de/wortmann/m.swim) and mirrored on [Github](https://github.com/mwort/m.swim). With GRASS >=7.2, install all the module via the build-in extension manager:
+The code is hosted both at [PIK's GitLab](https://gitlab.pik-potsdam.de/wortmann/m.swim) and mirrored on [Github](https://github.com/mwort/m.swim). With GRASS >=7.2, install all modules via the build-in extension manager:
 ```
 g.extension m.swim url=https://github.com/mwort/m.swim
 ```
@@ -21,7 +21,7 @@ PIK cluster users can use the git repository on the cluster to make changes to t
 ## Using the GUI
 The m.swim.\* modules (like any other GRASS module) can be either used as a script command or to open a GUI widget. On the GRASS command line, type the following to open them:
 ```
-m.swim.subbasin &
+m.swim.subbasins &
 m.swim.hydrotopes &
 m.swim.routing &
 m.swim.substats &
