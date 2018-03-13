@@ -1,18 +1,20 @@
-# allow overwriting
-export GRASS_OVERWRITE=1
+
 # create separate mapset
 g.mapset -c mapset=swim
-module=../m.swim.subbasins/m.swim.subbasins.py 
+module=../m.swim.subbasins/m.swim.subbasins.py
 
 # basic subbasins
 $module elevation=elevation@PERMANENT stations=stations@PERMANENT \
                  upthresh=40 lothresh=11 subbasins=subbasins
 
-# subbasins with carved streams 
+# subbasins with carved streams
 # catchment 2 has very small catchment/no subbasins
 # $module elevation=elevation@PERMANENT stations=stations@PERMANENT \
 #                 upthresh=30 lothresh=1 subbasins=subbasins streamcarve=rivers@PERMANENT
 
 
+# make project dir
+mkdir -p project/input
+
 # write subcatch.def
-v.db.select subbasins col=subbasinID,catchmentID sep=space > project/input/subcatch.def
+v.db.select subbasins col=subbasinID,catchmentID,catchmentID sep=space > project/input/subcatch.def

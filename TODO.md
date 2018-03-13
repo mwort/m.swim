@@ -6,13 +6,10 @@ Bugs
 Improvements
 ============
 ## m.swim.subbasins
-- loop over input station cats, rather than just range(len(stations))
-- output a snapped stations vector with terminating
-  subbasinID, downstream stationID  and other station related infos, synchronised with catchments table
-```
-v.distance from=stations_germany_danube to=streams -p upload=to_x,to_y,dist | v.in.ascii output=stations_snapped skip=1 columns='stationID int,x double,y double,distance double' cat=1 x=2 y=3 input=-
-v.what.rast map=stations_snapped raster=subbasins column=subbasinID
-```
+- add lon/lat to subbasin table (centroids)
+- tidy clean_subbasins method, maybe move some to postprocess_subbasins
+- convert accumulation cells to km2 and remove all kmtocell/celltokm conversions,
+  possible with routing?
 
 ## m.swim.substats
 - add lon, lat of subbasin centroids to table for stat-outdat, possibly add
@@ -32,3 +29,6 @@ v.db.select map=subbasins columns=subbasinID,lon,lat,average_elevation \
             separator=space file=input/stat-outdat.prn --o
 ```
 - provide additional files, eg. subcatch, bsn etc.
+
+## m.swim.hydrotopes
+- soils need to be in sequential order

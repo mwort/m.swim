@@ -413,7 +413,7 @@
 
 import grass.script as grass
 import numpy as np
-import sys, os, re
+import os
 import datetime as dt
 grun = grass.run_command
 gread= grass.read_command
@@ -433,10 +433,12 @@ class main:
                           'chs':self.mainChannelSlope,  ### MAIN CHANNEL SLOPE
                           'chw':self.channelWidth,      ### MAIN CHANNEL WIDTH
                           'chd':self.channelDepth}      ### MAIN CHANNEL DEPTH
-        self.functionrasts = ['elevation','drainage','accumulation','mainstreams']
+        self.functionsrasts = ['elevation','drainage','accumulation','mainstreams']
 
         # get needed parameters for the three files
-        self.orders = {'sub':self.suborder,'gw' :self.gworder,'rte':self.rteorder}
+        self.orders = {'subbasin': self.suborder,
+                       'groundwater': self.gworder,
+                       'routing': self.rteorder}
         # check if set properly
         for f in self.orders:
             # if not set at all
@@ -449,7 +451,7 @@ class main:
                 # not in options
                 if p not in self.options:
                     if p in self.functions:
-                        if any([r not in self.options for r in self.functionrasts]):
+                        if any([r not in self.options for r in self.functionsrasts]):
                             grass.fatal('To calculate %s, %s must be given!' %(p,','.join(self.functionsrasts)))
                     else:
                         # if no function exists and not given as argument
@@ -509,7 +511,7 @@ class main:
         self.nsubbasins = len(subbfractions)
 
         params = {'flu':subbfractions} # will be filled with all others
-        for f in ['sub','gw','rte']:
+        for f in self.orders.keys():
             for p in self.orders[f]:
                 # get each parameter
                 if p not in params:
@@ -750,9 +752,10 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
         cfmt = '%-'+precision.split('.')[0]+'s'
 
         # build up formats
-        grass.message('Writing .sub, .gw and .rte files to %s' %self.subpath)
+        grass.message('Writing subbasin.tab, routing.tab and '+
+                      'groundwater.tab files to %s' %self.subpath)
         for p in self.orders:
-            fname = os.path.join(self.subpath,'sub.'+p)
+            fname = os.path.join(self.subpath,'%s.tab' % p)
             tbl = np.column_stack([np.arange(1,self.nsubbasins+1)]+[data[c] for c in self.orders[p]])
             with file(fname,'w') as f:
                 f.write(' '.join([cfmt%s for s in ['sub']+self.orders[p]])+'\n')
@@ -777,10 +780,7 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
         headerlines = [  # number of empty lines at start
                        [self.projectname+ex for ex in named],
                        ('crop.dat','agman.dat','wgen.dat'),
-                       ('soil.cio','str.cio'),
-                       ('prec.dat',),
-                       ('temp.dat',),
-                       ('radi.dat',),
+                       ('soil.cio',),
                        ('runoff.dat',),
                        ('clim1.dat',),
                        ('clim2.dat',)] + [[]]*2  # number of empty lines at end

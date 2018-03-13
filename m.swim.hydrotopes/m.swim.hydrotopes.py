@@ -95,7 +95,7 @@
 #% guisection: Contours
 #% key: elevation
 #% type: string
-#% required: no
+#% required: yes
 #% multiple: no
 #% key_desc: name
 #% description: Elevation raster
@@ -159,7 +159,8 @@ class main:
 
     DEFAULTS = {'management': 1,
                 'wetland':    0,
-                'glaciers':   0}
+                'glaciers':   0,
+                'contourrast':   0}
 
     def __init__(self,**optionsandflags):
         '''Process all arguments and prepare processing'''
@@ -181,21 +182,21 @@ class main:
             self.strcolumns += [self.__dict__[r]]
 
 
-        # check what kind of contours
-        if self.c:
-            if 'elevation' not in self.options:
-                grass.fatal(('DEM not specified for contours.'))
-            # convert contours to ints
-            if 'contours' in self.options:
-                try:
-                    self.contours = map(int,self.contours.split(','))
-                    if len(self.contours)==1: self.contours = self.contours[0]
-                except:
-                    grass.fatal(('''Contours should be either an interval [integer]
-                    or a list of breaks separated by commas.'''))
-            # add to columns
-            self.strcolumns += [self.contourrast]
-            self.floatmaps[self.contourrast] = self.elevation
+        # check contours and create raster if needed
+        if 'contours' in self.options:
+            try:
+                self.contours = map(int,self.contours.split(','))
+                if len(self.contours)==1: self.contours = self.contours[0]
+            except:
+                grass.fatal(('''Contours should be either an interval [integer]
+                or a list of breaks separated by commas.'''))
+            # create contourrast
+            self.mkContours()
+        else:
+            self.contourrast = self._maskOrBlank('contourrast')
+        # add to columns
+        self.strcolumns += [self.contourrast]
+        self.floatmaps[self.contourrast] = self.elevation
 
         # glaciers
         self.glaciers = self._maskOrBlank('glaciers')
@@ -239,7 +240,8 @@ class main:
         '''Check if name option is given, if yes make a mask,
         if not make a blank map out of the default value.'''
         # if given, then it must be a raster, if not just make blank
-        if hasattr(self,name):
+        if (hasattr(self, name) and
+            tuple(name.split('@')) in grass.list_pairs('rast')):
             # make mask for DCELL and FCELL
             if not grass.raster_info(self.__dict__[name])['datatype']=='CELL':
                 outname = '%s__mask'%name

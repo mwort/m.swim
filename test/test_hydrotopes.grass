@@ -1,5 +1,4 @@
-# allow overwriting
-export GRASS_OVERWRITE=1
+
 # create separate mapset
 g.mapset -c mapset=swim
 module=../m.swim.hydrotopes/m.swim.hydrotopes.py
@@ -21,5 +20,5 @@ $module subbasins=subbasins landuse=landuse@PERMANENT soil=soil@PERMANENT \
 
 # with management and wetland, no contours
 $module subbasins=subbasins landuse=landuse@PERMANENT soil=soil@PERMANENT \
-                     wetland=drainage management=catchments \
+                     wetland=drainage management=catchments elevation=elevation@PERMANENT \
                      strfilepath=project/input/blank.str hydrotopes=hydrotopes
