@@ -465,6 +465,21 @@ class main:
                   '(stationID: distance):' % warning_threshold)
             for i, d in snapped_over_thresh[['stationID', 'distance']]:
                 gwarn('%i %1.0f' % (i, d))
+        # warn if snapped to within cell size
+        near = {}
+        for i, d, x, y in snapped_coor:
+            distcells = np.sqrt((snapped_coor['x'] - x)**2 +
+                                (snapped_coor['y'] - y)**2) * self.region['kmtocell']
+            isnear = np.all((distcells < 2, snapped_coor['stationID'] != i), axis=0)
+            if isnear.sum() > 0:
+                near[i] = snapped_coor['stationID'][isnear]
+        if len(near) > 0:
+            gwarn('These stations have been snapped to within 2 cells of '
+                  'other stations. This will lead to an incorrect station '
+                  'topology.')
+            for i, other in near.items():
+                gwarn('%s > %s' % (i, ', '.join(other.astype(str))))
+
         # save results
         lo = [(i, snapped_coor[i]) for i in dtnames]
         self.stations_snapped_columns = OrderedDict(lo)
@@ -476,6 +491,7 @@ class main:
                  .flatten() * self.region['celltokm'])
         self.stations_snapped_columns['darea'] = darea
         return
+
 
     def make_catchments(self):
         '''Make catchment raster and if catchmentprefix is set also vectors
@@ -552,6 +568,7 @@ class main:
         # create topology order
         order = {}  # unsorted dictionary
         for sid in tslen.keys():
+            # start from all headwaters and increase orders downstream
             if tslen[sid] == 0:
                 order[sid] = 1
                 ii, oi = sid, 1
@@ -559,8 +576,10 @@ class main:
                     ii = dsid[ii]
                     oi += 1
                     order[ii] = max(oi, order[ii]) if ii in order else oi
-        # order it again
-        self.stations_order = OrderedDict([(k, order[k]) for k in tslen.keys()])
+        import ipdb; ipdb.set_trace()
+        # order it again, if no order was found,
+        orderlist = [(k, order.pop(k, 1)) for k in tslen.keys()]
+        self.stations_order = OrderedDict(orderlist)
         oarr = np.array(self.stations_order.values(), dtype=int)
         self.stations_snapped_columns['strahler_order'] = oarr
         return
