@@ -291,6 +291,10 @@ class main:
         if not self.is_set('accumulation', 'drainage', 'streams'):
             grass.fatal('Either of these not set: accumulation, drainage, streams.')
 
+        # lothresh default
+        if 'lothresh' not in self.options:
+            self.lothresh = self.upthresh * 0.05
+
         # what to do with upthresh
         if self.is_set('upthreshcolumn'):
             gm('Will look for upper thresholds in the %s column.' %
@@ -304,10 +308,6 @@ class main:
             except:
                 grass.fatal('Cant read the upper threshold from the column %s'
                             % self.upthreshcolumn)
-
-        # lothresh default
-        if 'lothresh' not in self.options:
-            self.lothresh = np.mean(self.upthresh.values())*0.05
 
         # streamthresh
         if 'streamthresh' in self.options:
