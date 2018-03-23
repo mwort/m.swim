@@ -15,7 +15,7 @@ default: all
 all: $(MODULES) checkoutput
 
 checkoutput:
-	find $(TESTOUTPUTDIRS) -type f -exec sha1sum {} + > output.sha1
+	find $(TESTOUTPUTDIRS) -type f -exec shasum {} + > output.sha1
 
 clean:
 	rm -r $(TESTOUTPUTDIRS) $(GRASSTESTOUTPUT)
