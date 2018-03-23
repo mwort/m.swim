@@ -14,8 +14,9 @@ default: all
 
 all: $(MODULES) checkoutput
 
+# get shasum for each output file in pathname sorted list
 checkoutput:
-	find $(TESTOUTPUTDIRS) -type f -exec shasum {} + > output.sha1
+	find $(TESTOUTPUTDIRS) -type f | sort -f | xargs shasum > output.sha1
 
 clean:
 	rm -r $(TESTOUTPUTDIRS) $(GRASSTESTOUTPUT)
