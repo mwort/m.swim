@@ -821,6 +821,12 @@ class main:
         p.wait()
         # drop x y columns
         grun('v.db.dropcolumn', map=self.stations_snapped, columns='x,y')
+        # add other columns
+        cat = grass.vector_info(self.stations_snapped)['attribute_primary_key']
+        grun('g.copy', vector=self.stations+',stations__tmp', quiet=True)
+        catother = grass.vector_info('stations__tmp')['attribute_primary_key']
+        grun('v.db.join', map=self.stations_snapped, column=cat,
+             other_table='stations__tmp', other_column=catother, quiet=True)
         return
 
     def print_statistics(self):
