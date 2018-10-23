@@ -406,6 +406,76 @@ class main:
              type='line',quiet=True)
         return
 
+    def fig_file(self):
+        '''Write the .fig file needed for SWIM, subbasin vect needs to have a
+        subbasinID column and a nextID column'''
+        # get subbasinID and nextID or fromto array
+        fromto = readSubNxtID(self.subbasins)
+        # sort according to next and then subbasin ID
+        fromto = np.sort(fromto, order=('subbasinID',))
+
+        # lines list to be appended
+        lines = []
+
+        # write subbasin section
+        for sbcat in fromto:
+            sb = sbcat['subbasinID']
+            lines += [['subbasin', 1, sb, sb, sb, '']]
+
+        # ADD and ROUTE
+        # calculate stream order for each subbasin
+        order = subbasinorder(fromto)
+        # upload to subbasin table
+        otf = grass.tempfile()
+        # make 1 indexed
+        oar = np.array([order[s] for s in fromto['subbasinID']]) + 1
+        np.savetxt(otf, np.column_stack([fromto['subbasinID'], oar]),
+                   fmt='%i=%i')
+        grass.run_command('r.reclass', input=self.subbasinrast,
+                          output='sb__order', rules=otf, quiet=True)
+        grun('v.db.addcolumn', map=self.subbasins,
+             columns='strahler_order int')
+        grun('v.what.rast', map=self.subbasins, raster='sb__order',
+             type='centroid', column='strahler_order', quiet=True)
+        # get order of nextID subbasin
+        downstorder = fromto.copy()
+        for i, sb in enumerate(fromto['nextID']):
+            if sb > 0:
+                downstorder['nextID'][i] = order[sb]
+            else:
+                # outlet order
+                downstorder['nextID'][i] = max(order.values())
+
+        # next storage location, i.e. non subbasin
+        sID = fromto['subbasinID'].max()+1
+        # loop over subbasin orders and get addroute lines
+        maxorder = downstorder['nextID'].max()
+        downstorderNsb = []
+        for o in range(1, maxorder+1):
+            subs = fromto[downstorder['nextID'] == o]  # nextID is next order
+            # check if negative nextIDs/outlet is in there
+            subs = subs[subs['nextID'] > 0]
+            if len(subs) == 0:
+                continue  # in case of the real outlet
+            downstorderNsb += [(o, len(subs))]
+            # get the addrout lines
+            ls, routes = addroute(sID, subs)
+            lines += ls
+            # replace subbasinIDs by storageIDs from routes in fromto array
+            for r in routes:
+                ix = fromto['subbasinID'] == r['subbasinID']
+                fromto['subbasinID'][ix] = r['storageID']
+            # next storageID
+            sID = routes['storageID'].max() + 1
+        # add finish
+        lines += [['finish', 0, '', '', '', '']]
+
+        # write via numpy
+        np.savetxt(self.figpath, np.array(lines), fmt='%-15s%1s'+'%6s'*4)
+        gm('Wrote %s' % self.figpath)
+        return {'order': order, 'downstorder': downstorder,
+                'downstorderNsubbasins': downstorderNsb}
+
     def getCourse(self,headsb):
         '''Create river course from the headwater subbasin headsb to the outlet,
         that is reached when nextID<0.
@@ -464,66 +534,6 @@ def readSubNxtID(subbasinsvect,columns=('subbasinID','nextID','inletID')):
     # convert to numpy rec array
     t = np.array(zip(*tbl.T),dtype=zip(columns,(int,)*len(columns)))
     return t
-
-def fig(subbasins,fname):
-    '''Write the .fig file needed for SWIM, subbasin vect needs to have a
-    subbasinID column and a nextID column'''
-    # get subbasinID and nextID or fromto array
-    fromto = readSubNxtID(subbasins)
-    # sort according to next and then subbasin ID
-    fromto = np.sort(fromto, order=('subbasinID',))
-    ### TODO: fatal if more than one outlet
-
-    # lines list to be appended
-    lines = []
-
-    # write subbasin section
-    for sbcat in fromto:
-        sb = sbcat['subbasinID']
-        lines += [['subbasin',1,sb,sb,sb,'']]
-
-    ### ADD and ROUTE
-    # calculate stream order for each subbasin
-    order = subbasinorder(fromto)
-    # get order of nextID subbasin
-    downstorder = fromto.copy()
-    for i,sb in enumerate(fromto['nextID']):
-        if sb>0:
-            downstorder['nextID'][i] = order[sb]
-        else:
-            # outlet order
-            downstorder['nextID'][i] = max(order.values())
-
-    # next storage location, i.e. non subbasin
-    sID = fromto['subbasinID'].max()+1
-
-    # loop over subbasin orders and get addroute lines
-    maxorder = downstorder['nextID'].max()
-    #print 'Adding and routing flow of subbasins for each subbasin order:'
-    #print 'Order    Number of subbasins'
-    downstorderNsb = []
-    for o in range(1,maxorder+1):
-        subs = fromto[downstorder['nextID']==o] # nextID is the next sb order
-        # check if negative nextIDs/outlet is in there
-        subs = subs[subs['nextID']>0]
-        if len(subs)==0: continue # in case of the real outlet
-        #print '%5i%5i'  %(o,len(subs))
-        downstorderNsb += [(o,len(subs))]
-        # get the addrout lines
-        ls, routes = addroute(sID, subs)
-        lines += ls
-        # replace subbasinIDs by storageIDs from routes in fromto array
-        for r in routes:
-            fromto['subbasinID'][fromto['subbasinID']==r['subbasinID']] = r['storageID']
-        # next storageID
-        sID = routes['storageID'].max() + 1
-    # add finish
-    lines += [['finish', 0, '','','','']]
-
-    # write to file
-    writefig(lines, fname)
-
-    return {'order':order,'downstorder':downstorder,'downstorderNsubbasins':downstorderNsb}
 
 
 def subbasinorder(fromto):
@@ -596,15 +606,6 @@ def addroute(sID,fromto):
                       dtype=[('subbasinID',int),('storageID',int)])
     return (lines,routes)
 
-def writefig(lines,fname):
-    '''Write the lines calculated in fig to the figfile name fname'''
-    # format of columns
-    fmt = '%-15s%1s'+'%6s'*4
-    # write via numpy
-    np.savetxt(fname,np.array(lines),fmt=fmt)
-    gm('Wrote %s' %fname)
-    return
-
 
 if __name__=='__main__':
     st = dt.datetime.now()
@@ -638,9 +639,8 @@ if __name__=='__main__':
 
     ### .fig file
     if 'figpath' in main.options:
-        fname = os.path.join(main.figpath)
-        grass.message('Will write .fig file to %s!' %fname)
-        fig(main.outlets,fname)
+        grass.message('Will write .fig file to %s!' % main.figpath)
+        main.fig_file()
 
     # rivercouse
     if 'rivercourse' in main.options:
