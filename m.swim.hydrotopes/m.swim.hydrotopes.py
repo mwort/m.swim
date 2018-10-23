@@ -240,12 +240,12 @@ class main:
         '''Check if name option is given, if yes make a mask,
         if not make a blank map out of the default value.'''
         # if given, then it must be a raster, if not just make blank
-        if (hasattr(self, name) and
-            tuple(name.split('@')) in grass.list_pairs('rast')):
+        argv = getattr(self, name, None)
+        if argv:
             # make mask for DCELL and FCELL
-            if not grass.raster_info(self.__dict__[name])['datatype']=='CELL':
+            if not grass.raster_info(argv)['datatype'] == 'CELL':
                 outname = '%s__mask'%name
-                grass.mapcalc(exp=outname+'=isnull(%s)'%self.__dict__[name])
+                grass.mapcalc(exp=outname+'=isnull(%s)' % argv)
                 self.floatmaps[outname] = self.__dict__[name]
             else:
                 # CELL is just passed on
