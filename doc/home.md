@@ -2,6 +2,7 @@
 =======================================================
 
 ## Download and installation
+### Linux/Mac
 The code is hosted both at [PIK's GitLab](https://gitlab.pik-potsdam.de/wortmann/m.swim) and mirrored on [Github](https://github.com/mwort/m.swim). With GRASS >=7.2, install all modules via the build-in extension manager:
 ```
 g.extension m.swim url=https://github.com/mwort/m.swim
@@ -14,6 +15,11 @@ git clone git@gitlab.pik-potsdam.de:wortmann/m.swim.git
 g.extension m.swim url=path/to/m.swim/directory
 ```
 The modules can also be manually installed or used as python scripts if all things (i.e. g.extension) fail.
+
+### Windows
+Download the repository and use the modules as python scripts. This is because
+the standard Make add on compilation including the `g.extension url=<path>`
+argument doesn't work under Windows.
 
 ## Contributing, developing and debugging
 PIK cluster users can use the git repository on the cluster to make changes to the m.swim.\* code. Here is a quick [HOWTO](developing_debugging.md).
