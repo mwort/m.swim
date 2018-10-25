@@ -126,6 +126,17 @@
 
 #%Option
 #% guisection: Optional
+#% key: minmainstreams
+#% type: double
+#% required: no
+#% multiple: no
+#% label: Minimal drainage area headwater mainstreams, km2.
+#% description: All headwater subbasins below this area have a mainstream of 10% of their drainage area.
+#% answer: 50
+#%end
+
+#%Option
+#% guisection: Optional
 #% key: rivercourse
 #% type: string
 #% required: no
@@ -365,7 +376,11 @@ class main:
         cellcounts  = maxaccum[:,2]
         maxaccum    = maxaccum[:,1]
         # calculate optima accumulation for nice headwater mainstreams
-        optiaccum   = maxaccum-np.int32(cellcounts*0.1)
+        accr = grass.parse_command('r.info', map=self.accumulation, flags='g')
+        minaccum = np.int32(round(float(self.minmainstreams)*1e6 /
+                            (float(accr['nsres'])*float(accr['ewres']))))
+        minaccum = np.ones_like(maxaccum) * minaccum
+        optiaccum   = np.min([maxaccum-np.int32(cellcounts*0.1), minaccum], axis=0)
         # check incoming subbasins maxaccum and take the smallest accumulation to update optiaccum
         subnext     = readSubNxtID(self.outlets)
         optiaccum   = dict(zip(subbasinIDs,optiaccum))
