@@ -236,6 +236,16 @@
 #% answer: s
 #%end
 
+#%Option
+#% guisection: Optional
+#% key: rwatershedmemory
+#% type: integer
+#% required: no
+#% multiple: no
+#% key_desc: integer MB
+#% description: Limits memory usage of r.watershed in MB (slower)
+#%end
+
 #%Flag
 #% guisection: Optional
 #% key: s
@@ -323,6 +333,11 @@ class main:
         # if no r.watershed flags given
         if 'rwatershedflags' not in self.options:
             self.rwatershedflags = 's'
+        if 'rwatershedmemory' in self.options:
+            self.rwatershedflags += 'm'
+        else:
+            # default value/not used
+            self.rwatershedmemory = 300
 
         # check input for stats print
         if self.s:
@@ -396,7 +411,9 @@ class main:
                   'basin': 'standard__subbasins',
                   'slope_steepness': self.slopesteepness,
                   'length_slope': self.slopelength,
-                  'flags': self.rwatershedflags}
+                  'flags': self.rwatershedflags,
+                  'memory': self.rwatershedmemory}
+
         # check if depressions
         if self.is_set('depression'):
             kwargs['depression'] = self.depression
@@ -612,7 +629,8 @@ class main:
                 kwargs = {'elevation': self.elevation,
                           'basin'    : subbasins_uncut,
                           'threshold': thresh,
-                          'flags'    : self.rwatershedflags}
+                          'flags'    : self.rwatershedflags,
+                          'memory'   : self.rwatershedmemory}
                 # carved elevation
                 if 'streamcarve' in self.options:
                     kwargs['elevation'] = self.carvedelevation
