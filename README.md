@@ -1,20 +1,32 @@
 # The GRASS7 Soil and Water Integrated Model (SWIM) preprocessor
 
-Version v1.1
+Version v1.2
+
+## Documentation
+
+The documentation is located here:
+https://github.com/mwort/m.swim/wiki
 
 ## Version history
+
+*Version v1.2* - 2019-01-09
+- test project in sync with SWIM develop branch
+- output `stations_snapped` vector in `m.swim.subbasins` with topology
+  catchment info
+- docs migrated to markdown and as Github Wiki
+- `minmainstreams` argument to `m.swim.routing`
+- add subbasin order in `m.swim.routing` to subbasin table
+- `m.swim.substats` outputs just three files instead of three for each subbasin
+- `rwatershedmemory` argument to `m.swim.subbasins`
+- `m.swim.subbasins` output catchment names get station category postfix
+  (instead of running counter)
+- numerous bug fixes and refactoring
 
 *Version v1.1* - 2017-01-27:
 Some adjustments made to align output with current SWIM version (but not yet fully synchronised) including a small test suite and compatibility with g.extension (GRASS 7.2) for convenient installation.
 
 *Version v1.0* - 2016-09-18:
 First version develped between 2012-2016 producing a fully functional SWIM project but not sychronised with the development of the SWIM code.
-
-
-## Documentation
-
-The documentation is still located here:
-http://www.pik-potsdam.de/~wortmann/m.swim/doc
 
 
 ## Testing
@@ -40,3 +52,11 @@ To verify that the output is the same run:
 make checkoutput
 ```
 Checking the diff of the output.sha1 file will indicate output files that have changed (if any).
+
+
+## Releasing
+- change version in `README.md` and in header of all module files.
+- add change log in `README.md`
+- `git commit -a -m 'Bump version to vX.X.'`
+- `git tag vX.X`
+- `git push & git push --tags`
