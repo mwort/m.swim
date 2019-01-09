@@ -34,10 +34,10 @@ m.swim.substats &
 ```
 If you want to also set arguments on the command line and still open the GUI, just add a --ui flag. E.g.:
 ```
-m.swim.subbasin elevation=elevation@PERMANENT stations=stations upthresh=2 --ui &
+m.swim.subbasins elevation=elevation@PERMANENT stations=stations upthresh=2 --ui &
 ```
 Here are some screenshots of the GUI:
-![m.swim.subbasin](img/subbasin_screenshot.png)
+![m.swim.subbasins](img/subbasin_screenshot.png)
 
 The m.swim.subbasins GUI in the subbasin design tab.
 
