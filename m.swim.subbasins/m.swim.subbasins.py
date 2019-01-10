@@ -888,7 +888,7 @@ ID  excl. upstream   incl. upstream  outlet subbasin  upstream stations''')
         print('-----------------------------------------------------------------')
         print('Subbasin statistics (km2):')
         print(' '.join(['%-8s' %c for c in sub.keys()]))
-        for i in range(len(self.stations_upstream) + 1):
+        for i in range(len(cols) + 1):
             print(' '.join([sub[c][i] for c in sub]))
         print('-----------------------------------------------------------------')
         return scs, sbs
