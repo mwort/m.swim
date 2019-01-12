@@ -862,7 +862,7 @@ ID  excl. upstream   incl. upstream  outlet subbasin  upstream stations''')
         for i, a in enumerate(scs):
             upix = [np.where(scs['catchmentID'] == c)[0][0]
                     for c in self.stations_upstream[a[0]] if c in scs['catchmentID']]
-            upstsize = np.sum(scs['catchmentID'][upix])+a[1]
+            upstsize = np.sum(scs['size'][upix])+a[1]
             upstst = map(str, self.stations_upstream[a[0]])
             upstststr = ', '.join(upstst) if len(upstst) <= 3 else '%s stations' % len(upstst)
             print('%3i %14.2f %16.2f %16i  %s' % (a[0], a[1], upstsize,
