@@ -293,8 +293,8 @@ class main:
         # maps list
         ml=','.join(self.strcolumns)
         # take cross product of maps
-        g_run('r.cross', overwrite=True, flags='z',
-              input=ml, output=self.hydrotopes)
+        g_run('r.cross', overwrite=True, flags='z', input=ml,
+              output='hydrotopes__rcross')
 
         # read basic structure file info from hydrotope map
         struct = readinStr(self.strcolumns)
@@ -302,7 +302,7 @@ class main:
         # replace all float maps with float values
         for intmap,floatmap in self.floatmaps.items():
             # get mean hydrotope array with columns: hydrotope cats, mean
-            catval = hydrotopeQ(floatmap, self.hydrotopes)
+            catval = hydrotopeQ(floatmap, 'hydrotopes__rcross')
             # exchange column in strct with mean hydrotope value
             struct[intmap][catval['cat']] = catval['mean']
 
@@ -314,7 +314,9 @@ class main:
         grass.message('''%s hydrotopes created, %5.2f per subbasin on average, max.
 number of hydrotopes per subbasin %i
                       ''' %(len(struct),len(struct)/len(np.unique(struct[self.subbasins])),nmax))
-
+        # start hydrotope count at 1 instead of 0
+        grass.mapcalc('$output=$input+1', output=self.hydrotopes,
+                      input='hydrotopes__rcross')
         return struct
 
     def writeStr(self, array):
