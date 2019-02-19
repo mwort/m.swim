@@ -2,7 +2,8 @@ MODULE_TOPDIR =../..
 
 PGM = m.swim
 
-SUBDIRS = m.swim.subbasins \
+SUBDIRS = libmswim \
+          m.swim.subbasins \
           m.swim.hydrotopes \
           m.swim.routing \
           m.swim.substats \
