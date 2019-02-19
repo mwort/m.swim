@@ -670,11 +670,10 @@ class main:
 
         if self.is_set('predefined'):
             gm('Including predefined subbasins %s...' % self.predefined)
-            gwarn('Catchment boundaries are disregarded, doublecheck %s' %
-                  self.catchments)
             # avoid same numbers occur in subbasins
             predef = self.predefined.split('@')[0]+'__aboverange'
-            grass.mapcalc('%s=%s+%s' % (predef, self.predefined, lastmax))
+            grass.mapcalc('$output=if(isnull($c), null(), $p+$m)', m=lastmax,
+                          output=predef, p=self.predefined, c=self.catchments)
             # add to beginning of subbasins_rasters
             self.subbasins_rasters = OrderedDict([('predefined', predef)] +
                                                  self.subbasins_rasters.items())

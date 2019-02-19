@@ -9,6 +9,10 @@ https://github.com/mwort/m.swim/wiki
 
 ## Version history
 
+*upcomming*
+- fixed hydrotopes counting starting from 1
+- predefined subbasins will only be included if they are within the catchment
+
 *Version v1.2* - 2019-01-09
 - test project in sync with SWIM develop branch
 - output `stations_snapped` vector in `m.swim.subbasins` with topology

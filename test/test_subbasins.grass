@@ -12,6 +12,10 @@ $module elevation=elevation@PERMANENT stations=stations@PERMANENT \
 # $module elevation=elevation@PERMANENT stations=stations@PERMANENT \
 #                 upthresh=30 lothresh=1 subbasins=subbasins streamcarve=rivers@PERMANENT
 
+# with predefined subbasins
+# r.mapcalc exp='predefined=if(elevation>650, 1, null())'  # example
+# $module elevation=elevation@PERMANENT stations=stations@PERMANENT \
+#                  upthresh=40 lothresh=2 subbasins=subbasins predefined=predefined
 
 # make project dir
 mkdir -p project/input
