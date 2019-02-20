@@ -231,8 +231,8 @@ class main:
 
         # make outlet raster points, border subbasins with neg accumul. not correct
         grass.message('Searching outlets...')
-        grun('r.statistics', base=self.subbasinrast,cover=self.accumulation, method='max',
-             output='maxaccum__', **kw)
+        grun('r.stats.zonal', base=self.subbasinrast,cover=self.accumulation,
+             method='max', output='maxaccum__', flags='r', **kw)
         exp = "outlets__=if('%s' == @maxaccum__,%s,null())" %(self.accumulation,self.subbasinrast)
         grass.mapcalc(exp, **kw)
 
@@ -245,9 +245,9 @@ class main:
 
         # make inlets
         grass.message('Searching inlets...')
-        grun('r.statistics', base='outlets__grown__clumped', cover=self.accumulation,
-             method='max', output='maxoutlet__clumps', **kw)
-        grass.mapcalc("inlets__=if(%s == @maxoutlet__clumps,%s,null())" %(self.accumulation,self.subbasinrast), **kw)
+        grun('r.stats.zonal', base='outlets__grown__clumped', method='max',
+             cover=self.accumulation, output='maxoutlet__clumps', **kw)
+        grass.mapcalc("inlets__=if(%s == maxoutlet__clumps,%s,null())" %(self.accumulation,self.subbasinrast), **kw)
 
         # transfer inlet subbasinID to clumps
         grun('r.stats.zonal', base='outlets__grown__clumped', cover='inlets__',
@@ -371,7 +371,7 @@ class main:
         '''Create minimal stream network reaching all subbasins and with nice main streams'''
         # get max accumulation and cell count for each subbasin
         maxaccum = gread('r.stats',input='maxaccum__',flags='lcn')
-        maxaccum = np.array(maxaccum.split(),dtype=int).reshape((-1,3))
+        maxaccum = np.array(maxaccum.split(), dtype=float).reshape((-1, 3)).astype(int)
         subbasinIDs = maxaccum[:,0]
         cellcounts  = maxaccum[:,2]
         maxaccum    = maxaccum[:,1]
