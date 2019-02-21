@@ -370,11 +370,12 @@ class main:
     def mkstreams(self):
         '''Create minimal stream network reaching all subbasins and with nice main streams'''
         # get max accumulation and cell count for each subbasin
-        maxaccum = gread('r.stats',input='maxaccum__',flags='lcn')
-        maxaccum = np.array(maxaccum.split(), dtype=float).reshape((-1, 3)).astype(int)
-        subbasinIDs = maxaccum[:,0]
-        cellcounts  = maxaccum[:,2]
-        maxaccum    = maxaccum[:,1]
+        rsmaxaccum = gread('r.stats', input='maxaccum__', flags='lcn')
+        rsmaxaccum = np.array(rsmaxaccum.split(), dtype=float).reshape((-1, 3)).astype(int)
+        subbasinIDs = rsmaxaccum[:, 0]
+        maxaccum = rsmaxaccum[:, 1]
+        # cellcounts must not be larger than maxaccum (may happen in subbasins with more than 1 outlet)
+        cellcounts = np.min([rsmaxaccum[:, 2], maxaccum], axis=0)
         # calculate optima accumulation for nice headwater mainstreams
         accr = grass.parse_command('r.info', map=self.accumulation, flags='g')
         minaccum = np.int32(round(float(self.minmainstreams)*1e6 /
