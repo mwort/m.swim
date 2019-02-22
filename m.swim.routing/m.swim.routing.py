@@ -233,7 +233,7 @@ class main:
         grass.message('Searching outlets...')
         grun('r.stats.zonal', base=self.subbasinrast,cover=self.accumulation,
              method='max', output='maxaccum__', flags='r', **kw)
-        exp = "outlets__=if('%s' == @maxaccum__,%s,null())" %(self.accumulation,self.subbasinrast)
+        exp = "outlets__=if('%s' == int(@maxaccum__),%s,null())" %(self.accumulation,self.subbasinrast)
         grass.mapcalc(exp, **kw)
 
         grass.message('Growing outlets...')
@@ -246,8 +246,8 @@ class main:
         # make inlets
         grass.message('Searching inlets...')
         grun('r.stats.zonal', base='outlets__grown__clumped', method='max',
-             cover=self.accumulation, output='maxoutlet__clumps', **kw)
-        grass.mapcalc("inlets__=if(%s == maxoutlet__clumps,%s,null())" %(self.accumulation,self.subbasinrast), **kw)
+             cover=self.accumulation, output='maxoutlet__clumps', flags='r', **kw)
+        grass.mapcalc("inlets__=if(%s == int(@maxoutlet__clumps),%s,null())" %(self.accumulation,self.subbasinrast), **kw)
 
         # transfer inlet subbasinID to clumps
         grun('r.stats.zonal', base='outlets__grown__clumped', cover='inlets__',
