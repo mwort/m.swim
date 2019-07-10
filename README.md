@@ -13,6 +13,8 @@ https://github.com/mwort/m.swim/wiki
 - `streamthresh` is now a required parameter to `m.swim.subbasins`
 - fixed hydrotopes counting starting from 1
 - predefined subbasins will only be included if they are within the catchment
+- `m.swim.substats` is also writing out centroid latitude, reference elevation and initial water storage.
+
 
 *Version v1.2* - 2019-01-09
 - test project in sync with SWIM develop branch

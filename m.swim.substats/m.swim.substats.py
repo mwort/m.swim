@@ -51,6 +51,28 @@
 
 #%Option
 #% guisection: Subbasin
+#% key: elev0
+#% type: string
+#% required: no
+#% multiple: no
+#% key_desc: raster or value
+#% description: Reference elevation of the climate data to correct T and P.
+#% answer: 0
+#%end
+
+#%Option
+#% guisection: Subbasin
+#% key: sdtsav
+#% type: string
+#% required: no
+#% multiple: no
+#% key_desc: raster or value
+#% description: Initial water storage in the subbasin, m3
+#% answer: 0
+#%end
+
+#%Option
+#% guisection: Subbasin
 #% key: sl
 #% type: string
 #% required: no
@@ -145,7 +167,7 @@
 #% multiple: no
 #% key_desc: order
 #% description: Order of values in .sub file (variables as given as arguments)
-#% answer: salb,sno,chl,chs,chw,chk,chn,ovn,rt,css,ecp,sl,stp
+#% answer: salb,sno,chl,chs,chw,chk,chn,ovn,rt,css,ecp,sl,stp,lat,elev0,sdtsav
 #%end
 
 #%Option
@@ -432,7 +454,8 @@ class main:
         self.functions = {'chl':self.mainChannelLength, ### MAIN CHANNEL LENGTH
                           'chs':self.mainChannelSlope,  ### MAIN CHANNEL SLOPE
                           'chw':self.channelWidth,      ### MAIN CHANNEL WIDTH
-                          'chd':self.channelDepth}      ### MAIN CHANNEL DEPTH
+                          'chd':self.channelDepth,      ### MAIN CHANNEL DEPTH
+                          'lat':self.centroid_latitude}
         self.functionsrasts = ['elevation','drainage','accumulation','mainstreams']
 
         # get needed parameters for the three files
@@ -547,10 +570,17 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
                                 column=self.options[param].split('@')[0])
 
         else: # try to calculate it
-            raster = self.functions[param]() # call the respective function
-            stats  = self.upload2Subbasins(raster,column=raster)
+            stats = self.functions[param]() # call the respective function
+            if type(stats) == str:
+                stats = self.upload2Subbasins(stats, column=stats)
             # correct channelLength
             if param=='chl': stats = self.correctChannelLength()
+        # report statistics
+        nn = ~np.isnan(stats)
+        nnans = len(np.where(~nn)[0])
+        gm("%s statistics:" % param)
+        gm("min: %s mean: %s max: %s number of nans: %s" %
+           (np.min(stats[nn]), np.mean(stats[nn]), np.max(stats[nn]), nnans))
         return stats
 
     def meanSubbasin(self,raster, method='average'):
@@ -576,11 +606,6 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
         # get column out of table
         stats=getTable(self.subbasins,dtype=float,
                        columns='subbasinID,%s' %column)[column]
-
-        # report statistics
-        nans=np.isnan(stats)
-        gm("%s statistics:" %raster)
-        gm("min: %s mean: %s max: %s number of nans: %s" %(np.min(stats[~nans]),np.mean(stats[~nans]),np.max(stats[~nans]),len(np.where(nans)[0])))
         return stats
 
     def makeMainStreamRast(self):
@@ -611,6 +636,25 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
         min: %s mean: %s max: %s n: %s''' %(v.min(),v.mean(),v.max(),len(v)))
 
         return fraction
+
+    def centroid_latitude(self):
+        centroids = 'subbasin__centroids'
+        grass.run_command('v.extract', input=self.subbasins, type='centroid',
+                          output=centroids, flags='t', quiet=True, overwrite=True)
+        tmpdir = grass.tempdir()
+        tmploc = 'lonlat'
+        grass.core.create_location(tmpdir, tmploc, epsg=4326)
+        grass.run_command('g.mapset', mapset='PERMANENT', location=tmploc,
+                          dbase=tmpdir, quiet=True)
+        grass.run_command('v.proj', input=centroids, mapset=self.env['MAPSET'],
+                          location=self.env['LOCATION_NAME'],
+                          dbase=self.env['GISDBASE'], quiet=True)
+        tbl = grass.read_command('v.report', map=centroids, option='coor')
+        lat = np.array([l.split('|')[2] for l in tbl.split()[1:]], dtype=float)
+        grass.run_command('g.mapset', mapset=self.env['MAPSET'],
+                          location=self.env['LOCATION_NAME'],
+                          dbase=self.env['GISDBASE'], quiet=True)
+        return lat
 
     def mainChannelLength(self,rasterout='mainChannelLength'):
         '''Calculate the main channel length from the main channel vector
