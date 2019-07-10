@@ -42,6 +42,17 @@
 #%end
 
 #%Option
+#% guisection: Input
+#% key: streamthresh
+#% type: double
+#% required: yes
+#% multiple: no
+#% key_desc: name
+#% label: Drainage area of smallest stream in km2 (influences station snapping)
+#% description: Stations will be snapped to these streams, ie. should not be smaller than the smallest catchment.
+#%end
+
+#%Option
 #% guisection: Subbasin design
 #% key: upthresh
 #% type: double
@@ -120,17 +131,6 @@
 #% description: Name of streams vector to be created (or existing if -d)
 #% answer: streams
 #% gisprompt: new,vector,vector
-#%end
-
-#%Option
-#% guisection: Topography
-#% key: streamthresh
-#% type: double
-#% required: no
-#% multiple: no
-#% key_desc: name
-#% label: Drainage area of smallest stream in km2 (influences station snapping, default: 10% of region)
-#% description: Stations will be snapped to these streams, ie. should not be smaller than the smallest catchment
 #%end
 
 #%Option

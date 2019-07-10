@@ -10,6 +10,7 @@ https://github.com/mwort/m.swim/wiki
 ## Version history
 
 *upcomming*
+- `streamthresh` is now a required parameter to `m.swim.subbasins`
 - fixed hydrotopes counting starting from 1
 - predefined subbasins will only be included if they are within the catchment
 
