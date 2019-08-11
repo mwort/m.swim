@@ -245,7 +245,7 @@ class main:
             # make mask for DCELL and FCELL
             if not grass.raster_info(argv)['datatype'] == 'CELL':
                 outname = '%s__mask'%name
-                grass.mapcalc(exp=outname+'=isnull(%s)' % argv)
+                grass.mapcalc(exp=outname+'=if(isnull(%s), 0, 1)' % argv)
                 self.floatmaps[outname] = self.__dict__[name]
             else:
                 # CELL is just passed on
