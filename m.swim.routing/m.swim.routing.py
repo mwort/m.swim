@@ -359,9 +359,8 @@ class main:
             lines+=line(oinfo[int(sb['subbasinID'])],sbinfo[int(sb['nextID'])])
         # write to tmpfile and read as lines
         tf=grass.tempfile()
-        f=file(tf,'w')
-        f.writelines(lines)
-        f.close()
+        with open(tf, 'w') as f:
+            f.writelines(lines)
         # make line vector
         grun('v.in.lines',input=tf,output=self.routingnet,separator=',',quiet=True)
         return
@@ -392,7 +391,7 @@ class main:
                 optiaccum[sn] = min(optiaccum[sn],maxaccum[sb]-1)
         # make raster
         tempf = grass.tempfile()
-        np.savetxt(tempf,optiaccum.items(),fmt='%i=%i')
+        np.savetxt(tempf, list(optiaccum.items()), fmt='%i=%i')
         grass.run_command('r.reclass',input='maxaccum__',output='optiaccum__',
                           rules=tempf,quiet=True)
         # get accumulation and make lines
@@ -541,14 +540,15 @@ def vreport(vect,index):
 
 def readSubNxtID(subbasinsvect,columns=('subbasinID','nextID','inletID')):
     '''Vector needs subbasinID, nextID and inletID column'''
-    tbl=grass.vector_db_select(subbasinsvect,columns=','.join(columns))['values'].values()
+    tbl=list(grass.vector_db_select(subbasinsvect,columns=','.join(columns))['values'].values())
     # check if empty cells
     tbl=np.array(tbl,dtype=np.unicode)
     for i,c in enumerate(columns):
         empty=tbl[tbl[:,i]==u'',i]
         if len(empty)>0: grass.fatal('The table %s has %s null values in column %s' %(subbasinsvect,len(empty),c))
     # convert to numpy rec array
-    t = np.array(zip(*tbl.T),dtype=zip(columns,(int,)*len(columns)))
+    t = np.array(list(zip(*tbl.T)),
+                 dtype=list(zip(columns,(int,)*len(columns))))
     return t
 
 
@@ -618,7 +618,7 @@ def addroute(sID,fromto):
         # increase storage location counter for next inlet
         sID += 1
     # format routes nicely
-    routes = np.array(zip(routesIDs.keys(),routesIDs.values()),
+    routes = np.array(list(zip(routesIDs.keys(), routesIDs.values())),
                       dtype=[('subbasinID',int),('storageID',int)])
     return (lines,routes)
 

@@ -801,7 +801,7 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
         for p in self.orders:
             fname = os.path.join(self.subpath,'%s.tab' % p)
             tbl = np.column_stack([np.arange(1,self.nsubbasins+1)]+[data[c] for c in self.orders[p]])
-            with file(fname,'w') as f:
+            with open(fname,'w') as f:
                 f.write(' '.join([cfmt%s for s in ['sub']+self.orders[p]])+'\n')
                 fmts = '%14i'+ ' '.join(['%'+precision+'f']*len(self.orders[p]))
                 np.savetxt(f, tbl, fmt=fmts)
@@ -810,16 +810,13 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
     def writeFileCio(self):
         '''Write the file.cio file for the SWIM input, subbasins should be
         array with subbasinIDs'''
-        outname = os.path.join(self.projectpath,'file.cio')
+        outname = os.path.join(self.projectpath, 'file.cio')
         # file.cio filename length in file list
         fnlen = 13
         # get subbasin cats
         subbasins = np.array(gread('r.stats',input='subbasin__rast',
                     flags='n', quiet=True).split(),dtype=int)
-        # open file
-        f = file(outname,'w')
         # needed files / header
-        fmt = lambda l: '%13s'*len(l)+'\n'
         named = ['.cod', '.fig', '.str', '.bsn', '.lut']
         headerlines = [  # number of empty lines at start
                        [self.projectname+ex for ex in named],
@@ -828,8 +825,6 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
                        ('runoff.dat',),
                        ('clim1.dat',),
                        ('clim2.dat',)] + [[]]*2  # number of empty lines at end
-        # write header
-        for l in headerlines: f.write(fmt(l) %tuple(l))
         # columns
         cols = [list(subbasins)] + [[0]*len(subbasins)]*4
         ilen = len(str(int(self.nsubbasins)))
@@ -838,10 +833,14 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
         for e in ['sub','rte','gw']:
             cols+= [[(self.projectname+'%0'+str(ilen)+'i.%s') %(n,e) for n in subbasins]]
         # write
-        fmt = 5*'%4i'+3*(' %'+str(fnlen-1)+'s')+'\n'
-        for l in zip(*cols): f.write(fmt %l)
-        f.close()
-        grass.message( 'Wrote %s' %outname)
+        with open(outname, 'w') as f:
+            # write header
+            for l in headerlines:
+                f.write(('%13s'*len(l)+'\n') % tuple(l))
+                fmt = 5*'%4i'+3*(' %'+str(fnlen-1)+'s')+'\n'
+            for l in zip(*cols):
+                f.write(fmt % l)
+        grass.message('Wrote %s' % outname)
         return
 
 
@@ -849,7 +848,8 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
 def rstats(rast,flags='n'):
     '''Return r.stats output as a sorted array'''
     values=grass.parse_command('r.stats',input=rast,flags=flags,separator='=')
-    array =np.array(zip(values.keys(),values.values()),dtype=[('id',int),('value',float)])
+    array = np.array(list(zip(values.keys(), values.values())),
+                     dtype=[('id', int), ('value', float)])
     array.sort(order='id')
     return array
 
@@ -873,22 +873,25 @@ def getTable(vector,dtype='S250',**kw):
         dtypes.update(dict(zip(cols,dtype)))
 
     # first check for empty entries
-    tbl = np.array(values,dtype=zip(cols,['S250']*len(cols)))
+    tbl = np.array(values, dtype=list(zip(cols, ['S250']*len(cols))))
     convertedvals = []
     for c in cols:
         i = tbl[c]==''
-        if len(tbl[c][i])>0:
-            print 'Column %s has %s empty cells, will be parsed as float.' %(c,len(tbl[c][i]))
+        if len(tbl[c][i]) > 0:
+            grass.warning('Column %s has %s empty cells, will be parsed as '
+                          'float.' % (c, len(tbl[c][i])))
             if dtypes[c] in [float,int]:
                 dtypes[c]=float
                 tbl[c][i]='nan'
         # actual type conversion
         convertedvals += [np.array(tbl[c],dtype=dtypes[c])]
     # now properly make it
-    tbl = np.array(zip(*convertedvals),dtype=[(c,dtypes[c]) for c in cols])
+    tbl = np.array(list(zip(*convertedvals)),
+                   dtype=[(c, dtypes[c]) for c in cols])
     # now set nans
     #for c in ix: tbl[c][ix[c]]=np.nan
     return tbl
+
 
 if __name__=='__main__':
     st = dt.datetime.now()

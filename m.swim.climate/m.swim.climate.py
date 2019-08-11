@@ -276,16 +276,17 @@ class Interpolation:
             fnames += [os.path.join(self.datadir,str(n)+self.ext)]
             if not os.path.exists(fnames[-1]): grass.warning('%s doesnt exisist!' %fnames[-1])
         # get needed cols
-        cols = np.array(zip(coor['cat'],
-                            fnames,coor['x'],coor['y'],
-                            a[self.stationelevation]),
-                        dtype=[('cat',int),('fnames','S1000'),('x',float),('y',float),('z',float)])
+        cols = np.array(list(zip(coor['cat'],
+                                 fnames,coor['x'],coor['y'],
+                                 a[self.stationelevation])),
+                        dtype=[('cat',int),('fnames','S1000'),('x',float),
+                               ('y',float),('z',float)])
         # write file
         sfpath = os.path.join(self.outdir,'stationfile.dat')
         self.stfile = sfpath
-        f = file(sfpath,'w')
-        f.write('ID  FILE                       POINT_X     POINT_Y            ELEV\n')
-        np.savetxt(f, cols, fmt='%6i  %-'+str(len(self.datadir)+32)+'s%12.1f%12.1f%10.1f')
+        with open(sfpath, 'w') as f:
+            f.write('ID  FILE                       POINT_X     POINT_Y            ELEV\n')
+            np.savetxt(f, cols, fmt='%6i  %-'+str(len(self.datadir)+32)+'s%12.1f%12.1f%10.1f')
         gm( 'Saved climate stations to %s' %sfpath)
 
         return
@@ -297,10 +298,10 @@ class Interpolation:
 
         # save to file
         sfpath = os.path.join(self.outdir,'virtualstationfile.dat')
-        f = file(sfpath,'w')
-        f.write('id    x     y      z\n')
-        np.savetxt(f, coor, fmt='%6i %12.1f%12.1f%10.1f')
-        gm( 'Saved virtual stations to %s' %sfpath)
+        with open(sfpath, 'w') as f:
+            f.write('id    x     y      z\n')
+            np.savetxt(f, coor, fmt='%6i %12.1f%12.1f%10.1f')
+        gm('Saved virtual stations to %s' %sfpath)
         self.vstfile=sfpath
         return
 
@@ -311,7 +312,9 @@ class Interpolation:
         dist = gread('v.distance', flags='pa', from_=self.subbasins, from_type='centroid',
                to=self.climstations, dmax=self.maxdist*1e3, upload='dist')
         dist = [tuple(l.split('|')) for l in dist.split()]
-        dist = np.array(dist[1:],dtype=zip(['from_cat','to_cat','distance'],[int,int,float]))
+        dist = np.array(dist[1:],
+                        dtype=list(zip(['from_cat','to_cat','distance'],
+                                       [int,int,float])))
         n = len(np.unique(dist['from_cat']))
         if n==0: grass.fatal('No subbasins have corresponding climstation within the maxdist.')
         grass.warning('%s subbasins have %3.1f climstations on average within the maxdist.' \
@@ -342,24 +345,22 @@ class Interpolation:
         return aggregated
 
     def writePARfile(self):
-
-        f = file(os.path.join(self.outdir,'INTERPOL.PAR'),'w')
-        f.write('ClimateStationFile %r \n' %self.stfile)
-        f.write('VirtualStations %r \n' %self.vstfile)
-        f.write('OutputPath %r \n' %(self.outdir+'/'))
-        f.write('PrecCorr %s \n' %(str(bool(self.p)).upper()))
-        f.write('NoDataValue %r \n' %str(self.nodata))
-        f.write('BeginDate %r \n' %self.start)
-        f.write('EndDate %r \n' %self.end)
-        # Method
-        method = {'IDW':1, 'Kriging': 3}[self.method]
-        if self.e: method += 1
-        f.write('InterpolationMethod %s \n' %(' '.join(6*[str(method)])))
-        f.write('NumNeighboursMax %s \n' %self.maxnb)
-        f.write('NumNeighboursMin %s \n' %self.minnb)
-        f.write('Maxdist %s \n' %(self.maxdist*1e3))
-
-        f.write('''distributed  FALSE \nSubbasinMap ""  \nDemMap ""''')
+        with open(os.path.join(self.outdir,'INTERPOL.PAR'), 'w') as f:
+            f.write('ClimateStationFile %r \n' %self.stfile)
+            f.write('VirtualStations %r \n' %self.vstfile)
+            f.write('OutputPath %r \n' %(self.outdir+'/'))
+            f.write('PrecCorr %s \n' %(str(bool(self.p)).upper()))
+            f.write('NoDataValue %r \n' %str(self.nodata))
+            f.write('BeginDate %r \n' %self.start)
+            f.write('EndDate %r \n' %self.end)
+            # Method
+            method = {'IDW':1, 'Kriging': 3}[self.method]
+            if self.e: method += 1
+            f.write('InterpolationMethod %s \n' %(' '.join(6*[str(method)])))
+            f.write('NumNeighboursMax %s \n' %self.maxnb)
+            f.write('NumNeighboursMin %s \n' %self.minnb)
+            f.write('Maxdist %s \n' %(self.maxdist*1e3))
+            f.write('''distributed  FALSE \nSubbasinMap ""  \nDemMap ""''')
 
 
 def vectCoordsTbl(vect):
@@ -381,9 +382,13 @@ def vectCoordsTbl(vect):
             except ValueError: columns += [c]
     # now fuse to make recArray of table and of coordinates
     tblcols  = columns[:-3]
-    tbl   = np.array(zip(*tblcols), dtype=zip(colnames,[c.dtype for c in tblcols]))
+    tbl   = np.array(list(zip(*tblcols)),
+                     dtype=list(zip(colnames,
+                                    [c.dtype for c in tblcols])))
     coorcols = [columns[0]]+columns[-3:]
-    coor  = np.array(zip(*coorcols), dtype=zip(['cat','x','y','z'],[c.dtype for c in coorcols]))
+    coor = np.array(list(zip(*coorcols)),
+                    dtype=list(zip(['cat','x','y','z'],
+                                   [c.dtype for c in coorcols])))
 
     return coor,tbl
 

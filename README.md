@@ -14,6 +14,7 @@ https://github.com/mwort/m.swim/wiki
 - fixed hydrotopes counting starting from 1
 - predefined subbasins will only be included if they are within the catchment
 - `m.swim.substats` is also writing out centroid latitude, reference elevation and initial water storage.
+- Python3-proofed to run with grass 7.8
 
 
 *Version v1.2* - 2019-01-09
