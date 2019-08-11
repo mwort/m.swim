@@ -2,7 +2,7 @@
 #
 ############################################################################
 #
-# MODULE:      m.swim.hydrotopes v1.2
+# MODULE:      m.swim.hydrotopes v1.3
 # AUTHOR(S):   Michel Wortmann, wortmann@pik-potsdam.de
 # PURPOSE:     Preprocessing suit for the Soil and Water Integrated Model (SWIM)
 # COPYRIGHT:   (C) 2012-2019 by Wortmann/PIK

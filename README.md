@@ -1,6 +1,6 @@
 # The GRASS7 Soil and Water Integrated Model (SWIM) preprocessor
 
-Version v1.2
+Version v1.3
 
 ## Documentation
 
@@ -9,7 +9,7 @@ https://github.com/mwort/m.swim/wiki
 
 ## Version history
 
-*upcomming*
+*Version v1.3* - 2019-08-11
 - `streamthresh` is now a required parameter to `m.swim.subbasins`
 - fixed hydrotopes counting starting from 1
 - predefined subbasins will only be included if they are within the catchment
