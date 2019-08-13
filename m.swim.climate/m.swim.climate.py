@@ -509,7 +509,7 @@ if __name__=='__main__':
     keywords = o; keywords.update(f)
 
     # decide what climate module
-    if 'grid'!='':
+    if keywords['grid'] != '':
         main=Grid(**keywords)
 
         # make grid
