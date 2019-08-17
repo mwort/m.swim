@@ -858,7 +858,8 @@ def rinfo(rast):
 def runivar(rast):
     return grass.parse_command('r.univar',map=rast,flags='g')
 
-def getTable(vector,dtype='S250',**kw):
+
+def getTable(vector, dtype='U250', **kw):
     '''Get a vector table into a numpy field array, dtype can either be one
     for all or a list for each column'''
     tbl = grass.vector_db_select(vector,**kw)
@@ -873,10 +874,10 @@ def getTable(vector,dtype='S250',**kw):
         dtypes.update(dict(zip(cols,dtype)))
 
     # first check for empty entries
-    tbl = np.array(values, dtype=list(zip(cols, ['S250']*len(cols))))
+    tbl = np.array(values, dtype=list(zip(cols, ['U250']*len(cols))))
     convertedvals = []
     for c in cols:
-        i = tbl[c]==''
+        i = tbl[c] == u''
         if len(tbl[c][i]) > 0:
             grass.warning('Column %s has %s empty cells, will be parsed as '
                           'float.' % (c, len(tbl[c][i])))

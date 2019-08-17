@@ -373,7 +373,7 @@ def vectCoordsTbl(vect):
     colnames = t[0]
     t=np.array(t[1:])
     # set empty cell to nan
-    t[t=='']=np.nan
+    t[t == b''] = np.nan
     columns = []
     for c in t.T: # loop over columns
         try: columns += [np.array(c,int)]
