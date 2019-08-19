@@ -160,7 +160,7 @@ class main:
     DEFAULTS = {'management': 1,
                 'wetland':    0,
                 'glaciers':   0,
-                'contourrast':   0}
+                'contours':   0}
 
     def __init__(self,**optionsandflags):
         '''Process all arguments and prepare processing'''
@@ -193,7 +193,7 @@ class main:
             # create contourrast
             self.mkContours()
         else:
-            self.contourrast = self._maskOrBlank('contourrast')
+            self.contourrast = self._maskOrBlank('contours')
         # add to columns
         self.strcolumns += [self.contourrast]
         self.floatmaps[self.contourrast] = self.elevation
@@ -244,7 +244,7 @@ class main:
         if argv:
             # make mask for DCELL and FCELL
             if not grass.raster_info(argv)['datatype'] == 'CELL':
-                outname = '%s__mask'%name
+                outname = '%s__mask' % name
                 grass.mapcalc(exp=outname+'=if(isnull(%s), 0, 1)' % argv)
                 self.floatmaps[outname] = self.__dict__[name]
             else:
