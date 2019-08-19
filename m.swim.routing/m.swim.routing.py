@@ -544,7 +544,7 @@ def readSubNxtID(subbasinsvect,columns=('subbasinID','nextID','inletID')):
     # check if empty cells
     tbl=np.array(tbl,dtype=np.unicode)
     for i,c in enumerate(columns):
-        empty=tbl[tbl[:,i]==u'',i]
+        empty=tbl[tbl[:,i] == u'', i]
         if len(empty)>0: grass.fatal('The table %s has %s null values in column %s' %(subbasinsvect,len(empty),c))
     # convert to numpy rec array
     t = np.array(list(zip(*tbl.T)),
@@ -579,10 +579,10 @@ def subbasinorder(fromto):
     #sys.stdout.write('\n')
     # assign remaining unique inlet, i.e. outlet the next higher order and for
     # its nextID (the same negative) another index higher
-    order[int(orderX['subbasinID'])]=i
-    order[-int(orderX['subbasinID'])]=i+1
+    order.update({int(s)*o: i+a for s in orderX['subbasinID']
+                  for o, a in [(1, 0), (-1, 1)]})
 
-    gm('Outlet subbasin order: %s' %i)
+    gm('Outlet subbasin order: %s' % i)
     return order
 
 def addroute(sID,fromto):
