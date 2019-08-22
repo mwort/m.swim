@@ -716,8 +716,8 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
             grun('v.db.update', map=self.subbasins, column=self.chl,
                  qcolumn='perim__', where=where,quiet=True)
 
-            # remove perimeter column
-            grun('v.db.dropcolumn',map=self.subbasins,column='perim__',quiet=True)
+        # remove perimeter column
+        grun('v.db.dropcolumn',map=self.subbasins,column='perim__',quiet=True)
         # make raster again if needed
         if len(nolength)>0 or len(toolong)>0:
             grun('v.to.rast',input=self.subbasins,output=self.chl,use='attr',
