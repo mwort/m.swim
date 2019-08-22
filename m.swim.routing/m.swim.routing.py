@@ -388,7 +388,7 @@ class main:
         for sn in np.unique(subnext['nextID']):
             if sn < 0: continue
             for sb in subnext[subnext['nextID']==sn]['subbasinID']:
-                optiaccum[sn] = min(optiaccum[sn],maxaccum[sb]-1)
+                optiaccum[sn] = max(optiaccum[sn],maxaccum[sb]-1)
         # make raster
         tempf = grass.tempfile()
         np.savetxt(tempf, list(optiaccum.items()), fmt='%i=%i')
