@@ -543,9 +543,15 @@ def readSubNxtID(subbasinsvect,columns=('subbasinID','nextID','inletID')):
     tbl=list(grass.vector_db_select(subbasinsvect,columns=','.join(columns))['values'].values())
     # check if empty cells
     tbl=np.array(tbl,dtype=np.unicode)
-    for i,c in enumerate(columns):
-        empty=tbl[tbl[:,i] == u'', i]
-        if len(empty)>0: grass.fatal('The table %s has %s null values in column %s' %(subbasinsvect,len(empty),c))
+    empty = (tbl == u'').any(1)
+    if empty.sum() > 0:
+        outsb = tbl[empty, 0]  # assumes first column to be subbasinID
+        tbl[empty, 1] = outsb
+        # inletID=1
+        tbl[empty, 2] = '1'
+        grass.warning('Empty nextID values found. This is likely '
+                      'caused by multiple outlets for one subbasin. The '
+                      'subbasins %s will become outlets.' % outsb)
     # convert to numpy rec array
     t = np.array(list(zip(*tbl.T)),
                  dtype=list(zip(columns,(int,)*len(columns))))
