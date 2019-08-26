@@ -593,6 +593,9 @@ class main:
                     ii = dsid[ii]
                     oi += 1
                     order[ii] = max(oi, order[ii]) if ii in order else oi
+                    if oi > len(tslen):
+                        grass.fatal('Station %s seems to have a circular'
+                                    'topology (%r)' % (sid, dsid[ii]))
         # order it again, if no order was found,
         orderlist = [(k, order.pop(k, 1)) for k in tslen.keys()]
         self.stations_order = OrderedDict(orderlist)
