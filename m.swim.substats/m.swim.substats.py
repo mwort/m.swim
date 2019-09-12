@@ -517,9 +517,8 @@ class main:
             # only if chl and chs is empty, make proper mainstream rast
             self.mainstreamrast = self.makeMainStreamRast()
 
-        # get current maps and environment
-        self.maps = {t:grass.list_grouped(t) for t in ['rast','vect']}
-        self.env  = grass.gisenv()
+        # get current environment
+        self.env = grass.gisenv()
         return
 
     def subbasinStats(self):
@@ -558,12 +557,11 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
             try: # default value given
                 stats = float(self.options[param])*np.ones(self.nsubbasins)
                 grass.message( 'Using default value for %s = %s' %(param,stats[0]))
-            except: # map name given
-                rast = self.options[param].split('@')
-                rast,maps = {1: (rast[0],self.env['MAPSET']),2: rast}[len(rast)]
-                if rast not in self.maps['rast'][maps]:
-                    grass.fatal('%s not found.' %self.options[param])
-                grass.message( 'Will use average subbasin values of %s for %s.' %(self.options[param],param))
+            except ValueError:  # map name given
+                if not grass.find_file(self.options[param])['name']:
+                    grass.fatal('%s not found.' % self.options[param])
+                grass.message('Will use average subbasin values of %s for %s.'
+                              % (self.options[param], param))
                 # upload mean values to subbasins table
                 rastname = self.meanSubbasin(self.options[param])
                 stats    = self.upload2Subbasins(rastname,
