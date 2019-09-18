@@ -37,6 +37,17 @@
 #% gisprompt: old,cell,raster
 #% answer: accumulation
 #%end
+#%Option
+#% guisection: Required
+#% key: drainage
+#% type: string
+#% required: yes
+#% multiple: no
+#% key_desc: name
+#% description: CELL/integer drainage raster, e.g. m.swim.subbasins
+#% gisprompt: old,cell,raster
+#% answer: drainage
+#%end
 
 #%Flag
 #% guisection: Output
@@ -115,24 +126,12 @@
 
 #%Option
 #% guisection: Optional
-#% key: streams
-#% type: string
-#% required: no
-#% multiple: no
-#% key_desc: vect
-#% description: Predefined streams to include in mainstreams output
-#% gisprompt: old,vector,vector
-#%end
-
-#%Option
-#% guisection: Optional
 #% key: minmainstreams
 #% type: double
 #% required: no
 #% multiple: no
 #% label: Minimal drainage area headwater mainstreams, km2.
-#% description: All headwater subbasins below this area have a mainstream of 10% of their drainage area.
-#% answer: 50
+#% description: All headwater subbasins below this area (or if not given) have a single cell mainstream.
 #%end
 
 #%Option
@@ -216,7 +215,6 @@ class main:
         '''Calculate the routing for the subbasins given as vector. A column will
         be add to the subbasin table called nextSubbasinID and overwrites the following:
         a vector called subbasinoutlets
-        a vector called streams
 
         Search radius (in cells) determines how many cells around the outlet should
         be checked for inlet, should be greater than 1. The larger, the more likely
@@ -365,60 +363,103 @@ class main:
         grun('v.in.lines',input=tf,output=self.routingnet,separator=',',quiet=True)
         return
 
+    def _headwater_mainstreams(self):
+        """Create headwater mainstreams and patch with mainstreams__drain
+        to create mainstreams__patched for processing in mkstreams."""
+        subbasin_info = grass.raster_info(self.subbasins)
+        resolution = np.mean([subbasin_info['ewres'], subbasin_info['nsres']])
+        minaccum = int(round(float(self.minmainstreams)*1e6/resolution**2))
+        subnext = readSubNxtID(self.outlets)
+        nxtid = np.unique(subnext['nextID'])
+        hw = np.array([s for s in subnext['subbasinID'] if s not in nxtid])
+        tempf = grass.tempfile()
+        np.savetxt(tempf, np.column_stack([hw, np.ones_like(hw)*minaccum]),
+                   fmt='%i=%i')
+        grass.run_command('r.reclass', input=self.subbasinrast, quiet=True,
+                          output='headwater__minaccum', rules=tempf)
+        grass.mapcalc("headwater__mainstreams=if($ac > $hwm, $ac, null())",
+                      ac=self.accumulation, hwm='headwater__minaccum')
+        grun('r.thin', input="headwater__mainstreams",
+             output="headwater__mainstreams__thin", quiet=True)
+        grun('r.to.vect', input="headwater__mainstreams__thin",
+             output="headwater__mainstreams", type='line', quiet=True)
+        # check topology of headwater streams
+        grun('v.net', input="headwater__mainstreams", operation="nodes",
+             flags='c', output="headwater__mainstreams__network", quiet=1)
+        grun('v.db.addtable', map="headwater__mainstreams__network",
+             layer=2, columns='accumulation int', quiet=True)
+        grun('v.what.rast', map="headwater__mainstreams__network", layer=2,
+             raster=self.accumulation, column="accumulation", flags='i',
+             quiet=True)
+        tbl = grass.read_command('v.net', operation='report', quiet=True,
+                                 input="headwater__mainstreams__network")
+        topo_tbl = np.array(tbl.split(), dtype=int).reshape(-1, 3)
+        accumtbl = grass.vector_db_select(
+            "headwater__mainstreams__network", layer=2,
+            columns='accumulation')
+        accum = {i: float(v[0]) for i, v in accumtbl['values'].iteritems()}
+        wrongdirs = [lid for lid, st, en in topo_tbl
+                     if accum[st] > accum[en]]
+        if len(wrongdirs) > 0:
+            grun('v.edit', tool="flip", map="headwater__mainstreams__network",
+                 cats=wrongdirs, type="line", quiet=True)
+        grun('v.patch', output="mainstreams__patched", quiet=True,
+             input="mainstreams__drain,headwater__mainstreams__network")
+        return
 
     def mkstreams(self):
-        '''Create minimal stream network reaching all subbasins and with nice main streams'''
-        # get max accumulation and cell count for each subbasin
-        rsmaxaccum = gread('r.stats', input='maxaccum__', flags='lcn')
-        rsmaxaccum = np.array(rsmaxaccum.split(), dtype=float).reshape((-1, 3)).astype(int)
-        subbasinIDs = rsmaxaccum[:, 0]
-        maxaccum = rsmaxaccum[:, 1]
-        # cellcounts must not be larger than maxaccum (may happen in subbasins with more than 1 outlet)
-        cellcounts = np.min([rsmaxaccum[:, 2], maxaccum], axis=0)
-        # calculate optima accumulation for nice headwater mainstreams
-        accr = grass.parse_command('r.info', map=self.accumulation, flags='g')
-        minaccum = np.int32(round(float(self.minmainstreams)*1e6 /
-                            (float(accr['nsres'])*float(accr['ewres']))))
-        minaccum = np.ones_like(maxaccum) * minaccum
-        optiaccum   = np.min([maxaccum-np.int32(cellcounts*0.1), minaccum], axis=0)
-        # check incoming subbasins maxaccum and take the smallest accumulation to update optiaccum
-        subnext     = readSubNxtID(self.outlets)
-        optiaccum   = dict(zip(subbasinIDs,optiaccum))
-        maxaccum    = dict(zip(subbasinIDs,maxaccum))
-        for sn in np.unique(subnext['nextID']):
-            if sn < 0: continue
-            for sb in subnext[subnext['nextID']==sn]['subbasinID']:
-                optiaccum[sn] = max(optiaccum[sn],maxaccum[sb]-1)
-        # make raster
-        tempf = grass.tempfile()
-        np.savetxt(tempf, list(optiaccum.items()), fmt='%i=%i')
-        grass.run_command('r.reclass',input='maxaccum__',output='optiaccum__',
-                          rules=tempf,quiet=True)
-        # get accumulation and make lines
-        grass.mapcalc("{0}__unthin=if({1} > {2},{1},null())".format(self.mainstreams,
-                      self.accumulation,'optiaccum__'),overwrite=True)
+        '''Create minimal stream network reaching all subbasins.
 
-        # make sure all pixels between outlets and inlets are included
-        #grun('v.to.rast',input=self.outletinletlines,output='routingnet__rast',
-        #     use='val',type='line',quiet=True)
-        #grass.mapcalc("{0}=if(isnull({0})&~isnull({1}),{2},{0})".format(self.mainstreams,
-        #              'routingnet__rast',self.accumulation),overwrite=True)
-        grun('r.thin', input=self.mainstreams+'__unthin', output=self.mainstreams, overwrite=True, quiet=True) # may exclude outlet/inlet points
+        Characteristics:
+        - headwater subbasins have streams larger than minmainstreams parameter
+        - direction of lines point downstream
+        - there are nodes at each line itersection, at subbasin boundaries and
+          headwater subbasinoutlets
+        '''
+        # use r.drain to get all lines from subbasin outlets to the outlet
+        grass.mapcalc('elevation__cost__1=1', quiet=True)
+        grass.mapcalc("drainage__dg=%s*45" % self.drainage, quiet=True)
+        sf = ("drain" if 'minmainstreams' in self.options else "patched")
+        grun('r.drain', flags='d', input="elevation__cost__1",
+             direction="drainage__dg", output="mainstreams__drain",
+             drain="mainstreams__"+sf, start_points=self.outlets, quiet=True)
+        # create headwater mainstreams if minmainstreams given
+        if 'minmainstreams' in self.options:
+            self._headwater_mainstreams()
 
-        # use predefined streams for subbasins that have them
-        if 'streams' in self.options:
-            grun('v.to.rast',input=self.streams,output='stream__rast',
-             use='val',type='line',val=1,quiet=True)
-            grun('r.thin', input='stream__rast', output='stream__rast__thin',
-                 overwrite=True, quiet=True)
-            grun('r.stats.zonal',base=self.subbasinrast,cover='stream__rast__thin',
-                 method='sum',output='n__streams__subbasins',quiet=True,overwrite=True)
-            # get subbasins that have at least x cells of streams
-            grass.mapcalc('{0}=if(n__streams__subbasins>10,{1},{0})'.format(self.mainstreams,'stream__rast__thin'),
-                            overwrite=True)
-        # make final vector
-        grun('r.to.vect', input=self.mainstreams, output=self.mainstreams,
-             type='line',quiet=True)
+        # clean duplicate lines and assign unique category
+        grun('v.clean', flags='c', input="mainstreams__patched", type="line",
+             output="mainstreams__drain__cleaned", tool="break", quiet=True)
+        grun('v.category', input="mainstreams__drain__cleaned", option="del",
+             cat=-1, output="mainstreams__drain__cleaned__nocats", quiet=True)
+        grun('v.category', input="mainstreams__drain__cleaned__nocats",
+             option="add", output="mainstreams__minimal", quiet=True)
+        grun('v.db.addtable', map="mainstreams__minimal", quiet=True)
+        # split at subbasin boundaries and cut to subbasin extent
+        grun('v.overlay', ainput="mainstreams__minimal", binput=self.subbasins,
+             output="mainstreams__subbasins", operator="and", atype='line',
+             quiet=True)
+        grun('g.copy', vector="mainstreams__subbasins,mainstreams__split",
+             quiet=True)
+        grun('v.db.droptable', map="mainstreams__split", layer=1, flags='f',
+             quiet=True)
+        grun('v.db.addtable', map="mainstreams__split", quiet=True)
+        grun('v.rast.stats', map="mainstreams__split",
+             raster=self.accumulation, method="minimum,average,maximum",
+             column_prefix='accumulation', quiet=True)
+        # get subbasinID column from old vector
+        grun('v.db.join', map="mainstreams__split", column="cat",
+             other_table="mainstreams__subbasins", other_column="cat",
+             subset='b_subbasinID', quiet=True)
+        grun('v.db.renamecolumn', map="mainstreams__split",
+             column="b_subbasinID,subbasinID", quiet=True)
+        # make valid network for network analysis with nodes in layer 2
+        grun('v.net', input="mainstreams__split", output=self.mainstreams,
+             operation="nodes", flags='c', quiet=True)
+        grun('v.db.addtable', map=self.mainstreams, layer=2, quiet=True)
+        # make raster with subbasinIDs
+        grun('v.to.rast', input=self.mainstreams, output=self.mainstreams,
+             use='attr', type='line', attribute_column='subbasinID', quiet=1)
         return
 
     def fig_file(self):

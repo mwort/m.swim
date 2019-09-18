@@ -14,4 +14,4 @@ mkdir -p project/input
 
 # routing
 $module subbasins=subbasins accumulation=accumulation \
-                  figpath=project/input/blank.fig
+                  figpath=project/input/blank.fig minmainstreams=50

@@ -9,6 +9,17 @@ https://github.com/mwort/m.swim/wiki
 
 ## Version history
 
+*upcoming release*
+- `m.swim.routing`: topologically correct mainstreams vector output
+  - downstream directions, nodes at intersections and subbasin boundaries
+  - subbasinID and accumulation (min, mean, max) columns in table
+  - network nodes in layer 2 (for network analysis)
+  - optional `minmainstreams` parameter, by default headwater subbasins have
+    1-cell mainstream
+  - new required parameter `drainage` instead of `streams` which is set to the
+    default output of `m.swim.subbasins`
+
+
 *Version v1.3* - 2019-08-11
 - `streamthresh` is now a required parameter to `m.swim.subbasins`
 - fixed hydrotopes counting starting from 1
