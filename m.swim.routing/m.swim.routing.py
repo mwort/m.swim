@@ -379,6 +379,11 @@ class main:
                           output='headwater__minaccum', rules=tempf)
         grass.mapcalc("headwater__mainstreams=if($ac > $hwm, $ac, null())",
                       ac=self.accumulation, hwm='headwater__minaccum')
+        # if threshold produced no streams
+        if int(grass.raster_info('headwater__mainstreams')['ncats']) == 0:
+            grun('g.rename', vector='mainstreams__drain,mainstreams__patched',
+                 quiet=True)
+            return
         grun('r.thin', input="headwater__mainstreams",
              output="headwater__mainstreams__thin", quiet=True)
         grun('r.to.vect', input="headwater__mainstreams__thin",
