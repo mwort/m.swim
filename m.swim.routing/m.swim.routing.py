@@ -380,7 +380,8 @@ class main:
         grass.mapcalc("headwater__mainstreams=if($ac > $hwm, $ac, null())",
                       ac=self.accumulation, hwm='headwater__minaccum')
         # if threshold produced no streams
-        if int(grass.raster_info('headwater__mainstreams')['ncats']) == 0:
+        rinfo = grass.raster_info('headwater__mainstreams')
+        if not (rinfo['min'] and rinfo['max']):  # if empty raster
             grun('g.rename', vector='mainstreams__drain,mainstreams__patched',
                  quiet=True)
             return
