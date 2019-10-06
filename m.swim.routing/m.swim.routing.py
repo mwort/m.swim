@@ -382,8 +382,10 @@ class main:
         subbasin_info = grass.raster_info(self.subbasins)
         resolution = np.mean([subbasin_info['ewres'], subbasin_info['nsres']])
         minaccum = int(round(float(self.minmainstreams)*1e6/resolution**2))
-        grass.mapcalc("headwater__mainstreams=if($ac > $hwm*$ma, $ac, null())",
-                      ac=self.accumulation, hwm='headwater__sb', ma=minaccum)
+        grun('v.to.rast', input=self.subbasins, output='headwater__sb',
+             where='strahler_order=1', use='val', value=minaccum, quiet=True)
+        grass.mapcalc("headwater__mainstreams=if($ac > $hwm, $ac, null())",
+                      ac=self.accumulation, hwm='headwater__sb')
         # if threshold produced no streams
         rinfo = grass.raster_info('headwater__mainstreams')
         if not (rinfo['min'] and rinfo['max']):  # if empty raster
@@ -414,8 +416,6 @@ class main:
         if len(wrongdirs) > 0:
             grun('v.edit', tool="flip", map="headwater__mainstreams__network",
                  cats=wrongdirs, type="line", quiet=True)
-        grun('v.patch', output="mainstreams__patched", quiet=True,
-             input="mainstreams__drain,headwater__mainstreams__network")
         return
 
     def mkstreams(self):
@@ -427,33 +427,43 @@ class main:
         - there are nodes at each line itersection, at subbasin boundaries and
           headwater subbasinoutlets
         '''
-        subnext = readSubNxtID(self.outlets)
-        nxtid = np.unique(subnext['nextID'])
-        hw = np.array([s for s in subnext['subbasinID'] if s not in nxtid])
-        tempf = grass.tempfile()
-        np.savetxt(tempf, np.column_stack([hw, np.ones_like(hw)]),
-                   fmt='%i=%i')
-        grun('r.reclass', input=self.subbasinrast, quiet=True,
-             output='headwater__sb', rules=tempf)
-        grun('v.db.addcolumn', map=self.outlets, column='headwater int')
-        grun('v.what.rast', map=self.outlets, raster='headwater__sb',
-             column='headwater', quiet=True)
-        grun('v.extract', input=self.outlets, output='headwater__outlets',
-             where='headwater=1', quiet=True)
-        # use r.drain to get all lines from subbasin outlets to the outlet
+        order = readSubNxtID(self.outlets,
+                             columns=('subbasinID', 'strahler_order'))
         grass.mapcalc('elevation__cost__1=1', quiet=True)
-        grass.mapcalc("drainage__dg=%s*45" % self.drainage, quiet=True)
-        sf = ("drain" if 'minmainstreams' in self.options else "patched")
-        grun('r.drain', flags='d', input="elevation__cost__1", quiet=True,
-             direction="drainage__dg", output="mainstreams__drain",
-             drain="mainstreams__"+sf, start_points="headwater__outlets")
+        grun('v.to.rast', input=self.outlets, output='outlets__strahler',
+             use='attr', type='point', attribute_column='strahler_order',
+             quiet=True)
+        exps = "$out=if(isnull($s), $d*45, if($s!=$o, null(), $d*45))"
+        streams = []
+        unique, counts = np.unique(order['strahler_order'], return_counts=True)
+        orders = unique[counts > 1]
+        no = len(orders)
+        for i, o in enumerate(orders):
+            exp = "$out=$d*45" if i+1 == no else exps
+            grass.mapcalc(exp, o=o, d=self.drainage, s='outlets__strahler',
+                          out="drainage__dg__%i" % o, quiet=True)
+            grun('v.extract', input=self.outlets, output='outlets__%i' % o,
+                 where='strahler_order=%i' % o, quiet=True)
+        # use r.drain to get all lines from subbasin outlets to the outlet
+        # coult be replaced in grass>7.6 by
+        # r.path input=drainage format=45degree vector_path=mainstreams__drain
+        # start_points=headwater__outlets
+            grun('r.drain', flags='d', input="elevation__cost__1", quiet=True,
+                 direction="drainage__dg__%i" % o, output="mainstreams__drain",
+                 drain="mainstreams__drain__%i" % o,
+                 start_points='outlets__%i' % o)
+            streams.append("mainstreams__drain__%i" % o)
+            grass.core.percent(i+1, no, 1)
         # create headwater mainstreams if minmainstreams given
         if 'minmainstreams' in self.options:
             self._headwater_mainstreams()
+            streams.append("headwater__mainstreams__network")
 
-        # clean duplicate lines and assign unique category
-        grun('v.clean', flags='c', input="mainstreams__patched", type="line",
-             output="mainstreams__drain__cleaned", tool="break", quiet=True)
+        grun('v.patch', output="mainstreams__patched", quiet=True,
+             input=streams)
+        grun('v.clean', flags='c', input="mainstreams__patched", tool="break",
+             type="line", output="mainstreams__drain__cleaned", quiet=True)
+        # assign unique category
         grun('v.category', input="mainstreams__drain__cleaned", option="del",
              cat=-1, output="mainstreams__drain__cleaned__nocats", quiet=True)
         grun('v.category', input="mainstreams__drain__cleaned__nocats",
