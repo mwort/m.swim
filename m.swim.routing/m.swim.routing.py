@@ -310,8 +310,23 @@ class main:
                 for c in ['nextID','inletID']:
                     update(s['subbasinID'],m,c,s[c])
 
-        # check outlets again for reporting
+        # check outlets again for reporting and strahler_order
         sboutin = readSubNxtID(self.subbasins)
+
+        order = subbasinorder(sboutin)
+        # upload to subbasin table
+        otf = grass.tempfile()
+        # make 1 indexed
+        oar = np.array([order[s] for s in sboutin['subbasinID']]) + 1
+        np.savetxt(otf, np.column_stack([sboutin['subbasinID'], oar]),
+                   fmt='%i=%i')
+        grass.run_command('r.reclass', input=self.subbasinrast,
+                          output='sb__order', rules=otf, quiet=True)
+        for v in [self.subbasins, self.outlets]:
+            grun('v.db.addcolumn', map=v, columns='strahler_order int')
+            grun('v.what.rast', map=v, raster='sb__order',
+                 type='point,centroid', column='strahler_order', quiet=True)
+
         outlets = sboutin[sboutin['subbasinID']==sboutin['nextID']]
         outlets = np.append(outlets,sboutin[sboutin['nextID']<=0])
         grass.message('Subbasin(s) %s is(are) outlet(s)' %outlets['subbasinID'])
@@ -477,7 +492,8 @@ class main:
         '''Write the .fig file needed for SWIM, subbasin vect needs to have a
         subbasinID column and a nextID column'''
         # get subbasinID and nextID or fromto array
-        fromto = readSubNxtID(self.subbasins)
+        fromto = readSubNxtID(
+            self.subbasins, columns=('subbasinID', 'nextID', 'strahler_order'))
         # sort according to next and then subbasin ID
         fromto = np.sort(fromto, order=('subbasinID',))
 
@@ -491,19 +507,7 @@ class main:
 
         # ADD and ROUTE
         # calculate stream order for each subbasin
-        order = subbasinorder(fromto)
-        # upload to subbasin table
-        otf = grass.tempfile()
-        # make 1 indexed
-        oar = np.array([order[s] for s in fromto['subbasinID']]) + 1
-        np.savetxt(otf, np.column_stack([fromto['subbasinID'], oar]),
-                   fmt='%i=%i')
-        grass.run_command('r.reclass', input=self.subbasinrast,
-                          output='sb__order', rules=otf, quiet=True)
-        grun('v.db.addcolumn', map=self.subbasins,
-             columns='strahler_order int')
-        grun('v.what.rast', map=self.subbasins, raster='sb__order',
-             type='centroid', column='strahler_order', quiet=True)
+        order = dict(zip(fromto['subbasinID'], fromto['strahler_order']))
         # get order of nextID subbasin
         downstorder = fromto.copy()
         for i, sb in enumerate(fromto['nextID']):
