@@ -52,7 +52,7 @@
 #%Flag
 #% guisection: Output
 #% key: r
-#% label: Only remake routing network and .fig file (eg. after manual editing, outlets and inlets needed!)
+#% label: Only remake routing network, mainstreams and .fig file (eg. after manual editing, outlets and inlets needed!)
 #%end
 
 #%Option
@@ -278,11 +278,9 @@ class main:
         grun('v.db.join',map=self.subbasins,column=self.subb_col,
              otable=self.outlets,ocolumn='subbasinID',scolumns=self.nextsubb_col+',inletID',
              quiet=True)
-        # check outlets
-        self.checkOutletAndFromto()
 
         gm('Routing successfully completed. nextID and inletID added to %s table.' %self.subbasins)
-
+        grun('r.mask', flags='r', quiet=True)
         return
 
     def checkOutletAndFromto(self):
@@ -702,8 +700,8 @@ if __name__=='__main__':
         grass.message('Will calculate routing for %s' %main.subbasins)
         main.routing()
 
-    # if r set, check outlets and fromto again
-    if main.r: main.checkOutletAndFromto()
+    # check outlets and fromto
+    main.checkOutletAndFromto()
 
     # calculate routing network and mainstreams if set
     if 'routingnet' in main.options:
@@ -711,8 +709,9 @@ if __name__=='__main__':
         main.buildRoutingNet()
 
     # routing network needs to be set to calculate mainstreams
-    if not main.r and 'mainstreams' in main.options and 'routingnet' in main.options:
-        grass.message('Creating mainstream network in %s...' %main.mainstreams)
+    if 'mainstreams' in main.options:
+        grass.message('Creating mainstream network in %s...'
+                      % main.mainstreams)
         main.mkstreams()
 
     ### .fig file
@@ -727,8 +726,6 @@ if __name__=='__main__':
     # clean
     if not main.k:
         grass.run_command('g.remove',type='raster,vector', pattern='*__*',flags='fb',quiet=True)
-        # remove mask
-        grun('r.mask',flags='r',quiet=True)
 
     # report time it took
     delta = dt.datetime.now()-st
