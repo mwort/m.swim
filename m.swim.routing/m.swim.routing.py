@@ -410,7 +410,7 @@ class main:
         accumtbl = grass.vector_db_select(
             "headwater__mainstreams__network", layer=2,
             columns='accumulation')
-        accum = {i: float(v[0]) for i, v in accumtbl['values'].iteritems()}
+        accum = {i: float(v[0]) for i, v in accumtbl['values'].items()}
         wrongdirs = [lid for lid, st, en in topo_tbl
                      if accum[st] > accum[en]]
         if len(wrongdirs) > 0:
