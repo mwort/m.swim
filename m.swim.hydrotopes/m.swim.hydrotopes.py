@@ -357,9 +357,8 @@ def hydrotopeQ(cover,hydrotopemap):
                            flags='gt').split('\n')[:-1] #:-1 as last line hast line break]
     tbl = [tuple(l.split('|')) for l in tbl]
     tbl = np.array(tbl[1:], dtype=list(zip(tbl[0],['S250']*len(tbl[0]))))
-
-    return np.array(list(zip(tbl['zone'],tbl['mean'])), dtype=[('cat',np.int64),('mean',np.float64)])
-
+    tbl = np.array(list(zip(tbl['zone'],tbl['mean'])), dtype=[('cat',np.int64),('mean',np.float64)])
+    return tbl[np.isfinite(tbl['mean'])]
 
 
 if __name__=='__main__':
