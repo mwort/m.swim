@@ -826,8 +826,6 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
         # columns
         cols = [list(subbasins)] + [[0]*len(subbasins)]*4
         ilen = len(str(int(self.nsubbasins)))
-        if ilen+len(self.projectname)+5 > fnlen:
-            raise NameError('Name %s should be no longer than %s.' %(self.projectname,fnlen-ilen-5))
         for e in ['sub','rte','gw']:
             cols+= [[(self.projectname+'%0'+str(ilen)+'i.%s') %(n,e) for n in subbasins]]
         # write
