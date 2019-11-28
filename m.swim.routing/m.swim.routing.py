@@ -252,10 +252,10 @@ class main:
              method='max', output='clumps__subbasinID', **kw)
 
         # make outlets vector with nice columns
-        grun('r.to.vect', input='outlets__', output=self.outlets,type='point',
-             flags='v',**kw)
-        grun('v.db.addcolumn', map=self.outlets, columns='subbasinID int', quiet=quiet)
-        grun('v.db.update', map=self.outlets, column='subbasinID', qcol='cat', quiet=quiet)
+        grun('r.to.vect', input='outlets__', output=self.outlets, type='point',
+             **kw)
+        grun('v.db.renamecolumn', map=self.outlets, column='value,subbasinID',
+             quiet=quiet)
         grun('v.db.dropcolumn',map=self.outlets, column='label',**kw)
 
         # make inlets point vector
@@ -604,18 +604,16 @@ def vreport(vect,index):
 
 def readSubNxtID(subbasinsvect,columns=('subbasinID','nextID','inletID')):
     '''Vector needs subbasinID, nextID and inletID column'''
+    assert columns[0] == 'subbasinID'
     tbl=list(grass.vector_db_select(subbasinsvect,columns=','.join(columns))['values'].values())
     # check if empty cells
     tbl=np.array(tbl,dtype=np.unicode)
     empty = (tbl == u'').any(1)
     if empty.sum() > 0:
         outsb = tbl[empty, 0]  # assumes first column to be subbasinID
-        tbl[empty, 1] = outsb
-        # inletID=1
-        tbl[empty, 2] = '1'
-        grass.warning('Empty nextID values found. This is likely '
-                      'caused by multiple outlets for one subbasin. The '
-                      'subbasins %s will become outlets.' % outsb)
+        tbl[empty, :] = outsb.repeat(len(columns)).reshape(-1, len(columns))
+        grass.warning('Empty values found in %r. of %s' %
+                      (columns, subbasinsvect))
     # convert to numpy rec array
     t = np.array(list(zip(*tbl.T)),
                  dtype=list(zip(columns,(int,)*len(columns))))
