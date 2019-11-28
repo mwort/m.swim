@@ -13,6 +13,10 @@ $module elevation=elevation@PERMANENT stations=stations@PERMANENT \
 # $module elevation=elevation@PERMANENT stations=stations@PERMANENT \
 #                 upthresh=30 lothresh=1 subbasins=subbasins streamcarve=rivers@PERMANENT
 
+# example with grided subbasins
+# $module elevation=elevation@PERMANENT stations=stations@PERMANENT \
+#         streamthresh=200 -l upthresh=1 lothresh=0.5 subbasins=subbasins
+
 # make project dir
 mkdir -p project/input
 

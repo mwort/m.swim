@@ -248,6 +248,18 @@
 
 #%Flag
 #% guisection: Optional
+#% key: g
+#% label: Create regular grid subbasins interpreting upthresh as the grid size.
+#%end
+
+#%Flag
+#% guisection: Optional
+#% key: l
+#% label: Create regular lonlat grid subbasins interpreting upthresh as the grid size.
+#%end
+
+#%Flag
+#% guisection: Optional
 #% key: s
 #% label: Just print statistics of subbasins, --o must be set
 #%end
@@ -385,7 +397,7 @@ class main:
 
         # clean
         if not self.k:
-            grass.run_command('g.remove', type='raster,vector', pattern='*__*',
+            grun('g.remove', type='raster,vector', pattern='*__*',
                               flags='fb', quiet=True)
         return
 
@@ -424,7 +436,8 @@ class main:
         grun('r.watershed', **kwargs)
 
         # save subbasins in dictionary
-        self.subbasinsdone[thresh] = 'standard__subbasins'
+        if not (self.g or self.l):
+            self.subbasinsdone[thresh] = 'standard__subbasins'
 
         # postprocess accumulation map
         grass.mapcalc("%s=int(if(accum__float <= 0,null(),accum__float))" %
@@ -508,7 +521,6 @@ class main:
                 .flatten() * self.region['celltokm'])
         self.stations_snapped_columns['darea'] = darea
         return
-
 
     def make_catchments(self):
         '''Make catchment raster and if catchmentprefix is set also vectors
@@ -639,7 +651,10 @@ class main:
                     kwargs['elevation'] = self.carvedelevation
 
                 # r.watershed to produce subbasins
-                grun('r.watershed', quiet=True, **kwargs)
+                if self.g or self.l:
+                    self.grid_subbasin(subbasins_uncut, self.upthresh[sid])
+                else:
+                    grun('r.watershed', quiet=True, **kwargs)
 
                 # add to done subbasins list
                 self.subbasinsdone[thresh] = subbasins_uncut
@@ -688,6 +703,35 @@ class main:
         # clean subbasin raster and vector keeping the same name
         self.clean_subbasins()
 
+        return
+
+    def grid_subbasin(self, output, size):
+        """Grid a raster with resolution size, optionally as lonlat."""
+        if self.l:
+            env = grass.gisenv()
+            grun('v.in.region', output='roi__', quiet=True)
+            # create temporary lonlat location
+            tmpdir, tmploc = grass.tempdir(), 'lonlat'
+            grass.core.create_location(tmpdir, tmploc, epsg=4326)
+            grun('g.mapset', mapset='PERMANENT', location=tmploc, dbase=tmpdir,
+                 quiet=True)
+            # reproj roi, smax in meters = 200km per degree
+            grun('v.proj', input='roi__', mapset=env['MAPSET'], quiet=True,
+                 location=env['LOCATION_NAME'], dbase=env['GISDBASE'])
+            grun('g.region', vector='roi__')
+        else:
+            grass.use_temp_region()
+        # create actual grid raster
+        grun('g.region', flags='a', res=size)
+        grass.mapcalc('$o = row()*col()', o=output)
+        if self.l:
+            # back to origional location and reproj
+            grun('g.mapset', mapset=env['MAPSET'], quiet=True,
+                 location=env['LOCATION_NAME'], dbase=env['GISDBASE'])
+            grun('r.proj', input=output, mapset='PERMANENT',
+                 location=tmploc, dbase=tmpdir, quiet=True)
+        else:
+            grass.del_temp_region()
         return
 
     def postprocess_catchments(self):

@@ -18,6 +18,10 @@ https://github.com/mwort/m.swim/wiki
     1-cell mainstream
   - new required parameter `drainage` instead of `streams` which is set to the
     default output of `m.swim.subbasins`
+- `m.swim.subbasin`: grided subbasin support
+  - `-g` enables grid subbasins in current locations projects
+  - `-l` enables grid subbasins in lon-lat projection
+- subbasinoutlets vector no longer has category IDs equal to the subbasinID
 
 
 *Version v1.3* - 2019-08-11
