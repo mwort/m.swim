@@ -425,15 +425,7 @@ class Grid:
         grass.run_command('v.proj',input=roi,mapset=self.env['MAPSET'],
                           location=self.env['LOCATION_NAME'],dbase=self.env['GISDBASE'],
                           quiet=True)
-        grass.run_command('g.region',vector=roi,quiet=True)
-        llregion = grass.region()
-
-        # bounds to extend to next resolution break
-        extent = {c:int(float(llregion[c])/self.res)*self.res for c in ('s','w')}
-        extent.update({c:int((float(llregion[c])+self.res)/self.res)*self.res for c in ('n','e')})
-        # set region
-        grass.run_command('g.region',res=self.res,**extent)
-        grass.message(('Lon/Lat extent of region:',extent))
+        grass.run_command('g.region', vector=roi, res=self.res, flags='a')
 
         # make grid
         grass.run_command('v.mkgrid',map=self.grid, type='area')
