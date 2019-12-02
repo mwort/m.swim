@@ -1,6 +1,6 @@
 # The GRASS7 Soil and Water Integrated Model (SWIM) preprocessor
 
-Version v1.3
+Version v1.4
 
 ## Documentation
 
@@ -9,7 +9,7 @@ http://www.pik-potsdam.de/~wortmann/m.swim/
 
 ## Version history
 
-*upcoming release*
+*Version v1.4* - 2019-12-02
 - `m.swim.routing`: topologically correct mainstreams vector output
   - downstream directions, nodes at intersections and subbasin boundaries
   - subbasinID and accumulation (min, mean, max) columns in table
@@ -24,6 +24,7 @@ http://www.pik-potsdam.de/~wortmann/m.swim/
 - documentation moved to http://www.pik-potsdam.de/~wortmann/m.swim
 - subbasinoutlets vector no longer has category IDs equal to the subbasinID
 - dropped `m.swim.run` as succeeded by [swimpy](http://www.pik-potsdam.de/~wortmann/swimpy/)
+
 
 *Version v1.3* - 2019-08-11
 - `streamthresh` is now a required parameter to `m.swim.subbasins`
@@ -55,10 +56,12 @@ http://www.pik-potsdam.de/~wortmann/m.swim/
 
 ## Testing
 
-There are tests for each grass module based on the Blankenstein catchment (upper Saale (Elbe). All required input maps are in the grassdb/utm32n/PERMANENT mapset, all tests should therefore be executed in:
+There are tests for each grass module based on the Blankenstein catchment
+(upper Saale (Elbe)). All required input maps are in the
+`grassdb/utm32n/PERMANENT` mapset, all tests should therefore be executed in:
 ```
 cd test
-grass70 grassdb/utm32n/PERMANENT
+grass grassdb/utm32n/PERMANENT
 ```
 Run all tests:
 ```
@@ -84,3 +87,4 @@ Checking the diff of the output.sha1 file will indicate output files that have c
 - `git commit -a -m 'Bump version to vX.X.'`
 - `git tag vX.X`
 - `git push & git push --tags`
+- publish docs: `cd doc; make [URL=...] publish`
