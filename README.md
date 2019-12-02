@@ -16,6 +16,8 @@ https://github.com/mwort/m.swim/wiki
   - network nodes in layer 2 (for network analysis)
   - optional `minmainstreams` parameter, by default headwater subbasins have
     1-cell mainstream
+  - `-d` flag allows `minmainstreams` to also apply to downstream subbasins
+    (mainly intended to be used for pluvial flood investigations)
   - new required parameter `drainage` instead of `streams` which is set to the
     default output of `m.swim.subbasins`
 - `m.swim.subbasin`: grided subbasin support

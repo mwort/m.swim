@@ -147,6 +147,12 @@
 
 #%Flag
 #% guisection: Optional
+#% key: d
+#% label: Also apply the minmainstreams threshold to downstream subbasins.
+#%end
+
+#%Flag
+#% guisection: Optional
 #% key: k
 #% label: Keep intermediate files (those named *__*)
 #%end
@@ -382,8 +388,9 @@ class main:
         subbasin_info = grass.raster_info(self.subbasins)
         resolution = np.mean([subbasin_info['ewres'], subbasin_info['nsres']])
         minaccum = int(round(float(self.minmainstreams)*1e6/resolution**2))
+        where = {} if self.d else {"where": 'strahler_order=1'}
         grun('v.to.rast', input=self.subbasins, output='headwater__sb',
-             where='strahler_order=1', use='val', value=minaccum, quiet=True)
+             use='val', value=minaccum, quiet=True, **where)
         grass.mapcalc("headwater__mainstreams=if($ac > $hwm, $ac, null())",
                       ac=self.accumulation, hwm='headwater__sb')
         # if threshold produced no streams
