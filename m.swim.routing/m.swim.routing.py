@@ -402,8 +402,7 @@ class main:
         grun('v.db.addtable', map="headwater__mainstreams__network",
              layer=2, columns='accumulation int', quiet=True)
         grun('v.what.rast', map="headwater__mainstreams__network", layer=2,
-             raster=self.accumulation, column="accumulation", flags='i',
-             quiet=True)
+             raster=self.accumulation, column="accumulation", quiet=True)
         tbl = grass.read_command('v.net', operation='report', quiet=True,
                                  input="headwater__mainstreams__network")
         topo_tbl = np.array(tbl.split(), dtype=int).reshape(-1, 3)
