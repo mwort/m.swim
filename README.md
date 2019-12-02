@@ -5,7 +5,7 @@ Version v1.3
 ## Documentation
 
 The documentation is located here:
-https://github.com/mwort/m.swim/wiki
+http://www.pik-potsdam.de/~wortmann/m.swim/
 
 ## Version history
 
@@ -21,6 +21,7 @@ https://github.com/mwort/m.swim/wiki
 - `m.swim.subbasin`: grided subbasin support
   - `-g` enables grid subbasins in current locations projects
   - `-l` enables grid subbasins in lon-lat projection
+- documentation moved to http://www.pik-potsdam.de/~wortmann/m.swim
 - subbasinoutlets vector no longer has category IDs equal to the subbasinID
 
 
