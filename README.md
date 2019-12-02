@@ -23,7 +23,7 @@ http://www.pik-potsdam.de/~wortmann/m.swim/
   - `-l` enables grid subbasins in lon-lat projection
 - documentation moved to http://www.pik-potsdam.de/~wortmann/m.swim
 - subbasinoutlets vector no longer has category IDs equal to the subbasinID
-
+- dropped `m.swim.run` as succeeded by [swimpy](http://www.pik-potsdam.de/~wortmann/swimpy/)
 
 *Version v1.3* - 2019-08-11
 - `streamthresh` is now a required parameter to `m.swim.subbasins`
