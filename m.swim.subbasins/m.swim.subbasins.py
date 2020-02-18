@@ -47,7 +47,7 @@
 #% type: double
 #% required: yes
 #% multiple: no
-#% key_desc: name
+#% key_desc: km2
 #% label: Drainage area of smallest stream in km2 (influences station snapping)
 #% description: Stations will be snapped to these streams, ie. should not be smaller than the smallest catchment.
 #%end
