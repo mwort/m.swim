@@ -19,13 +19,14 @@
 #%End
 
 #%Option
-#% guisection: Subbasins
+#% guisection: Input
 #% key: subbasins
 #% type: string
 #% multiple: no
 #% key_desc: name
-#% label: Subbasins vector or raster
+#% label: Subbasins raster
 #% description: SWIM subbasins
+#% required: yes
 #% gisprompt: old,raster,raster
 #%end
 
@@ -36,8 +37,9 @@
 #% multiple: no
 #% required: no
 #% key_desc: name
-#% label: Name of new or old grid vector
-#% description: Resulting climate grid area vector with centroids and table or if -d existing grid vector with lon & lat columns
+#% required: yes
+#% label: (Output/input) Name of new or old grid vector
+#% description: Resulting climate grid area vector with centroids and table or if -d existing vector with lon & lat columns
 #%end
 
 #%Option
@@ -50,9 +52,28 @@
 #% description: grid size in degrees
 #%end
 
+#%Option
+#% guisection: Grid
+#% key: lon_column
+#% type: char
+#% multiple: no
+#% key_desc: column name
+#% answer: lon
+#% description: If grid is prescribed, use this column as lon value.
+#%end
 
 #%Option
 #% guisection: Grid
+#% key: lat_column
+#% type: char
+#% multiple: no
+#% key_desc: column name
+#% answer: lat
+#% description: If grid is prescribed, use this column as lat value.
+#%end
+
+#%Option
+#% guisection: Output
 #% key: ncinfopath
 #% type: string
 #% required: no
@@ -118,7 +139,8 @@ class Grid:
 
         # make grid
         grass.run_command('v.mkgrid',map=self.grid, type='area')
-        grass.run_command('v.db.addcolumn',map=self.grid,columns='lon double,lat double')
+        cols = '%s double,%s double' % (self.lon_column, self.lat_column)
+        grass.run_command('v.db.addcolumn', map=self.grid, columns=cols)
         grass.run_command('v.to.db', map=self.grid, type='centroid',
                           option='coor', columns='lon,lat',quiet=True)
 
@@ -133,8 +155,8 @@ class Grid:
 
     def getSubbasinGridProportions(self):
         # make raster
-        grass.run_command('v.to.rast',input=self.grid,output=self.grid+'__',
-                          use='cat',type='area')
+        grass.run_command('v.to.rast', input=self.grid, output=self.grid+'__',
+                          use='cat', type="area,point")
 
         # grow grid if predefined
         if self.d:
@@ -158,7 +180,8 @@ class Grid:
     def writeNCInfo(self,tbl):
 
         # get lon,lats (ditionary with cell ids as keys and [lon,lat] as entry
-        lonlatmap = grass.vector_db_select(self.grid,columns='lon,lat')['values']
+        cols = "%s,%s" % (self.lon_column, self.lat_column)
+        lonlatmap = grass.vector_db_select(self.grid, columns=cols)['values']
 
         # pickout lonlats for gridids
         lons = np.array([lonlatmap[i][0] for i in tbl['gridID']],float)

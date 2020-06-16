@@ -1,6 +1,7 @@
 944f23aa2fabcd2b3ad8d400112a85b555702179  project/input/blank.fig
 aff62e1f3a488792ff7d1664dd96e4d7b5e491b2  project/input/blank.str
 70a834221af862b2cf86300a33ad977e2aae1ac6  project/input/climate/ncgrid.dat
+0760045b26828f8432baa2a03c587a3d326a8bb4  project/input/climate/ncgrid_from_points.dat
 4d73e9fda32b4e29a6dbc9af39c1ca0a411790a5  project/input/file.cio
 34d0cd9443203a2474a6ce7e4f81f68ace177769  project/input/gauges.output
 ce13cccf8c326065f74064e0887dceec5cdc461b  project/input/Sub/groundwater.tab
