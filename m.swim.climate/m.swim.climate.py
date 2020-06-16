@@ -55,7 +55,7 @@
 #%Option
 #% guisection: Grid
 #% key: lon_column
-#% type: char
+#% type: string
 #% multiple: no
 #% key_desc: column name
 #% answer: lon
@@ -65,7 +65,7 @@
 #%Option
 #% guisection: Grid
 #% key: lat_column
-#% type: char
+#% type: string
 #% multiple: no
 #% key_desc: column name
 #% answer: lat
@@ -74,19 +74,30 @@
 
 #%Option
 #% guisection: Output
+#% key: gridfilepath
+#% type: string
+#% required: no
+#% multiple: no
+#% key_desc: path
+#% description: path/name of the subbasin-grid file that will be written
+#% gisprompt: new,file,file
+#%end
+
+#%Option
+#% guisection: Output
 #% key: ncinfopath
 #% type: string
 #% required: no
 #% multiple: no
-#% key_desc: path/myproj.dat
-#% description: path/name of the nc info file that will be written
+#% key_desc: path
+#% description: Deprecated, use gridfilepath
 #% gisprompt: new,file,file
 #%end
 
 #%Flag
 #% guisection: Optional
 #% key: d
-#% label: Predefined grid, will be 'grown' onto subbasin area if smaller
+#% label: Predefined grid, will be 'grown' onto subbasin area if smaller or the grid are points.
 #%end
 
 #%Flag
@@ -111,6 +122,13 @@ class Grid:
         for o in optionsandflags:
             if optionsandflags[o]!='': self.options[o] = optionsandflags[o]
         self.__dict__.update(self.options)
+
+        if "ncinfopath" in self.options and "gridfilepath" not in self.options:
+            self.gridfilepath = self.ncinfopath
+            import warnings
+            warnings.warn(
+                "ncinfopath is deprecated and will be removed, "
+                "use gridfilepath instead.", DeprecationWarning)
 
         # get some location infos
         self.env=grass.gisenv()
@@ -198,8 +216,8 @@ class Grid:
         # write out
         fmt = '%12i %12.3f %12.3f %12.6f'
         head= '%10s '%'subbasinID' + '%12s %12s %12s'%('lon','lat','weight')
-        np.savetxt(self.ncinfopath,outtbl,fmt=fmt,header=head)
-        grass.message('Wrote %s lines and %s columns to %s'%(outtbl.shape+(self.ncinfopath,)))
+        np.savetxt(self.gridfilepath,outtbl,fmt=fmt,header=head)
+        grass.message('Wrote %s lines and %s columns to %s'%(outtbl.shape+(self.gridfilepath,)))
         return 0
 
 

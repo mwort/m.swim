@@ -6,6 +6,15 @@ An arbitrary grid can be defined by parsing it to <b>grid</b> and the <b>-d</b>
 flag. 
 </p>
 
+<h2>EXAMPLE</h2>
+
+Write a subbasin-grid mapping for a regular, 0.5 degree grid:
+<pre>m.swim.climate subbasins=subbasins grid=halfdg_grid res=0.5 gridfilepath=project/input/climate/halfdg_grid.dat</pre>
+<br>
+Use points to define the grid with custom lat/lon column names and write out grid file:
+<pre>m.swim.climate subbasins=subbasins -d grid=grid_points lon_column=rlon lat_column=rlat gridfilepath=project/input/climate/halfdg_grid.dat</pre>
+<br>
+
 <h2>SEE ALSO</h2>
 
 <a href="m.swim.subbasins.html">m.swim.subbasins</a>,

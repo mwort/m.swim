@@ -13,6 +13,7 @@ http://www.pik-potsdam.de/~wortmann/m.swim/
   - support for R-based climate interpolation input dropped
   - point-defined grid definition enabled via `grid=`, `-d` and optionally
     `lon_column, lat_column`, e.g. for rotated grids
+  - `ncinfopath` argument to `gridfilepath` with deprecation notice
 
 *Version v1.4* - 2019-12-02
 - `m.swim.routing`: topologically correct mainstreams vector output

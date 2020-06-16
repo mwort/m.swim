@@ -24,9 +24,6 @@ html: help_pages
 publish: html
 	rsync -av html/ $(URL)
 
-test:
-	echo $(URL)
-
 
 clean:
 	rm -rf html m.swim.*.html

@@ -61,6 +61,7 @@ All GRASS manuals come with a manual page as the last tab in the GUI or you can 
 - [m.swim.hydrotopes](m.swim.hydrotopes.md)
 - [m.swim.routing](m.swim.routing.md)
 - [m.swim.substats](m.swim.substats.md)
+- [m.swim.climate](m.swim.climate.md)
 
 ## Prerequisits
 -   the DEM must be slightly larger then the entire topographical catchment, by one cell in each direction to be precise. Using a precut DEM is therefore not advisable, but this can be overcome by adding an 'a' to the rwatershedflags in the m.swim.subbasins (this might lead to errors later on though).
