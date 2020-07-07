@@ -239,7 +239,7 @@ if __name__=='__main__':
     # calculate proportional coverage with subbasins
     tbl = main.getSubbasinGridProportions()
 
-    if 'ncinfopath' in main.options:
+    if 'ncinfopath' in main.options or 'gridfilepath' in main.options:
         main.writeNCInfo(tbl)
 
     # clean
