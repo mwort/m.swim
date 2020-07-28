@@ -1,6 +1,6 @@
 # The GRASS7 Soil and Water Integrated Model (SWIM) preprocessor
 
-Version v1.4
+Version v1.5
 
 ## Documentation
 
@@ -8,7 +8,7 @@ The documentation is located here:
 http://www.pik-potsdam.de/~wortmann/m.swim/
 
 ## Version history
-*upcomming*
+*Version v1.5* - 2020-07-28
 - alpha implementation of the `mswim` python package to contain abstracted/shared
   functionality between all modules, mainly to test if it's working
 - `-v` to show the version and install date of modules and grass itself

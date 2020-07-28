@@ -2,7 +2,7 @@
 #
 ############################################################################
 #
-# MODULE:      m.swim.substats v1.4
+# MODULE:      m.swim.substats v1.5
 # AUTHOR(S):   Michel Wortmann, wortmann@pik-potsdam.de
 # PURPOSE:     Preprocessing suit for the Soil and Water Integrated Model (SWIM)
 # COPYRIGHT:   (C) 2012-2019 by Wortmann/PIK
