@@ -155,7 +155,6 @@
 
 
 import grass.script as grass
-from grass.pygrass.utils import get_lib_path
 import numpy as np
 import sys, os
 import datetime as dt
@@ -163,12 +162,18 @@ grun = grass.run_command
 gread= grass.read_command
 gm   = grass.message
 
-path = get_lib_path(modname='m.swim', libname='libmswim')
-if path is None:
-    grass.fatal('Unable to find the libmswim library directory.')
-sys.path.extend(path.split(':'))
-
-from libmswim import utils
+# cautious Alpha implementation of the mswim abstraction package
+try:
+    path = grass.utils.get_lib_path(modname='m.swim', libname='mswim')
+    if path:
+        sys.path.extend(path.split(':'))
+        import mswim
+    else:
+        grass.warning('Unable to find the mswim python library.')
+except Exception as e:
+    grass.warning('An exception occurred while loading the mswim python library.\n'+
+                  str(e))
+    mswim = None
 
 
 class main:

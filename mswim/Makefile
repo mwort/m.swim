@@ -3,7 +3,7 @@ MODULE_TOPDIR = ../../..
 include $(MODULE_TOPDIR)/include/Make/Other.make
 include $(MODULE_TOPDIR)/include/Make/Python.make
 
-PKG = libmswim
+PKG = mswim
 TOOLBOX = m.swim
 MODULES = __init__ utils
 
