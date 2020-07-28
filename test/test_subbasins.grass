@@ -2,6 +2,8 @@
 # create separate mapset
 g.mapset -c mapset=swim
 module=../m.swim.subbasins/m.swim.subbasins.py
+# make mswim importable for test runs
+export PYTHONPATH=..:$PYTHONPATH
 
 # basic subbasins
 $module elevation=elevation@PERMANENT stations=stations@PERMANENT \

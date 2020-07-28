@@ -282,6 +282,18 @@ gwarn = grass.warning
 gdebug = grass.debug
 gprogress = grass.core.percent
 
+# cautious Alpha implementation of the mswim abstraction package
+try:
+    path = grass.utils.get_lib_path(modname='m.swim', libname='mswim')
+    if path:
+        sys.path.extend(path.split(':'))
+        import mswim
+    else:
+        grass.warning('Unable to find the mswim python library.')
+except Exception as e:
+    grass.warning('An error occurred while loading the mswim python library.\n'+str(e))
+    mswim = None
+
 
 def interpret_options(optionsandflags):
     options = {}

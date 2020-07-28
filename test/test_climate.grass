@@ -2,6 +2,8 @@
 # create separate mapset
 g.mapset -c mapset=swim
 module=../m.swim.climate/m.swim.climate.py
+# make mswim importable for test runs
+export PYTHONPATH=..:$PYTHONPATH
 
 # depending on:
 # ./test_subbasins.grass

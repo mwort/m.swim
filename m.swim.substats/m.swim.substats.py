@@ -441,6 +441,19 @@ grun = grass.run_command
 gread= grass.read_command
 gm   = grass.message
 
+# cautious Alpha implementation of the mswim abstraction package
+try:
+    path = grass.utils.get_lib_path(modname='m.swim', libname='mswim')
+    if path:
+        sys.path.extend(path.split(':'))
+        import mswim
+    else:
+        grass.warning('Unable to find the mswim python library.')
+except Exception as e:
+    grass.warning('An error occurred while loading the mswim python library.\n'+str(e))
+    mswim = None
+
+
 class main:
     def __init__(self,**optionsandflags):
         '''Check all input and prepare the processing'''

@@ -171,8 +171,7 @@ try:
     else:
         grass.warning('Unable to find the mswim python library.')
 except Exception as e:
-    grass.warning('An exception occurred while loading the mswim python library.\n'+
-                  str(e))
+    grass.warning('An error occurred while loading the mswim python library.\n'+str(e))
     mswim = None
 
 
