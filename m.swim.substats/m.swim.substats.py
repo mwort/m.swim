@@ -433,6 +433,14 @@
 #% label: Keep intermediate files (those named *__*)
 #%end
 
+#%Flag
+#% guisection: Optional
+#% key: v
+#% label: Show version and change/install date of this module and grass.
+#%end
+
+
+import sys
 import grass.script as grass
 import numpy as np
 import os

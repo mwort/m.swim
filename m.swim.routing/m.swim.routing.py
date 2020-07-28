@@ -151,7 +151,11 @@
 #% label: Keep intermediate files (those named *__*)
 #%end
 
-
+#%Flag
+#% guisection: Optional
+#% key: v
+#% label: Show version and change/install date of this module and grass.
+#%end
 
 
 import grass.script as grass
@@ -707,6 +711,8 @@ def addroute(sID,fromto):
 
 if __name__=='__main__':
     st = dt.datetime.now()
+    # print version/date before doing anything else
+    mswim.utils.print_version(__file__) if '-v' in sys.argv else None
     # get options and flags
     o, f = grass.parser()
     fmt = lambda d: '\n'.join(['%s: %s' % (k, v) for k, v in d.items()])+'\n'

@@ -270,6 +270,13 @@
 #% label: Keep intermediat files (include __ in names)
 #%end
 
+#%Flag
+#% guisection: Optional
+#% key: v
+#% label: Show version and change/install date of this module and grass.
+#%end
+
+
 import sys
 import numpy as np
 import datetime as dt
@@ -1044,6 +1051,8 @@ def get_table(vector, dtype='U250', **kw):
 if __name__ == '__main__':
     # start time
     st = dt.datetime.now()
+    # print version/date before doing anything else
+    mswim.utils.print_version(__file__) if '-v' in sys.argv else None
     # get options and flags
     o, f = grass.parser()
     fmt = lambda d: '\n'.join(['%s: %s' % (k, v) for k, v in d.items()])+'\n'
