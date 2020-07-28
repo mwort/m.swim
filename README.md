@@ -1,17 +1,44 @@
 # The GRASS7 Soil and Water Integrated Model (SWIM) preprocessor
 
-Version v1.2
+Version v1.4
 
 ## Documentation
 
 The documentation is located here:
-https://github.com/mwort/m.swim/wiki
+http://www.pik-potsdam.de/~wortmann/m.swim/
 
 ## Version history
-
 *upcomming*
+- `m.swim.climate`:
+  - support for R-based climate interpolation input dropped
+  - point-defined grid definition enabled via `grid=`, `-d` and optionally
+    `lon_column, lat_column`, e.g. for rotated grids
+  - `ncinfopath` argument to `gridfilepath` with deprecation notice
+
+*Version v1.4* - 2019-12-02
+- `m.swim.routing`: topologically correct mainstreams vector output
+  - downstream directions, nodes at intersections and subbasin boundaries
+  - subbasinID and accumulation (min, mean, max) columns in table
+  - network nodes in layer 2 (for network analysis)
+  - optional `minmainstreams` parameter, by default headwater subbasins have
+    1-cell mainstream
+  - new required parameter `drainage` instead of `streams` which is set to the
+    default output of `m.swim.subbasins`
+- `m.swim.subbasin`: grided subbasin support
+  - `-g` enables grid subbasins in current locations projects
+  - `-l` enables grid subbasins in lon-lat projection
+- documentation moved to http://www.pik-potsdam.de/~wortmann/m.swim
+- subbasinoutlets vector no longer has category IDs equal to the subbasinID
+- dropped `m.swim.run` as succeeded by [swimpy](http://www.pik-potsdam.de/~wortmann/swimpy/)
+
+
+*Version v1.3* - 2019-08-11
+- `streamthresh` is now a required parameter to `m.swim.subbasins`
 - fixed hydrotopes counting starting from 1
 - predefined subbasins will only be included if they are within the catchment
+- `m.swim.substats` is also writing out centroid latitude, reference elevation and initial water storage.
+- Python3-proofed to run with grass 7.8
+
 
 *Version v1.2* - 2019-01-09
 - test project in sync with SWIM develop branch
@@ -35,10 +62,12 @@ https://github.com/mwort/m.swim/wiki
 
 ## Testing
 
-There are tests for each grass module based on the Blankenstein catchment (upper Saale (Elbe). All required input maps are in the grassdb/utm32n/PERMANENT mapset, all tests should therefore be executed in:
+There are tests for each grass module based on the Blankenstein catchment
+(upper Saale (Elbe)). All required input maps are in the
+`grassdb/utm32n/PERMANENT` mapset, all tests should therefore be executed in:
 ```
 cd test
-grass70 grassdb/utm32n/PERMANENT
+grass grassdb/utm32n/PERMANENT
 ```
 Run all tests:
 ```
@@ -64,3 +93,4 @@ Checking the diff of the output.sha1 file will indicate output files that have c
 - `git commit -a -m 'Bump version to vX.X.'`
 - `git tag vX.X`
 - `git push & git push --tags`
+- publish docs: `cd doc; make [URL=...] publish`

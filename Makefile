@@ -8,7 +8,6 @@ SUBDIRS = libmswim \
           m.swim.routing \
           m.swim.substats \
           m.swim.climate 
-#          m.swim.run   # not running yet
 
 include $(MODULE_TOPDIR)/include/Make/Dir.make
 
