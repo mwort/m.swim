@@ -146,6 +146,11 @@
 #% key: k
 #% label: Keep intermediat files (include __ in names)
 #%end
+#%Flag
+#% guisection: Optional
+#% key: v
+#% label: Show version and change/install date of this module and grass.
+#%end
 
 
 import os,sys,collections
@@ -154,6 +159,19 @@ g_run=grass.run_command
 gm   =grass.message
 import numpy as np
 import datetime as dt
+
+# cautious Alpha implementation of the mswim abstraction package
+try:
+    path = grass.utils.get_lib_path(modname='m.swim', libname='mswim')
+    if path:
+        sys.path.extend(path.split(':'))
+        import mswim
+    else:
+        grass.warning('Unable to find the mswim python library.')
+except Exception as e:
+    grass.warning('An error occurred while loading the mswim python library.\n'+str(e))
+    mswim = None
+
 
 class main:
 
@@ -363,6 +381,8 @@ def hydrotopeQ(cover,hydrotopemap):
 
 if __name__=='__main__':
     st = dt.datetime.now()
+    # print version/date before doing anything else
+    mswim.utils.print_version(__file__) if '-v' in sys.argv else None
     # get options and flags
     o, f = grass.parser()
     fmt = lambda d: '\n'.join(['%s: %s' % (k, v) for k, v in d.items()])+'\n'

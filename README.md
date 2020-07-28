@@ -9,11 +9,14 @@ http://www.pik-potsdam.de/~wortmann/m.swim/
 
 ## Version history
 *upcomming*
+- alpha implementation of the `mswim` python package to contain abstracted/shared
+  functionality between all modules, mainly to test if it's working
+- `-v` to show the version and install date of modules and grass itself
 - `m.swim.climate`:
   - support for R-based climate interpolation input dropped
   - point-defined grid definition enabled via `grid=`, `-d` and optionally
     `lon_column, lat_column`, e.g. for rotated grids
-  - `ncinfopath` argument to `gridfilepath` with deprecation notice
+  - `ncinfopath` argument renamed to `gridfilepath` with deprecation notice
 
 *Version v1.4* - 2019-12-02
 - `m.swim.routing`: topologically correct mainstreams vector output
