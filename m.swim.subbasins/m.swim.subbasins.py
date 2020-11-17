@@ -364,6 +364,9 @@ class main:
         # if no r.watershed flags given
         if 'rwatershedflags' not in self.options:
             self.rwatershedflags = 's'
+        elif 's' not in self.rwatershedflags:
+            gwarn('rwatershedflags without "s" (single flow direction) will render the '
+                  'accumulation raster incompatible with m.swim.routing!')
         if 'rwatershedmemory' in self.options:
             self.rwatershedflags += 'm'
         else:
