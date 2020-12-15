@@ -766,7 +766,7 @@ class main:
         grun('r.to.vect', input=self.catchments, output=self.catchments,
              type='area', flags='vst', quiet=True)
         grun('v.db.addtable', map=self.catchments, quiet=True,
-             key='catchmentID', column='size double')
+             key='catchmentID', overwrite=True)
         grun('v.to.db', map=self.catchments, option='area', units='kilometers',
              columns='size', quiet=True)
 
@@ -781,15 +781,12 @@ class main:
         self.stations_snapped_columns['subbasinID'] = ds_sbid
 
         # assign catchment id
-        grun('v.db.addcolumn', map=self.subbasins, column='catchmentID int',
-             quiet=True)
         grun('v.what.rast', map=self.subbasins, raster=self.catchments,
              column='catchmentID', quiet=True, type='centroid')
 
         # mean,min,max and centroid elevation and subbasin size
         cols = ['%s_elevation double' % s
                 for s in ['average', 'max', 'min', 'centroid']]
-        cols += ['size double', 'centroid_x double', 'centroid_y double']
         grun('v.db.addcolumn', map=self.subbasins, quiet=True,
              column=','.join(cols))
         grun('v.what.rast', map=self.subbasins, raster=self.elevation,
@@ -882,7 +879,8 @@ class main:
         # TODO: here final self.subbasins vector is created
         grun('v.reclass', input='unreclassed__subbasins', output=self.subbasins,
              column='subbasinID', quiet=True)
-        grun('v.db.addtable', map=self.subbasins, key='subbasinID', quiet=True)
+        grun('v.db.addtable', map=self.subbasins, key='subbasinID', quiet=True,
+             overwrite=True)
         grun('v.db.join', map=self.subbasins, column='subbasinID',
              otable='unreclassed__subbasins', ocolumn='subbasinID', quiet=True)
         grun('v.db.dropcolumn', map=self.subbasins, column='cat', quiet=True)

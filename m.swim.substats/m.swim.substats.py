@@ -710,7 +710,6 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
         '''Constrain channel length by subbasin perimeter and set nans to cell
         size, assuming that those without calculated chl have at least one cell as channel'''
         # get subbasin perimeter as an upper limit
-        grun('v.db.addcolumn',map=self.subbasins,columns='perim__ double',quiet=True)
         grun('v.to.db',map=self.subbasins,columns='perim__',option='perimeter',
              units='kilometer',quiet=True)
         # get subbasin table

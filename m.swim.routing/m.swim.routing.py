@@ -419,7 +419,7 @@ class main:
         grun('v.net', input="headwater__mainstreams", operation="nodes",
              flags='c', output="headwater__mainstreams__network", quiet=1)
         grun('v.db.addtable', map="headwater__mainstreams__network",
-             layer=2, columns='accumulation int', quiet=True)
+             layer=2, columns='accumulation int', quiet=True, overwrite=True)
         grun('v.what.rast', map="headwater__mainstreams__network", layer=2,
              raster=self.accumulation, column="accumulation", quiet=True)
         tbl = grass.read_command('v.net', operation='report', quiet=True,
@@ -486,7 +486,7 @@ class main:
              cat=-1, output="mainstreams__drain__cleaned__nocats", quiet=True)
         grun('v.category', input="mainstreams__drain__cleaned__nocats",
              option="add", output="mainstreams__minimal", quiet=True)
-        grun('v.db.addtable', map="mainstreams__minimal", quiet=True)
+        grun('v.db.addtable', map="mainstreams__minimal", quiet=True, overwrite=True)
         # split at subbasin boundaries and cut to subbasin extent
         grun('v.overlay', ainput="mainstreams__minimal", binput=self.subbasins,
              output="mainstreams__subbasins", operator="and", atype='line',
@@ -495,7 +495,7 @@ class main:
              quiet=True)
         grun('v.db.droptable', map="mainstreams__split", layer=1, flags='f',
              quiet=True)
-        grun('v.db.addtable', map="mainstreams__split", quiet=True)
+        grun('v.db.addtable', map="mainstreams__split", quiet=True, overwrite=True)
         grun('v.rast.stats', map="mainstreams__split",
              raster=self.accumulation, method="minimum,average,maximum",
              column_prefix='accumulation', quiet=True)
@@ -508,7 +508,7 @@ class main:
         # make valid network for network analysis with nodes in layer 2
         grun('v.net', input="mainstreams__split", output=self.mainstreams,
              operation="nodes", flags='c', quiet=True)
-        grun('v.db.addtable', map=self.mainstreams, layer=2, quiet=True)
+        grun('v.db.addtable', map=self.mainstreams, layer=2, quiet=True, overwrite=True)
         # make raster with subbasinIDs
         grun('v.to.rast', input=self.mainstreams, output=self.mainstreams,
              use='attr', type='line', attribute_column='subbasinID', quiet=1)
