@@ -67,18 +67,13 @@
 #% gisprompt: new,cell,raster
 #% description: Name of hydrotope raster to be created
 #%end
-#%Flag
-#% guisection: Contours
-#% key: c
-#% label: include contours, either create if contours given or use contourrast
-#%end
 #%Option
 #% guisection: Contours
 #% key: contours
 #% type: string
 #% required: no
 #% multiple: no
-#% key_desc: ints or list of ints
+#% key_desc: ints or list of ints or raster
 #% description: Elevation contours to include in hydrotopes [optional, if set, DEM in Subbasins also needs to be set]
 #%end
 #%Option
@@ -87,9 +82,13 @@
 #% type: string
 #% required: no
 #% multiple: no
-#% key_desc: existing rast of elevation contours or to be created
 #% answer: contours
-#% description: Elevation contours to include in hydrotopes [optional, if set, DEM in Subbasins also needs to be set]
+#% description: Resultant contours raster if contours option is int/list of ints
+#%end
+#%Flag
+#% guisection: Contours
+#% key: c
+#% label: deprecated option, left for backwards compatibility
 #%end
 #%Option
 #% guisection: Contours
@@ -205,11 +204,12 @@ class main:
             try:
                 self.contours = list(map(int,self.contours.split(',')))
                 if len(self.contours)==1: self.contours = self.contours[0]
-            except:
-                grass.fatal(('''Contours should be either an interval [integer]
-                or a list of breaks separated by commas.'''))
-            # create contourrast
-            self.mkContours()
+            except ValueError:
+                gm(('''Using %s as predefined contours.''' % self.contours))
+                self.contourrast = self.contours
+            else:
+                # create contourrast
+                self.mkContours()
         else:
             self.contourrast = self._maskOrBlank('contours')
         # add to columns
@@ -335,6 +335,7 @@ number of hydrotopes per subbasin %i
         # start hydrotope count at 1 instead of 0
         grass.mapcalc('$output=$input+1', output=self.hydrotopes,
                       input='hydrotopes__rcross')
+        g_run('r.colors', map=self.hydrotopes, color="random", quiet=True)
         return struct
 
     def writeStr(self, array):
@@ -392,11 +393,6 @@ if __name__=='__main__':
     # send all to main
     keywords = o; keywords.update(f)
     main=main(**keywords)
-
-    ### EXECUTION OPTIONS
-    # include or make contours
-    if main.c and 'contours' in main.options:
-        main.mkContours()
 
     # calculate hydrotopes
     grass.message(('Calculating hydrotopes with: %s...' %main.strcolumns))

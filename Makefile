@@ -7,7 +7,8 @@ SUBDIRS = mswim \
           m.swim.hydrotopes \
           m.swim.routing \
           m.swim.substats \
-          m.swim.climate 
+          m.swim.climate \
+          m.swim.glaciers
 
 include $(MODULE_TOPDIR)/include/Make/Dir.make
 

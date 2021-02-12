@@ -8,6 +8,14 @@ The documentation is located here:
 http://www.pik-potsdam.de/~wortmann/m.swim/
 
 ## Version history
+
+*upcoming release*
+- added the `m.swim.glaciers` module to create SWIM-G input files
+- `m.swim.hydrotopes`
+  - `countoursrast` is now only output file, custom contours raster is passed as string
+    to `contours`
+  - `-c` is not needed anymore and is deprecated
+
 *Version v1.5* - 2020-07-28
 - alpha implementation of the `mswim` python package to contain abstracted/shared
   functionality between all modules, mainly to test if it's working
