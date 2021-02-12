@@ -2,6 +2,9 @@
 # create separate mapset
 g.mapset -c mapset=swim
 module=../m.swim.routing/m.swim.routing.py
+# make mswim importable for test runs
+export PYTHONPATH=..:$PYTHONPATH
+
 # depending on:
 # ./test_subbasins.grass
 g.findfile element=cell file=subbasins > /dev/null
@@ -14,4 +17,4 @@ mkdir -p project/input
 
 # routing
 $module subbasins=subbasins accumulation=accumulation \
-                  figpath=project/input/blank.fig
+                  figpath=project/input/blank.fig minmainstreams=50

@@ -2,6 +2,8 @@
 # create separate mapset
 g.mapset -c mapset=swim
 module=../m.swim.hydrotopes/m.swim.hydrotopes.py
+# make mswim importable for test runs
+export PYTHONPATH=..:$PYTHONPATH
 
 # depending on:
 # ./test_subbasins.grass
@@ -15,7 +17,7 @@ mkdir -p project/input
 
 # default
 $module subbasins=subbasins landuse=landuse@PERMANENT soil=soil@PERMANENT \
-                     -c contours=200 elevation=elevation@PERMANENT \
+                     contours=200 elevation=elevation@PERMANENT \
                      strfilepath=project/input/blank.str hydrotopes=hydrotopes
 
 # with management and wetland, no contours

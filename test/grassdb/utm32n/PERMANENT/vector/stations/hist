@@ -5,3 +5,7 @@ LOCATION: tmp MAPSET: PERMANENT USER: wortmann DATE: Sun Sep 18 04:07:43 2016
 COMMAND: v.proj input="gauges" location="tmp" mapset="PERMANENT" smax=10000 output="stations"
 GISDBASE: /data/sumario/wortmann/Methods/GRASS/mymodules/m.swim/test/grassdb
 LOCATION: utm32n MAPSET: PERMANENT USER: wortmann DATE: Sun Sep 18 04:20:10 2016
+---------------------------------------------------------------------------------
+COMMAND: v.db.update "stations" "column=NAME" "value=BLANKENSTEIN" "where=cat="2""
+GISDBASE: /Users/wortmann/Desktop/source/swimpy/dependencies/m.swim/test/grassdb
+LOCATION: utm32n MAPSET: PERMANENT USER: wortmann DATE: Thu Aug 23 13:59:52 2018

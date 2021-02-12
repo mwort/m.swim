@@ -2,10 +2,10 @@
 #
 ############################################################################
 #
-# MODULE:      m.swim.hydrotopes v1.0
+# MODULE:      m.swim.hydrotopes v1.5
 # AUTHOR(S):   Michel Wortmann, wortmann@pik-potsdam.de
 # PURPOSE:     Preprocessing suit for the Soil and Water Integrated Model (SWIM)
-# COPYRIGHT:   (C) 2012-2016 by Wortmann/PIK
+# COPYRIGHT:   (C) 2012-2019 by Wortmann/PIK
 #
 #              This program is free software under the GNU General Public
 #              License (>=v2). Read the file COPYING that comes with GRASS
@@ -67,18 +67,13 @@
 #% gisprompt: new,cell,raster
 #% description: Name of hydrotope raster to be created
 #%end
-#%Flag
-#% guisection: Contours
-#% key: c
-#% label: include contours, either create if contours given or use contourrast
-#%end
 #%Option
 #% guisection: Contours
 #% key: contours
 #% type: string
 #% required: no
 #% multiple: no
-#% key_desc: ints or list of ints
+#% key_desc: ints or list of ints or raster
 #% description: Elevation contours to include in hydrotopes [optional, if set, DEM in Subbasins also needs to be set]
 #%end
 #%Option
@@ -87,9 +82,13 @@
 #% type: string
 #% required: no
 #% multiple: no
-#% key_desc: existing rast of elevation contours or to be created
 #% answer: contours
-#% description: Elevation contours to include in hydrotopes [optional, if set, DEM in Subbasins also needs to be set]
+#% description: Resultant contours raster if contours option is int/list of ints
+#%end
+#%Flag
+#% guisection: Contours
+#% key: c
+#% label: deprecated option, left for backwards compatibility
 #%end
 #%Option
 #% guisection: Contours
@@ -146,6 +145,11 @@
 #% key: k
 #% label: Keep intermediat files (include __ in names)
 #%end
+#%Flag
+#% guisection: Optional
+#% key: v
+#% label: Show version and change/install date of this module and grass.
+#%end
 
 
 import os,sys,collections
@@ -155,12 +159,25 @@ gm   =grass.message
 import numpy as np
 import datetime as dt
 
+# cautious Alpha implementation of the mswim abstraction package
+try:
+    path = grass.utils.get_lib_path(modname='m.swim', libname='mswim')
+    if path:
+        sys.path.extend(path.split(':'))
+        import mswim
+    else:
+        grass.warning('Unable to find the mswim python library.')
+except Exception as e:
+    grass.warning('An error occurred while loading the mswim python library.\n'+str(e))
+    mswim = None
+
+
 class main:
 
     DEFAULTS = {'management': 1,
                 'wetland':    0,
                 'glaciers':   0,
-                'contourrast':   0}
+                'contours':   0}
 
     def __init__(self,**optionsandflags):
         '''Process all arguments and prepare processing'''
@@ -185,15 +202,16 @@ class main:
         # check contours and create raster if needed
         if 'contours' in self.options:
             try:
-                self.contours = map(int,self.contours.split(','))
+                self.contours = list(map(int,self.contours.split(',')))
                 if len(self.contours)==1: self.contours = self.contours[0]
-            except:
-                grass.fatal(('''Contours should be either an interval [integer]
-                or a list of breaks separated by commas.'''))
-            # create contourrast
-            self.mkContours()
+            except ValueError:
+                gm(('''Using %s as predefined contours.''' % self.contours))
+                self.contourrast = self.contours
+            else:
+                # create contourrast
+                self.mkContours()
         else:
-            self.contourrast = self._maskOrBlank('contourrast')
+            self.contourrast = self._maskOrBlank('contours')
         # add to columns
         self.strcolumns += [self.contourrast]
         self.floatmaps[self.contourrast] = self.elevation
@@ -240,12 +258,12 @@ class main:
         '''Check if name option is given, if yes make a mask,
         if not make a blank map out of the default value.'''
         # if given, then it must be a raster, if not just make blank
-        if (hasattr(self, name) and
-            tuple(name.split('@')) in grass.list_pairs('rast')):
+        argv = getattr(self, name, None)
+        if argv:
             # make mask for DCELL and FCELL
-            if not grass.raster_info(self.__dict__[name])['datatype']=='CELL':
-                outname = '%s__mask'%name
-                grass.mapcalc(exp=outname+'=isnull(%s)'%self.__dict__[name])
+            if not grass.raster_info(argv)['datatype'] == 'CELL':
+                outname = '%s__mask' % name
+                grass.mapcalc(exp=outname+'=if(isnull(%s), 0, 1)' % argv)
                 self.floatmaps[outname] = self.__dict__[name]
             else:
                 # CELL is just passed on
@@ -268,12 +286,12 @@ class main:
             # make nice breaks
             minelev = int(float(stats['min'])/interval+1)*interval
             maxelev = int(float(stats['max'])/interval)*interval
-            breaks  = range(minelev,maxelev+1,interval)
+            breaks  = list(range(minelev, maxelev+1, interval))
         else:
             breaks = self.contours
         if len(breaks)<2:
                 grass.fatal('Need at least 2 contour breaks: %s \nRange of elevation: %s - %s' %(breaks,stats['min'],stats['max']))
-        grass.message(('Contour breaks:',str(breaks)))
+        grass.message(('Contour breaks:', str(breaks)))
         # form mapcalc expression and execute
         exp = self.contourrast+'= if(%s<%s,1)' %(self.elevation, breaks[0]) # for the first, smaller than
         for b in breaks: exp+='+ if(%s>=%s,1)' %(self.elevation,b) # for all greater eq than
@@ -293,8 +311,8 @@ class main:
         # maps list
         ml=','.join(self.strcolumns)
         # take cross product of maps
-        g_run('r.cross', overwrite=True, flags='z',
-              input=ml, output=self.hydrotopes)
+        g_run('r.cross', overwrite=True, flags='z', input=ml,
+              output='hydrotopes__rcross')
 
         # read basic structure file info from hydrotope map
         struct = readinStr(self.strcolumns)
@@ -302,7 +320,7 @@ class main:
         # replace all float maps with float values
         for intmap,floatmap in self.floatmaps.items():
             # get mean hydrotope array with columns: hydrotope cats, mean
-            catval = hydrotopeQ(floatmap, self.hydrotopes)
+            catval = hydrotopeQ(floatmap, 'hydrotopes__rcross')
             # exchange column in strct with mean hydrotope value
             struct[intmap][catval['cat']] = catval['mean']
 
@@ -314,7 +332,10 @@ class main:
         grass.message('''%s hydrotopes created, %5.2f per subbasin on average, max.
 number of hydrotopes per subbasin %i
                       ''' %(len(struct),len(struct)/len(np.unique(struct[self.subbasins])),nmax))
-
+        # start hydrotope count at 1 instead of 0
+        grass.mapcalc('$output=$input+1', output=self.hydrotopes,
+                      input='hydrotopes__rcross')
+        g_run('r.colors', map=self.hydrotopes, color="random", quiet=True)
         return struct
 
     def writeStr(self, array):
@@ -326,16 +347,14 @@ number of hydrotopes per subbasin %i
         datcolfmt = ('%%%si '%colwidth)*ncolumns
         colnames= tuple([c.split('@')[0] for c in self.strcolumns]) + ('area','cells')
         # write out structure file
-        strname = self.strfilepath
-        strf=file(strname,'w')
-        # header
-        strf.write( (heacolfmt + '\n')%colnames )
-        # data
-        np.savetxt(strf, array, fmt=datcolfmt)
-        # 0s as the last line
-        strf.write( datcolfmt%((0,)*ncolumns))
-        strf.close()
-        grass.message(('Wrote structure file %s' %strname))
+        with open(self.strfilepath, 'w') as strf:
+            # header
+            strf.write((heacolfmt + '\n')%colnames)
+            # data
+            np.savetxt(strf, array, fmt=datcolfmt)
+            # 0s as the last line
+            strf.write( datcolfmt%((0,)*ncolumns))
+        grass.message(('Wrote structure file %s' % self.strfilepath))
         return
 
 def readinStr(strcolumns):
@@ -344,8 +363,8 @@ def readinStr(strcolumns):
     # get all values with area and cell, [:-1] as last line hast line break
     tbl = grass.read_command('r.stats',input=','.join(strcolumns),flags='acn').split('\n')[:-1]
     tbl = [tuple(l.split()) for l in tbl]
-    tbl = np.array(tbl, dtype=zip(strcolumns+['area','cells'],
-                                  [np.int64]*len(strcolumns) + [np.float,np.int64]))
+    tbl = np.array(tbl, dtype=list(zip(strcolumns+['area','cells'],
+                                  [np.int64]*len(strcolumns) + [np.float,np.int64])))
 
     return tbl
 
@@ -356,14 +375,15 @@ def hydrotopeQ(cover,hydrotopemap):
     tbl = grass.read_command('r.univar', map=cover, zones=hydrotopemap,
                            flags='gt').split('\n')[:-1] #:-1 as last line hast line break]
     tbl = [tuple(l.split('|')) for l in tbl]
-    tbl = np.array(tbl[1:],dtype=zip(tbl[0],['S250']*len(tbl[0])))
-
-    return np.array(zip(tbl['zone'],tbl['mean']),dtype=[('cat',np.int64),('mean',np.float64)])
-
+    tbl = np.array(tbl[1:], dtype=list(zip(tbl[0],['S250']*len(tbl[0]))))
+    tbl = np.array(list(zip(tbl['zone'],tbl['mean'])), dtype=[('cat',np.int64),('mean',np.float64)])
+    return tbl[np.isfinite(tbl['mean'])]
 
 
 if __name__=='__main__':
     st = dt.datetime.now()
+    # print version/date before doing anything else
+    mswim.utils.print_version(__file__) if '-v' in sys.argv else None
     # get options and flags
     o, f = grass.parser()
     fmt = lambda d: '\n'.join(['%s: %s' % (k, v) for k, v in d.items()])+'\n'
@@ -373,11 +393,6 @@ if __name__=='__main__':
     # send all to main
     keywords = o; keywords.update(f)
     main=main(**keywords)
-
-    ### EXECUTION OPTIONS
-    # include or make contours
-    if main.c and 'contours' in main.options:
-        main.mkContours()
 
     # calculate hydrotopes
     grass.message(('Calculating hydrotopes with: %s...' %main.strcolumns))

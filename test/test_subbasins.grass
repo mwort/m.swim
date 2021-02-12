@@ -2,19 +2,26 @@
 # create separate mapset
 g.mapset -c mapset=swim
 module=../m.swim.subbasins/m.swim.subbasins.py
+# make mswim importable for test runs
+export PYTHONPATH=..:$PYTHONPATH
 
 # basic subbasins
 $module elevation=elevation@PERMANENT stations=stations@PERMANENT \
-                 upthresh=40 lothresh=11 subbasins=subbasins
+                 streamthresh=200 upthresh=50 lothresh=1.6 \
+                 subbasins=subbasins predefined=reservoirs@PERMANENT
 
 # subbasins with carved streams
 # catchment 2 has very small catchment/no subbasins
 # $module elevation=elevation@PERMANENT stations=stations@PERMANENT \
 #                 upthresh=30 lothresh=1 subbasins=subbasins streamcarve=rivers@PERMANENT
 
+# example with grided subbasins
+# $module elevation=elevation@PERMANENT stations=stations@PERMANENT \
+#         streamthresh=200 -l upthresh=1 lothresh=0.5 subbasins=subbasins
 
 # make project dir
 mkdir -p project/input
 
-# write subcatch.def
+# write ancillary files
+v.db.select stations_snapped col=subbasinID,NAME sep=space > project/input/gauges.output
 v.db.select subbasins col=subbasinID,catchmentID,catchmentID sep=space > project/input/subcatch.def

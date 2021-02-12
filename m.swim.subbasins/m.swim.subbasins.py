@@ -2,10 +2,10 @@
 #
 ############################################################################
 #
-# MODULE:      m.swim.subbasins v1.0
+# MODULE:      m.swim.subbasins v1.5
 # AUTHOR(S):   Michel Wortmann, wortmann@pik-potsdam.de
 # PURPOSE:     Preprocessing suit for the Soil and Water Integrated Model (SWIM)
-# COPYRIGHT:   (C) 2012-2016 by Wortmann/PIK
+# COPYRIGHT:   (C) 2012-2019 by Wortmann/PIK
 #
 #              This program is free software under the GNU General Public
 #              License (>=v2). Read the file COPYING that comes with GRASS
@@ -39,6 +39,17 @@
 #% label: Station point vector
 #% description: Will be snapped to the nearest stream
 #% gisprompt: old,vector,vector
+#%end
+
+#%Option
+#% guisection: Input
+#% key: streamthresh
+#% type: double
+#% required: yes
+#% multiple: no
+#% key_desc: km2
+#% label: Drainage area of smallest stream in km2 (influences station snapping)
+#% description: Stations will be snapped to these streams, ie. should not be smaller than the smallest catchment.
 #%end
 
 #%Option
@@ -120,17 +131,6 @@
 #% description: Name of streams vector to be created (or existing if -d)
 #% answer: streams
 #% gisprompt: new,vector,vector
-#%end
-
-#%Option
-#% guisection: Topography
-#% key: streamthresh
-#% type: double
-#% required: no
-#% multiple: no
-#% key_desc: name
-#% label: Drainage area of smallest stream in km2 (influences station snapping, default: 10% of region)
-#% description: Stations will be snapped to these streams, ie. should not be smaller than the smallest catchment
 #%end
 
 #%Option
@@ -236,6 +236,28 @@
 #% answer: s
 #%end
 
+#%Option
+#% guisection: Optional
+#% key: rwatershedmemory
+#% type: integer
+#% required: no
+#% multiple: no
+#% key_desc: integer MB
+#% description: Limits memory usage of r.watershed in MB (slower)
+#%end
+
+#%Flag
+#% guisection: Optional
+#% key: g
+#% label: Create regular grid subbasins interpreting upthresh as the grid size.
+#%end
+
+#%Flag
+#% guisection: Optional
+#% key: l
+#% label: Create regular lonlat grid subbasins interpreting upthresh as the grid size.
+#%end
+
 #%Flag
 #% guisection: Optional
 #% key: s
@@ -248,6 +270,13 @@
 #% label: Keep intermediat files (include __ in names)
 #%end
 
+#%Flag
+#% guisection: Optional
+#% key: v
+#% label: Show version and change/install date of this module and grass.
+#%end
+
+
 import sys
 import numpy as np
 import datetime as dt
@@ -259,6 +288,18 @@ gm = grass.message
 gwarn = grass.warning
 gdebug = grass.debug
 gprogress = grass.core.percent
+
+# cautious Alpha implementation of the mswim abstraction package
+try:
+    path = grass.utils.get_lib_path(modname='m.swim', libname='mswim')
+    if path:
+        sys.path.extend(path.split(':'))
+        import mswim
+    else:
+        grass.warning('Unable to find the mswim python library.')
+except Exception as e:
+    grass.warning('An error occurred while loading the mswim python library.\n'+str(e))
+    mswim = None
 
 
 def interpret_options(optionsandflags):
@@ -291,6 +332,10 @@ class main:
         if not self.is_set('accumulation', 'drainage', 'streams'):
             grass.fatal('Either of these not set: accumulation, drainage, streams.')
 
+        # lothresh default
+        if 'lothresh' not in self.options:
+            self.lothresh = self.upthresh * 0.05
+
         # what to do with upthresh
         if self.is_set('upthreshcolumn'):
             gm('Will look for upper thresholds in the %s column.' %
@@ -304,10 +349,6 @@ class main:
             except:
                 grass.fatal('Cant read the upper threshold from the column %s'
                             % self.upthreshcolumn)
-
-        # lothresh default
-        if 'lothresh' not in self.options:
-            self.lothresh = np.mean(self.upthresh.values())*0.05
 
         # streamthresh
         if 'streamthresh' in self.options:
@@ -323,6 +364,11 @@ class main:
         # if no r.watershed flags given
         if 'rwatershedflags' not in self.options:
             self.rwatershedflags = 's'
+        if 'rwatershedmemory' in self.options:
+            self.rwatershedflags += 'm'
+        else:
+            # default value/not used
+            self.rwatershedmemory = 300
 
         # check input for stats print
         if self.s:
@@ -370,7 +416,7 @@ class main:
 
         # clean
         if not self.k:
-            grass.run_command('g.remove', type='raster,vector', pattern='*__*',
+            grun('g.remove', type='raster,vector', pattern='*__*',
                               flags='fb', quiet=True)
         return
 
@@ -396,7 +442,9 @@ class main:
                   'basin': 'standard__subbasins',
                   'slope_steepness': self.slopesteepness,
                   'length_slope': self.slopelength,
-                  'flags': self.rwatershedflags}
+                  'flags': self.rwatershedflags,
+                  'memory': self.rwatershedmemory}
+
         # check if depressions
         if self.is_set('depression'):
             kwargs['depression'] = self.depression
@@ -407,7 +455,8 @@ class main:
         grun('r.watershed', **kwargs)
 
         # save subbasins in dictionary
-        self.subbasinsdone[thresh] = 'standard__subbasins'
+        if not (self.g or self.l):
+            self.subbasinsdone[thresh] = 'standard__subbasins'
 
         # postprocess accumulation map
         grass.mapcalc("%s=int(if(accum__float <= 0,null(),accum__float))" %
@@ -456,7 +505,7 @@ class main:
         # format, report and reassign stations_snapped_coor
         snapped_coor = np.array([tuple(d.split('|'))
                                  for d in snapped_points[1:]],
-                                dtype=zip(dtnames, dtpy))
+                                dtype=list(zip(dtnames, dtpy)))
         # warn if above threshold
         snapped_over_thresh = snapped_coor[snapped_coor['distance'] >
                                            warning_threshold]
@@ -465,6 +514,21 @@ class main:
                   '(stationID: distance):' % warning_threshold)
             for i, d in snapped_over_thresh[['stationID', 'distance']]:
                 gwarn('%i %1.0f' % (i, d))
+        # warn if snapped to within cell size
+        near = {}
+        for i, d, x, y in snapped_coor:
+            distcells = np.sqrt((snapped_coor['x'] - x)**2 +
+                                (snapped_coor['y'] - y)**2) * self.region['kmtocell']
+            isnear = np.all((distcells < 2, snapped_coor['stationID'] != i), axis=0)
+            if isnear.sum() > 0:
+                near[i] = snapped_coor['stationID'][isnear]
+        if len(near) > 0:
+            gwarn('These stations have been snapped to within 2 cells of '
+                  'other stations. This will lead to an incorrect station '
+                  'topology.')
+            for i, other in near.items():
+                gwarn('%s > %s' % (i, ', '.join(other.astype(str))))
+
         # save results
         lo = [(i, snapped_coor[i]) for i in dtnames]
         self.stations_snapped_columns = OrderedDict(lo)
@@ -473,7 +537,7 @@ class main:
 
         # add accummulation as darea
         darea = (rwhat([self.accumulation], self.stations_snapped_coor.values())
-                 .flatten() * self.region['celltokm'])
+                .flatten() * self.region['celltokm'])
         self.stations_snapped_columns['darea'] = darea
         return
 
@@ -525,7 +589,7 @@ class main:
         stopo = rwhat(self.catchment_rasters.values(),
                       self.stations_snapped_coor.values())
         # list of numpy arrays with indeces of nonzero cat values
-        stationid_array = np.array(self.stations_snapped_coor.keys())
+        stationid_array = np.array(list(self.stations_snapped_coor.keys()))
         stopo = stopo.transpose()
         topo = []
         for i, d in enumerate(stopo):
@@ -547,11 +611,12 @@ class main:
                     break
             if i not in dsid:
                 dsid[i] = -1
-        self.stations_snapped_columns['ds_stationID'] = np.array(dsid.values(),
-                                                                 dtype=int)
+        self.stations_snapped_columns['ds_stationID'] = np.array(
+            list(dsid.values()), dtype=int)
         # create topology order
         order = {}  # unsorted dictionary
         for sid in tslen.keys():
+            # start from all headwaters and increase orders downstream
             if tslen[sid] == 0:
                 order[sid] = 1
                 ii, oi = sid, 1
@@ -559,9 +624,13 @@ class main:
                     ii = dsid[ii]
                     oi += 1
                     order[ii] = max(oi, order[ii]) if ii in order else oi
-        # order it again
-        self.stations_order = OrderedDict([(k, order[k]) for k in tslen.keys()])
-        oarr = np.array(self.stations_order.values(), dtype=int)
+                    if oi > len(tslen):
+                        grass.fatal('Station %s seems to have a circular'
+                                    'topology (%r)' % (sid, dsid[ii]))
+        # order it again, if no order was found,
+        orderlist = [(k, order.pop(k, 1)) for k in tslen.keys()]
+        self.stations_order = OrderedDict(orderlist)
+        oarr = np.array(list(self.stations_order.values()), dtype=int)
         self.stations_snapped_columns['strahler_order'] = oarr
         return
 
@@ -594,13 +663,17 @@ class main:
                 kwargs = {'elevation': self.elevation,
                           'basin'    : subbasins_uncut,
                           'threshold': thresh,
-                          'flags'    : self.rwatershedflags}
+                          'flags'    : self.rwatershedflags,
+                          'memory'   : self.rwatershedmemory}
                 # carved elevation
                 if 'streamcarve' in self.options:
                     kwargs['elevation'] = self.carvedelevation
 
                 # r.watershed to produce subbasins
-                grun('r.watershed', quiet=True, **kwargs)
+                if self.g or self.l:
+                    self.grid_subbasin(subbasins_uncut, self.upthresh[sid])
+                else:
+                    grun('r.watershed', quiet=True, **kwargs)
 
                 # add to done subbasins list
                 self.subbasinsdone[thresh] = subbasins_uncut
@@ -634,14 +707,14 @@ class main:
 
         if self.is_set('predefined'):
             gm('Including predefined subbasins %s...' % self.predefined)
-            gwarn('Catchment boundaries are disregarded, doublecheck %s' %
-                  self.catchments)
             # avoid same numbers occur in subbasins
             predef = self.predefined.split('@')[0]+'__aboverange'
-            grass.mapcalc('%s=%s+%s' % (predef, self.predefined, lastmax))
+            grass.mapcalc('$output=if(isnull($c), null(), $p+$m)', m=lastmax,
+                          output=predef, p=self.predefined, c=self.catchments)
             # add to beginning of subbasins_rasters
-            self.subbasins_rasters = OrderedDict([('predefined', predef)] +
-                                                 self.subbasins_rasters.items())
+            self.subbasins_rasters = OrderedDict(
+                [('predefined', predef)] +
+                list(self.subbasins_rasters.items()))
 
         # PATCHING subbasins maps
         patch_basins(self.subbasins_rasters.values(), outname=self.subbasins)
@@ -649,6 +722,35 @@ class main:
         # clean subbasin raster and vector keeping the same name
         self.clean_subbasins()
 
+        return
+
+    def grid_subbasin(self, output, size):
+        """Grid a raster with resolution size, optionally as lonlat."""
+        if self.l:
+            env = grass.gisenv()
+            grun('v.in.region', output='roi__', quiet=True)
+            # create temporary lonlat location
+            tmpdir, tmploc = grass.tempdir(), 'lonlat'
+            grass.core.create_location(tmpdir, tmploc, epsg=4326)
+            grun('g.mapset', mapset='PERMANENT', location=tmploc, dbase=tmpdir,
+                 quiet=True)
+            # reproj roi, smax in meters = 200km per degree
+            grun('v.proj', input='roi__', mapset=env['MAPSET'], quiet=True,
+                 location=env['LOCATION_NAME'], dbase=env['GISDBASE'])
+            grun('g.region', vector='roi__')
+        else:
+            grass.use_temp_region()
+        # create actual grid raster
+        grun('g.region', flags='a', res=size)
+        grass.mapcalc('$o = row()*col()', o=output)
+        if self.l:
+            # back to origional location and reproj
+            grun('g.mapset', mapset=env['MAPSET'], quiet=True,
+                 location=env['LOCATION_NAME'], dbase=env['GISDBASE'])
+            grun('r.proj', input=output, mapset='PERMANENT',
+                 location=tmploc, dbase=tmpdir, quiet=True)
+        else:
+            grass.del_temp_region()
         return
 
     def postprocess_catchments(self):
@@ -724,7 +826,7 @@ class main:
         grun('r.to.vect', quiet=True, flags='', input='subbasins__0',
              output=self.subbasins + '__unclean', type='area')
         # remove small subbasins smaller than a thenth of threshold (m2)
-        prunedist = float(np.mean(self.upthresh.values())*3)
+        prunedist = float(np.mean(list(self.upthresh.values())) * 3)
         subbasins_cleaned = self.subbasins + '__cleaned'
         grun('v.clean', quiet=True, input=self.subbasins+'__unclean', flags='bc',
              output=subbasins_cleaned, type='area', tool='rmarea,prune',
@@ -794,7 +896,7 @@ class main:
         cols = self.stations_snapped_columns
         cols_dt = [' '.join([i, types[cols[i].dtype.kind]]) for i in cols.keys()]
         cols_fmt = '|'.join(['%'+cols[i].dtype.kind for i in cols.keys()])
-        data = np.column_stack(cols.values())
+        data = np.column_stack(list(cols.values()))
         # create vector if needed
         p = grass.feed_command('v.in.ascii', input='-', x=3, y=4, cat=1, quiet=True,
                                columns=cols_dt, output=self.stations_snapped)
@@ -803,6 +905,12 @@ class main:
         p.wait()
         # drop x y columns
         grun('v.db.dropcolumn', map=self.stations_snapped, columns='x,y')
+        # add other columns
+        cat = grass.vector_info(self.stations_snapped)['attribute_primary_key']
+        grun('g.copy', vector=self.stations+',stations__tmp', quiet=True)
+        catother = grass.vector_info('stations__tmp')['attribute_primary_key']
+        grun('v.db.join', map=self.stations_snapped, column=cat,
+             other_table='stations__tmp', other_column=catother, quiet=True)
         return
 
     def print_statistics(self):
@@ -820,8 +928,8 @@ ID  excl. upstream   incl. upstream  outlet subbasin  upstream stations''')
         for i, a in enumerate(scs):
             upix = [np.where(scs['catchmentID'] == c)[0][0]
                     for c in self.stations_upstream[a[0]] if c in scs['catchmentID']]
-            upstsize = np.sum(scs['catchmentID'][upix])+a[1]
-            upstst = map(str, self.stations_upstream[a[0]])
+            upstsize = np.sum(scs['size'][upix])+a[1]
+            upstst = list(map(str, self.stations_upstream[a[0]]))
             upstststr = ', '.join(upstst) if len(upstst) <= 3 else '%s stations' % len(upstst)
             print('%3i %14.2f %16.2f %16i  %s' % (a[0], a[1], upstsize,
                                                   outletsb[i], upstststr))
@@ -846,7 +954,7 @@ ID  excl. upstream   incl. upstream  outlet subbasin  upstream stations''')
         print('-----------------------------------------------------------------')
         print('Subbasin statistics (km2):')
         print(' '.join(['%-8s' %c for c in sub.keys()]))
-        for i in range(len(self.stations_upstream) + 1):
+        for i in range(len(cols) + 1):
             print(' '.join([sub[c][i] for c in sub]))
         print('-----------------------------------------------------------------')
         return scs, sbs
@@ -889,7 +997,7 @@ def rwhat(rasters, coordinates):
                  separator=',').split('\n')[:-1]
     # put category values into numpy array of integers
     what_array = np.array(
-        [map(int, l.split(',')[-len(rasters):]) for l in what])
+        [list(map(int, l.split(',')[-len(rasters):])) for l in what])
 
     return what_array
 
@@ -906,7 +1014,7 @@ def patch_basins(rastlist, outname):
     return
 
 
-def get_table(vector, dtype='S250', **kw):
+def get_table(vector, dtype='U250', **kw):
     '''Get a vector table into a numpy field array, dtype can either be one
     for all or a list for each column'''
     tbl = grass.vector_db_select(vector, **kw)
@@ -921,10 +1029,10 @@ def get_table(vector, dtype='S250', **kw):
         dtypes.update(dict(zip(cols, dtype)))
 
     # first check for empty entries
-    tbl = np.array(values, dtype=zip(cols, ['S250'] * len(cols)))
+    tbl = np.array(values, dtype=list(zip(cols, ['U250'] * len(cols))))
     convertedvals = []
     for c in cols:
-        i = tbl[c] == ''
+        i = tbl[c] == u''
         if len(tbl[c][i]) > 0:
             gm('Column %s has %s empty cells, will be parsed as float.' %
                (c, len(tbl[c][i])))
@@ -934,7 +1042,8 @@ def get_table(vector, dtype='S250', **kw):
         # actual type conversion
         convertedvals += [np.array(tbl[c], dtype=dtypes[c])]
     # now properly make it
-    tbl = np.array(zip(*convertedvals), dtype=[(c, dtypes[c]) for c in cols])
+    tbl = np.array(list(zip(*convertedvals)),
+                   dtype=[(c, dtypes[c]) for c in cols])
     tbl.sort()
     return tbl
 
@@ -942,6 +1051,8 @@ def get_table(vector, dtype='S250', **kw):
 if __name__ == '__main__':
     # start time
     st = dt.datetime.now()
+    # print version/date before doing anything else
+    mswim.utils.print_version(__file__) if '-v' in sys.argv else None
     # get options and flags
     o, f = grass.parser()
     fmt = lambda d: '\n'.join(['%s: %s' % (k, v) for k, v in d.items()])+'\n'

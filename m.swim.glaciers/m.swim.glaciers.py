@@ -2,11 +2,11 @@
 #
 ############################################################################
 #
-# MODULE:      m.swim.glaciers v1.0
+# MODULE:      m.swim.glaciers v1.5
 # AUTHOR(S):   Michel Wortmann, wortmann@pik-potsdam.de
 # PURPOSE:     Preprocessing suit for the Soil and Water Integrated Model
 #              Glacier dynamics (SWIM-G)
-# COPYRIGHT:   (C) 2012-2017 by Wortmann/PIK
+# COPYRIGHT:   (C) 2012-2021 by Wortmann/PIK
 #
 #              This program is free software under the GNU General Public
 #              License (>=v2). Read the file COPYING that comes with GRASS
@@ -34,7 +34,7 @@
 #% required: yes
 #% multiple: no
 #% key_desc: name
-#% description: Accumulation raster
+#% description: Accumulation raster, e.g. from m.swim.subbasins
 #% gisprompt: old,cell,raster
 #%end
 #%Option
@@ -44,7 +44,7 @@
 #% required: yes
 #% multiple: no
 #% key_desc: name
-#% description: Glacier modelling domain raster
+#% description: Glacier modelling domain raster, e.g. created using a min. elevation
 #% gisprompt: old,cell,raster
 #%end
 #%Option
@@ -84,7 +84,7 @@
 #% answer: 100000
 #% multiple: no
 #% key_desc: sq. m
-#% description: Minimum unit area
+#% description: Minimum unit area in sq. m
 #%end
 #%Option
 #% guisection: Glacier units
@@ -93,7 +93,7 @@
 #% answer: 19
 #% multiple: no
 #% key_desc: dg
-#% description: Valley slope threshold
+#% description: Valley slope threshold in dg
 #%end
 #%Option
 #% guisection: Glacier units
@@ -102,7 +102,7 @@
 #% answer: 200
 #% multiple: no
 #% key_desc: m
-#% description: Valley smoothing radius
+#% description: Valley smoothing radius in m
 #%end
 #%Option
 #% guisection: Glacier units
@@ -111,7 +111,7 @@
 #% answer: 30
 #% multiple: no
 #% key_desc: m
-#% description: Elevation contour intervals in valleys
+#% description: Elevation contour intervals in valleys in m
 #%end
 #%Option
 #% guisection: Glacier units
@@ -120,7 +120,7 @@
 #% answer: 200
 #% multiple: no
 #% key_desc: m
-#% description: Elevation contour intervals on slopes
+#% description: Elevation contour intervals on slopes in m
 #%end
 #%Option
 #% guisection: Glacier units
@@ -138,7 +138,7 @@
 #% answer: 45
 #% multiple: no
 #% key_desc: degrees
-#% description: Slope threshold to delineate avalanche area. If not given, avalanchearea raster must exist.
+#% description: Slope threshold to delineate avalanche area in dg. If not given, avalanchearea raster must exist.
 #%end
 #%Option
 #% guisection: Glacier units
@@ -251,7 +251,7 @@
 #% key_desc: name
 #% answer: glaciercontours
 #% gisprompt: new,cell,raster
-#% description: Name of glacier vallley and slope classed contours raster
+#% description: Name of glacier valley and slope classed contours raster
 #%end
 #%Option
 #% guisection: Output
@@ -365,7 +365,7 @@
 #% multiple: no
 #% key_desc: name
 #% gisprompt: new,cell,raster
-#% description: Initial debris concentration, if not given set to 0
+#% description: Initial debris concentration (fraction of total volume), if not given set to 0
 #%end
 #%Option
 #% guisection: Optional
@@ -376,6 +376,15 @@
 #% gisprompt: new,cell,raster
 #% description: Create raster with number of cells upstream/downstream raster
 #%end
+#%Option
+#% guisection: Optional
+#% key: mswimhydrotopespath
+#% type: string
+#% multiple: no
+#% key_desc: name
+#% gisprompt: old,file,file
+#% description: Path to custom m.swim.hydrotopes script or if not installed (e.g. in testing)
+#%end
 
 from __future__ import print_function
 import os
@@ -384,7 +393,7 @@ import numpy as np
 
 
 try:
-    import pandas as pa
+    import pandas as pd
 except ImportError:
     raise 'Cant import pandas. Is it installed?'
 
@@ -492,7 +501,7 @@ def cleanRast(input, output, areathresh, fill=True, lenthresh=None,
 
 def zonalStats(rast, zones, **runivarargs):
     '''Copied from mwpy.grass !!!
-    Return statistics of the raster for the given zones as a pa.Dataframe.
+    Return statistics of the raster for the given zones as a pd.Dataframe.
     '''
     # make flags
     if 'flags' in runivarargs:
@@ -509,14 +518,14 @@ def zonalStats(rast, zones, **runivarargs):
     cols = []
     for c in stats.T:
         try:
-            cols += [map(int, c)]
-        except:
+            cols += [list(map(int, c))]
+        except ValueError:
             try:
-                cols += [map(float, c)]
-            except:
+                cols += [list(map(float, c))]
+            except ValueError:
                 cols += [c]
     # make dataframe and set index to zone
-    df = pa.DataFrame(zip(*cols), columns=colnames)
+    df = pd.DataFrame(zip(*cols), columns=colnames)
     df.set_index('zone', inplace=True)
     # convert cells to area
     reg = grass.region()
@@ -591,7 +600,7 @@ def checkRouting(nextID, gunits, outname):
     tbl = grass.read_command('r.univar', map=nextID,
                              zones=gunits, flags='t').split('\n')
     cols = tbl[0].split('|')
-    tbl = pa.DataFrame([tuple(l.split('|')) for l in tbl[1:-1]], columns=cols)
+    tbl = pd.DataFrame([tuple(l.split('|')) for l in tbl[1:-1]], columns=cols)
     tbl.set_index(tbl['zone'].astype(int), inplace=True)
     tbl = tbl[['mean', 'non_null_cells']].astype(int)
     # group by 'inlet ids' and accum cells
@@ -613,24 +622,25 @@ def aspect(elevation, output, nclasses):
     # resulting map: degrees from E ccw, ie. E=0, N=270
 
     # make aspect classes
-    step = 360 / nclasses
-    start = 270 + (step / 2)  # centered around north
+    step = int(360 / nclasses)
+    start = 270 + int(step / 2)  # centered around north
 
     # from start to 0 (-1 for python)
     breaks = range(start, -1, -step)
+    nbr = len(breaks)
     exp = ['if(aspect__ <= %s & aspect__ > %s,%s,0)' % (
-        breaks[i], breaks[i] - step, i + 1) for i in range(len(breaks))][:-1]
-
+        breaks[i], breaks[i] - step, i + 1) for i in range(nbr)][:-1]
     # from start to 360
     breaks2 = range(start, 360, step)[::-1]
     # if not breaking at 0deg/E, add class going across 0
     if breaks[-1] != 0:
         exp += ['if(aspect__ <= %s | aspect__ > %s,%s,0)' %
-                (breaks[i], 360 - breaks[i], i + 1)]
+                (breaks[-1], 360 - breaks[-1], nbr)]
         breaks2 = breaks2[1:]
 
-    exp += ['if(aspect__ <= %s & aspect__ > %s,%s,0)' % (breaks2[i] +
-                                                         step, breaks2[i], len(exp) + i + 1) for i in range(len(breaks2))]
+    exp += ['if(aspect__ <= %s & aspect__ > %s,%s,0)' % (
+            breaks2[-1] + step, breaks2[-1], len(exp) + nbr)
+            for i in range(len(breaks2))]
 
     # add all rules together
     exp = output + '=' + ('+'.join(exp))
@@ -648,7 +658,7 @@ def hydAddressRast(hydrotopes, subbasins, output):
     tbl = grass.read_command('r.univar', map=subbasins, zones=hydrotopes,
                              flags='gt').split('\n')[:-1]  # :-1 as last line hast line break]
     tbl = [tuple(l.split('|')) for l in tbl]
-    tbl = np.array(tbl[1:], dtype=zip(tbl[0], ['S250'] * len(tbl[0])))
+    tbl = np.array(tbl[1:], dtype=list(zip(tbl[0], ['S250'] * len(tbl[0]))))
     sub = np.array(tbl['mean'], dtype=int)
     subIDs = np.unique(sub)
     # get counts
@@ -724,17 +734,17 @@ def writeStr(outname, unitmap, subbasins, hydAddress, nextID, *othercols):
             ocols += (meanUnit(unitmap, c, float)[c.split('@')[0]],)
 
     # get all columns
-    data = zip(subb['id'], subb[subbasins], hydAdd[hydAddress],
-               nxt[nextID], *ocols)
+    data = list(zip(subb['id'], subb[subbasins], hydAdd[hydAddress],
+                    nxt[nextID], *ocols))
     columnnames = ['gunitID', 'subbasinID', 'hydrotopeID', 'nextID']
     columnnames += [c.split('@')[0] if type(c) == str else 'raster_%s' % i
                     for i, c in enumerate(othercols)]
-    data = np.array(data, dtype=zip(columnnames, 4 *
-                                    [int] + len(othercols) * [float]))
+    data = np.array(data, dtype=list(zip(columnnames, 4 *
+                                         [int] + len(othercols) * [float])))
 #    # dont take those that are outflows
 #    data = data[nxt['id']!=nxt[nextID]]
     # save to txt file
-    f = file(outname, 'w')
+    f = open(outname, 'w')
     f.write((4 * '%-10s ' + len(othercols) * '%-14s ' + '\n') %
             tuple(columnnames))
     np.savetxt(f, data, fmt=4 * '%10i ' + len(othercols) * '%16.6f ')
@@ -750,9 +760,9 @@ def meanUnit(units, rast, outtype=str):
     tbl = grass.read_command('r.univar', map=rast, zones=units, flags='gt')
     # :-1 as last line hast line break]
     tbl = [tuple(l.split('|')) for l in tbl.split('\n')[:-1]]
-    array = np.array(tbl[1:], dtype=zip(tbl[0], ['S250'] * len(tbl[0])))
-    out = np.array(zip(array['zone'], array['mean'],
-                       array['non_null_cells'], array['null_cells']),
+    array = np.array(tbl[1:], dtype=list(zip(tbl[0], ['S250'] * len(tbl[0]))))
+    out = np.array(list(zip(array['zone'], array['mean'],
+                            array['non_null_cells'], array['null_cells'])),
                    dtype=[('id', int), (rast.split('@')[0], outtype),
                           ('non_null_cells', int), ('null_cells', int)])
     gm('Got %r x %s' % (out.dtype.names, out.shape[0]))
@@ -761,7 +771,7 @@ def meanUnit(units, rast, outtype=str):
 
 def loadGWE(file, prefix, reclassrast):
     # load gla file
-    gla = pa.read_table(file, index_col=[0, 1], names=[
+    gla = pd.read_table(file, index_col=[0, 1], names=[
                         'id', 'value'], delim_whitespace=True)
     styear = 1979
     # colormap
@@ -1046,11 +1056,19 @@ class Main:
         options = {i: self.__dict__[i]
                    for i in optionkeys
                    if hasattr(self, i)}
+        options.update(dict(
+            flags='k',
+            contours=self.contourrast,  # contains gunits
+            landuse=self.gunitslanduse,
+            soil=self.gunitssoil,
+        ))
         gm('Running m.swim.hydrotopes...')
-        grun('m.swim.hydrotopes',  flags='ck', quiet=False,
-             contourrast=self.contourrast,  # contains gunits
-             landuse=self.gunitslanduse, soil=self.gunitssoil,
-             **options)
+        if hasattr(self, "mswimhydrotopespath"):
+            mshp = self.mswimhydrotopespath
+            gm("...using custom m.swim.hydrotopes %s" % mshp)
+        else:
+            mshp = 'm.swim.hydrotopes'
+        grun(mshp, quiet=False, **options)
 
         return
 

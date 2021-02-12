@@ -2,7 +2,8 @@
 =======================================================
 
 ## Download and installation
-The code is hosted both at [PIK's GitLab](https://gitlab.pik-potsdam.de/wortmann/m.swim) and mirrored on [Github](https://github.com/mwort/m.swim). With GRASS >=7.2, install all the module via the build-in extension manager:
+### Linux/Mac
+The code is hosted both at [PIK's GitLab](https://gitlab.pik-potsdam.de/wortmann/m.swim) and mirrored on [Github](https://github.com/mwort/m.swim). With GRASS >=7.2, install all modules via the build-in extension manager:
 ```
 g.extension m.swim url=https://github.com/mwort/m.swim
 ```
@@ -15,23 +16,28 @@ g.extension m.swim url=path/to/m.swim/directory
 ```
 The modules can also be manually installed or used as python scripts if all things (i.e. g.extension) fail.
 
+### Windows
+Download the repository and use the modules as python scripts. This is because
+the standard Make add on compilation including the `g.extension url=<path>`
+argument doesn't work under Windows.
+
 ## Contributing, developing and debugging
 PIK cluster users can use the git repository on the cluster to make changes to the m.swim.\* code. Here is a quick [HOWTO](developing_debugging.md).
 
 ## Using the GUI
 The m.swim.\* modules (like any other GRASS module) can be either used as a script command or to open a GUI widget. On the GRASS command line, type the following to open them:
 ```
-m.swim.subbasin &
+m.swim.subbasins &
 m.swim.hydrotopes &
 m.swim.routing &
 m.swim.substats &
 ```
 If you want to also set arguments on the command line and still open the GUI, just add a --ui flag. E.g.:
 ```
-m.swim.subbasin elevation=elevation@PERMANENT stations=stations upthresh=2 --ui &
+m.swim.subbasins elevation=elevation@PERMANENT stations=stations upthresh=2 --ui &
 ```
 Here are some screenshots of the GUI:
-![m.swim.subbasin](img/subbasin_screenshot.png)
+![m.swim.subbasins](img/subbasin_screenshot.png)
 
 The m.swim.subbasins GUI in the subbasin design tab.
 
@@ -55,7 +61,9 @@ All GRASS manuals come with a manual page as the last tab in the GUI or you can 
 - [m.swim.hydrotopes](m.swim.hydrotopes.md)
 - [m.swim.routing](m.swim.routing.md)
 - [m.swim.substats](m.swim.substats.md)
-
+- [m.swim.climate](m.swim.climate.md)
+- [m.swim.glaciers](m.swim.glaciers.md)
+  
 ## Prerequisits
 -   the DEM must be slightly larger then the entire topographical catchment, by one cell in each direction to be precise. Using a precut DEM is therefore not advisable, but this can be overcome by adding an 'a' to the rwatershedflags in the m.swim.subbasins (this might lead to errors later on though).
 -   the stationthresh in the m.swim.subbasin module should be slightly smaller than the drainage area of the station with the smallest drainage area. If stations don't produce the expected catchment area, they are most likely not snapped to the appropriate stream. Moving these stations closer to the exact stream location will avoid this.

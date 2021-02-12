@@ -1,1 +1,29 @@
-<h2>DESCRIPTION</h2>Simple module to write the stationfile and virutalstationfile for the R interpolation script (von T. Vetter).<br><br>
+<h2>DESCRIPTION</h2>
+<p>This module creates the grid information needed for the SWIM netCDF climate
+input module for regular grids.
+The lon-lat grid size is set via the <b>res</b> argument (default is 0.5 degree).
+An arbitrary grid can be defined by parsing it to <b>grid</b> and the <b>-d</b>
+flag. 
+</p>
+
+<h2>EXAMPLE</h2>
+
+Write a subbasin-grid mapping for a regular, 0.5 degree grid:
+<pre>m.swim.climate subbasins=subbasins grid=halfdg_grid res=0.5 gridfilepath=project/input/climate/halfdg_grid.dat</pre>
+<br>
+Use points to define the grid with custom lat/lon column names and write out grid file:
+<pre>m.swim.climate subbasins=subbasins -d grid=grid_points lon_column=rlon lat_column=rlat gridfilepath=project/input/climate/halfdg_grid.dat</pre>
+<br>
+
+<h2>SEE ALSO</h2>
+
+<a href="m.swim.subbasins.html">m.swim.subbasins</a>,
+Documentation [external]: <a href="http://www.pik-potsdam.de/%7Ewortmann/m.swim">m.swim</a><br>
+
+<h2>AUTHORS</h2>
+Michel Wortmann, Potsdam Institute for Climate Impact Research (wortmann@pik-potsdam.de)<br>
+
+<!--
+<p>
+<i>Last changed: $Date$</i>
+-->

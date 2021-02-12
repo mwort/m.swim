@@ -2,13 +2,13 @@ MODULE_TOPDIR =../..
 
 PGM = m.swim
 
-SUBDIRS = m.swim.subbasins \
+SUBDIRS = mswim \
+          m.swim.subbasins \
           m.swim.hydrotopes \
           m.swim.routing \
           m.swim.substats \
           m.swim.climate \
           m.swim.glaciers
-#          m.swim.run   # not running yet
 
 include $(MODULE_TOPDIR)/include/Make/Dir.make
 

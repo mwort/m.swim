@@ -6,6 +6,7 @@ for f in ../m.swim.*/m.swim.*.html; do
   lt=$((${l% *} - 2))
   head -n $lt tmp_description > tmp_header
   tail -n 2 tmp_description > tmp_footer
-  cat tmp_header $f tmp_footer > ${f##*/}
+  echo "<p>Last updated (docs/code): $(git log -1 --format=%cd $f) / $(git log -1 --format=%cd ${f%.*}.py) </p>" > tmp_date
+  cat tmp_header $f tmp_date tmp_footer > ${f##*/}
   rm tmp_*
 done

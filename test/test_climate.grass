@@ -2,6 +2,8 @@
 # create separate mapset
 g.mapset -c mapset=swim
 module=../m.swim.climate/m.swim.climate.py
+# make mswim importable for test runs
+export PYTHONPATH=..:$PYTHONPATH
 
 # depending on:
 # ./test_subbasins.grass
@@ -14,5 +16,10 @@ fi
 mkdir -p project/input/climate
 
 # input for the ncdfclimate module
-$module subbasins=subbasins grid=grid_half_dg res=0.5 ncinfopath=project/input/climate/ncgrid.dat
+$module subbasins=subbasins grid=grid_half_dg res=0.5 gridfilepath=project/input/climate/ncgrid.dat
 
+# point-based grid definition (e.g. rotated grid)
+v.to.points input=grid_half_dg output=grid_half_dg_points type=centroid
+g.region vect=grid_half_dg_points,subbasins
+$module subbasins=subbasins -d grid=grid_half_dg_points gridfilepath=project/input/climate/ncgrid_from_points.dat -k
+g.region -d
