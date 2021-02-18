@@ -15,7 +15,7 @@
 #############################################################################
 
 #%Module
-#% description: preprocessor for the Soil and Water Integrated Model - Glacier dynamics (SWIM-G)
+#% description: Preprocessor for the Soil and Water Integrated Model - Glacier dynamics (SWIM-G), requires pandas.
 #%End
 #%Option
 #% guisection: Required
@@ -391,11 +391,6 @@ import os
 import datetime as dt
 import numpy as np
 
-
-try:
-    import pandas as pd
-except ImportError:
-    raise 'Cant import pandas. Is it installed?'
 
 import grass.script as grass
 import grass.script.core as gcore
@@ -1123,6 +1118,11 @@ if __name__ == '__main__':
                                   for k, v in d.items()]) + '\n'
     grass.message('GIS Environment:\n' + fmt(grass.gisenv()))
     grass.message('Parameters:\n' + fmt(o) + fmt(f))
+
+    try:
+        import pandas as pd
+    except ModuleNotFoundError:
+        raise ImportError('Cant import pandas. Is it installed?')
 
     # Parameters
     # glacierarea = 'glacierarea'  # existing raster
