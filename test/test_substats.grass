@@ -1,3 +1,4 @@
+set -e
 
 # create separate mapset
 g.mapset -c mapset=swim

@@ -1,3 +1,4 @@
+set -e
 # allow overwriting
 export GRASS_OVERWRITE=1
 
