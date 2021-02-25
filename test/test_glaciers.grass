@@ -21,11 +21,12 @@ mkdir -p project/input
 g.mapset -c glaciers
 
 # with glacier module
-r.mapcalc exp='glacierarea=if(elevation>750,1,null())'
+r.mapcalc exp='elevation=elevation@PERMANENT^1.3'
+r.mapcalc exp='glacierarea=if(elevation>1500 & subbasins@swim>9, 1, null())'
 
 $module subbasins=subbasins@swim accumulation=accumulation@swim \
         landuse=landuse@PERMANENT soil=soil@PERMANENT \
-        elevation=elevation@PERMANENT \
+        elevation=elevation \
         glacierarea=glacierarea \
         strfilepath=project/input/blank_glaciers.str \
         mswimhydrotopespath=$hydrotopemodule  # not required if m.swim.hydrotopes is installsed
