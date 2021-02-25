@@ -665,8 +665,8 @@ def hydAddressRast(hydrotopes, subbasins, output):
     np.savetxt(tmpf, cumfreq, delimiter='=', fmt='%i')
     grass.run_command('r.reclass', input=subbasins,
                       output='subbasins__cumfreq', rules=tmpf)
-    # subtract from hydrotopes, +1 because hydrotope raster values start at 0
-    grass.mapcalc('%s=%s - subbasins__cumfreq + 1' % (output, hydrotopes))
+    # subtract from hydrotopes
+    grass.mapcalc('%s=%s - subbasins__cumfreq' % (output, hydrotopes))
     # remove help stuff
     grass.run_command('g.remove', type='rast',
                       name='subbasins__cumfreq', flags='f')
