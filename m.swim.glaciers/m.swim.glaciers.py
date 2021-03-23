@@ -574,7 +574,7 @@ def cleanGunits(gunits, subbasins, outname, smallarea):
     else:
         # patch in batches due to open files limit of r.patch
         patched = []
-        batches = range(0, len(cunits), 500) + [len(cunits)]
+        batches = list(range(0, len(cunits), 500)) + [len(cunits)]
         for i in range(len(batches) - 1):
             n = outname + '__%s' % i
             grun('r.patch', input=','.join(
