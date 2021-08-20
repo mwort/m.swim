@@ -216,10 +216,10 @@ class main:
                 # add a 0 inlet column to it
                 a = np.column_stack((a,np.zeros(len(a))))
                 # bring into rec array
-                self.fromto = np.array(zip(*a.T),dtype=[('subbasinID',int),
-                                       ('nextID',int),('inletID',int)])
-            except:
-                grass.fatal('No integers or uneven number of values in fromto pairs. %s' %self.fromto)
+                self.fromto = np.array(list(zip(*a.T)), dtype=[('subbasinID',int),
+                                        ('nextID',int), ('inletID',int)])
+            except ValueError:
+                grass.fatal('Cant convert fromto pairs to integers. %s' %self.fromto)
 
         # check river course
         if 'rivercourse' in self.options:
