@@ -720,7 +720,7 @@ class main:
                 list(self.subbasins_rasters.items()))
 
         # PATCHING subbasins maps
-        patch_basins(self.subbasins_rasters.values(), outname=self.subbasins)
+        patch_basins(list(self.subbasins_rasters.values()), outname=self.subbasins)
 
         # clean subbasin raster and vector keeping the same name
         self.clean_subbasins()
