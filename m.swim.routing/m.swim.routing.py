@@ -468,7 +468,7 @@ class main:
         # start_points=headwater__outlets
             grun('r.drain', flags='d', input="elevation__cost__1", quiet=True,
                  direction="drainage__dg__%i" % o, output="mainstreams__drain",
-                 drain="mainstreams__drain__%i" % o,
+                 drain="mainstreams__drain__%i" % o, overwrite=True,
                  start_points='outlets__%i' % o)
             streams.append("mainstreams__drain__%i" % o)
             grass.core.percent(i+1, no, 1)
