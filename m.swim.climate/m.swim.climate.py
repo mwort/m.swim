@@ -180,7 +180,7 @@ class Grid:
         cols = '%s double,%s double' % (self.lon_column, self.lat_column)
         grass.run_command('v.db.addcolumn', map=self.grid, columns=cols)
         grass.run_command('v.to.db', map=self.grid, type='centroid',
-                          option='coor', columns='lon,lat',quiet=True)
+                          option='coor', columns='lon,lat', quiet=True, overwrite=True)
 
         # back to origional location and reproj
         grass.run_command('g.mapset',mapset=self.env['MAPSET'],location=self.env['LOCATION_NAME'],
