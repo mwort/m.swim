@@ -1,6 +1,6 @@
 # The GRASS7 Soil and Water Integrated Model (SWIM) preprocessor
 
-Version v1.5
+Version v1.6
 
 ## Documentation
 
@@ -10,11 +10,16 @@ http://www.pik-potsdam.de/~wortmann/m.swim/
 ## Version history
 
 *upcoming release*
+- version 2.0 to support SWIM redesign input files
+
+*Version v1.6 - 2022-01-19*
+- last version supporting legacy SWIM input
 - added the `m.swim.glaciers` module to create SWIM-G input files
 - `m.swim.hydrotopes`
   - `countoursrast` is now only output file, custom contours raster is passed as string
     to `contours`
   - `-c` is not needed anymore and is deprecated
+- several bug fixes
 
 *Version v1.5* - 2020-07-28
 - alpha implementation of the `mswim` python package to contain abstracted/shared

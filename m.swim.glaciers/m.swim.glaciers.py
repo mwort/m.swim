@@ -2,11 +2,11 @@
 #
 ############################################################################
 #
-# MODULE:      m.swim.glaciers v1.5
+# MODULE:      m.swim.glaciers v1.6
 # AUTHOR(S):   Michel Wortmann, wortmann@pik-potsdam.de
 # PURPOSE:     Preprocessing suit for the Soil and Water Integrated Model
 #              Glacier dynamics (SWIM-G)
-# COPYRIGHT:   (C) 2012-2021 by Wortmann/PIK
+# COPYRIGHT:   (C) 2012-2022 by Wortmann/PIK
 #
 #              This program is free software under the GNU General Public
 #              License (>=v2). Read the file COPYING that comes with GRASS
