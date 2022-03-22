@@ -1,5 +1,7 @@
 set -e
 
+export GRASS_OVERWRITE=1
+
 # create separate mapset
 g.mapset -c mapset=swim
 module=../m.swim.substats/m.swim.substats.py
@@ -22,5 +24,5 @@ fi
 mkdir -p project/input
 
 # subbasin statistics
-$module subbasins=subbasins projectname=blank projectpath=project/input elevation=elevation@PERMANENT \
+$module subbasins=subbasins output=project/input/subbasin.csv elevation=elevation@PERMANENT \
                    mainstreams=mainstreams drainage=drainage accumulation=accumulation stp=slopesteepness sl=slopelength

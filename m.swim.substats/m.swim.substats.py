@@ -19,23 +19,13 @@
 
 #%Option
 #% guisection: Required
-#% key: projectname
-#% type: string
-#% required: yes
-#% multiple: no
-#% key_desc: name
-#% description: Name of project
-#%end
-
-#%Option
-#% guisection: Required
-#% key: projectpath
+#% key: output
 #% type: string
 #% required: yes
 #% multiple: no
 #% key_desc: path
-#% description: Path to project folder
-#% gisprompt: old,dir,dir
+#% description: Subbasin csv stats output
+#% gisprompt: new,file,file
 #%end
 
 #%Option
@@ -167,7 +157,7 @@
 #% multiple: no
 #% key_desc: order
 #% description: Order of values in .sub file (variables as given as arguments)
-#% answer: salb,sno,chl,chs,chw,chk,chn,ovn,rt,css,ecp,sl,stp,lat,elev0,sdtsav
+#% answer: sl,stp,lat,elev0
 #%end
 
 #%Option
@@ -313,7 +303,7 @@
 #% multiple: no
 #% key_desc: order
 #% description: Order of values in .rte file (see help for values)
-#% answer: chw,chd,chs,chl,chn,chk,chxk,chc
+#% answer: chw,chd,chs,chl
 #%end
 
 
@@ -413,18 +403,7 @@
 #% multiple: no
 #% key_desc: order
 #% description: Order of values in .gw file (see help for values)
-#% answer: gwht,gwq,abf,syld,delay,revapc,rchrgc,revapmn
-#%end
-
-#%Option
-#% guisection: Optional
-#% key: dummy
-#% type: string
-#% required: no
-#% multiple: no
-#% key_desc: raster or value
-#% description: Dummy value as fill value and example
-#% answer: 0
+#% answer: delay
 #%end
 
 #%Flag
@@ -501,17 +480,6 @@ class main:
                         # if no function exists and not given as argument
                         grass.fatal('Not sure what to do with %s given in %sorder. No default value or raster given.' %(p,f))
 
-        # check if project dir exists
-        if not os.path.exists(self.projectpath):
-                grass.fatal('projectpath %s doesnt exists.' %self.projectpath)
-
-        ### .sub, .rte, .gw files location
-        path=os.path.join(self.projectpath,'Sub')
-        # check if Sub directory exists
-        if not os.path.exists(path):
-            grass.message('%s doesnt exist and will be created.' %path)
-            os.mkdir(path)
-        self.subpath = path
 
         # make rast from subbasin vector
         self.subbasinrast='subbasin__rast'
@@ -809,57 +777,13 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
     def writeSubFiles(self,data):
         '''Creates or overwrites files in the subpath with the
         .sub, .rte and .gw files from the data given and the structure given in parameters'''
-
-        precision = '14.5'
-        cfmt = '%-'+precision.split('.')[0]+'s'
-
-        # build up formats
-        grass.message('Writing subbasin.tab, routing.tab and '+
-                      'groundwater.tab files to %s' %self.subpath)
-        for p in self.orders:
-            fname = os.path.join(self.subpath,'%s.tab' % p)
-            tbl = np.column_stack([np.arange(1,self.nsubbasins+1)]+[data[c] for c in self.orders[p]])
-            with open(fname,'w') as f:
-                f.write(' '.join([cfmt%s for s in ['sub']+self.orders[p]])+'\n')
-                fmts = '%14i'+ ' '.join(['%'+precision+'f']*len(self.orders[p]))
-                np.savetxt(f, tbl, fmt=fmts)
+        tbl = np.column_stack([np.arange(1, self.nsubbasins+1)] +
+                               [data[c] for p in sorted(self.orders) for c in self.orders[p]])
+        cols = [s for p in sorted(self.orders) for s in self.orders[p]]
+        mswim.io.write_csv(self.output, tbl, ['subasin_id'] + cols, float_precision=5,
+                           float_columns=cols)
+        grass.message('Wrote %s' %self.output)
         return
-
-    def writeFileCio(self):
-        '''Write the file.cio file for the SWIM input, subbasins should be
-        array with subbasinIDs'''
-        outname = os.path.join(self.projectpath, 'file.cio')
-        # file.cio filename length in file list
-        fnlen = 13
-        # get subbasin cats
-        subbasins = np.array(gread('r.stats',input='subbasin__rast',
-                    flags='n', quiet=True).split(),dtype=int)
-        # needed files / header
-        named = ['.cod', '.fig', '.str', '.bsn', '.lut']
-        headerlines = [  # number of empty lines at start
-                       [self.projectname+ex for ex in named],
-                       ('crop.dat','agman.dat','wgen.dat'),
-                       ('soil.cio',),
-                       ('runoff.dat',),
-                       ('clim1.dat',),
-                       ('clim2.dat',)] + [[]]*2  # number of empty lines at end
-        # columns
-        cols = [list(subbasins)] + [[0]*len(subbasins)]*4
-        ilen = len(str(int(self.nsubbasins)))
-        for e in ['sub','rte','gw']:
-            cols+= [[(self.projectname+'%0'+str(ilen)+'i.%s') %(n,e) for n in subbasins]]
-        # write
-        with open(outname, 'w') as f:
-            # write header
-            for l in headerlines:
-                f.write(('%13s'*len(l)+'\n') % tuple(l))
-                fmt = 5*'%4i'+3*(' %'+str(fnlen-1)+'s')+'\n'
-            for l in zip(*cols):
-                f.write(fmt % l)
-        grass.message('Wrote %s' % outname)
-        return
-
-
 
 def rstats(rast,flags='n'):
     '''Return r.stats output as a sorted array'''
@@ -923,14 +847,11 @@ if __name__=='__main__':
     main=main(**keywords)
 
     # execute
-    # calculate statistics and write .sub/.gw/.rte files
+    # calculate statistics
     data = main.subbasinStats()
 
-    # Write to files
+    # Write to subbasin.csv file
     main.writeSubFiles(data)
-
-    ### file.cio
-    main.writeFileCio()
 
     # clean
     grun('r.mask',flags='r')
