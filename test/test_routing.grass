@@ -5,6 +5,7 @@ g.mapset -c mapset=swim
 module=../m.swim.routing/m.swim.routing.py
 # make mswim importable for test runs
 export PYTHONPATH=..:$PYTHONPATH
+export GRASS_OVERWRITE=1
 
 # depending on:
 # ./test_subbasins.grass
@@ -18,8 +19,8 @@ mkdir -p project/input
 
 # routing
 $module subbasins=subbasins accumulation=accumulation \
-                  figpath=project/input/blank.fig minmainstreams=50
+        output=project/input/subbasin_routing.csv minmainstreams=50
 
 # change routing without recalculation
 $module -r subbasins=subbasins accumulation=accumulation fromto=2,1,3,4 \
-                  figpath=project/input/blank.fig minmainstreams=50
+        output=project/input/subbasin_routing.csv minmainstreams=50

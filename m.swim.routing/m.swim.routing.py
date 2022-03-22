@@ -105,12 +105,12 @@
 
 #%Option
 #% guisection: SWIM files
-#% key: figpath
+#% key: output
 #% type: string
 #% required: no
 #% multiple: no
-#% key_desc: path/myproj.fig
-#% description: path to the .fig file
+#% key_desc: path/subbasin_routing.csv
+#% description: path to the output file
 #% gisprompt: new,file,file
 #%end
 
@@ -514,7 +514,7 @@ class main:
              use='attr', type='line', attribute_column='subbasinID', quiet=1)
         return
 
-    def fig_file(self):
+    def output_file(self):
         '''Write the .fig file needed for SWIM, subbasin vect needs to have a
         subbasinID column and a nextID column'''
         # get subbasinID and nextID or fromto array
@@ -529,7 +529,7 @@ class main:
         # write subbasin section
         for sbcat in fromto:
             sb = sbcat['subbasinID']
-            lines += [['subbasin', 1, sb, sb, sb, '']]
+            lines += [[sb, 'subbasin', 1, sb, sb, sb]]
 
         # ADD and ROUTE
         # calculate stream order for each subbasin
@@ -565,11 +565,13 @@ class main:
             # next storageID
             sID = routes['storageID'].max() + 1
         # add finish
-        lines += [['finish', 0, '', '', '', '']]
+        lines += [[0, 'finish', 0, 0, 0, 0]]
 
         # write via numpy
-        np.savetxt(self.figpath, np.array(lines), fmt='%-15s%1s'+'%6s'*4)
-        gm('Wrote %s' % self.figpath)
+        with open(self.output, 'w') as f:
+            f.write("iht   , instruction    , icd, inm1  , inm2  , inm3\n")
+            np.savetxt(f, np.array(lines), fmt='%6s, %-15s, %3s, %6s, %6s, %6s')
+        gm('Wrote %s' % self.output)
         return {'order': order, 'downstorder': downstorder,
                 'downstorderNsubbasins': downstorderNsb}
 
@@ -625,7 +627,7 @@ def readSubNxtID(subbasinsvect,columns=('subbasinID','nextID','inletID')):
     assert columns[0] == 'subbasinID'
     tbl=list(grass.vector_db_select(subbasinsvect,columns=','.join(columns))['values'].values())
     # check if empty cells
-    tbl=np.array(tbl,dtype=np.unicode)
+    tbl=np.array(tbl,dtype=np.compat.unicode)
     empty = (tbl == u'').any(1)
     if empty.sum() > 0:
         outsb = tbl[empty, 0]  # assumes first column to be subbasinID
@@ -685,19 +687,19 @@ def addroute(sID,fromto):
             for i,sb in enumerate(upsb[1:]):
                 if i==0: lastsID=upsb[0]
                 ### ADD
-                lines += [['add', 5, sID, lastsID, sb, sb]] # 5 is the swim code for add
+                lines += [[sID, 'add', 5, lastsID, sb, sb]] # 5 is the swim code for add
                 #print 'add', sb, 'to', lastsID, '=', sID
                 lastsID = sID
                 sID += 1
         else:
             lastsID = upsb[0]
         ### ROUTE
-        lines += [['route', 2, sID, inlet, lastsID, inlet]] # 2 is for route
+        lines += [[sID, 'route', 2, inlet, lastsID, inlet]] # 2 is for route
         #print 'route',lastsID, 'through', inlet, '=',sID
         # add inlet station to routed storage location
         lastsID = sID
         sID += 1
-        lines += [['add', 5, sID, lastsID, inlet, inlet]]
+        lines += [[sID, 'add', 5, lastsID, inlet, inlet]]
         #print 'add inlet',inlet, 'to routed', lastsID
         # save sID for further routing/adding
         routesIDs[inlet] = sID
@@ -743,9 +745,9 @@ if __name__=='__main__':
         main.mkstreams()
 
     ### .fig file
-    if 'figpath' in main.options:
-        grass.message('Will write .fig file to %s!' % main.figpath)
-        main.fig_file()
+    if 'output' in main.options:
+        grass.message('Will write routing file to %s!' % main.output)
+        main.output_file()
 
     # rivercouse
     if 'rivercourse' in main.options:
