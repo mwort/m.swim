@@ -1,6 +1,6 @@
 # The GRASS7 Soil and Water Integrated Model (SWIM) preprocessor
 
-Version v1.6
+Version v2.0
 
 ## Documentation
 
