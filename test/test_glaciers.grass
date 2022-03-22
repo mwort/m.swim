@@ -3,7 +3,8 @@ set -e
 export GRASS_OVERWRITE=1
 
 # make mswim importable for test runs
-export PYTHONPATH=..:$PYTHONPATH
+export PYTHONPATH=..:/Users/wortmann/Desktop/source/swimpy/venv/lib/python3.8/site-packages/:$PYTHONPATH
+export GRASS_OVERWRITE=1
 
 hydrotopemodule=../m.swim.hydrotopes/m.swim.hydrotopes.py
 module=../m.swim.glaciers/m.swim.glaciers.py
@@ -24,17 +25,17 @@ g.mapset -c glaciers
 r.mapcalc exp='elevation=elevation@PERMANENT^1.3'
 r.mapcalc exp='glacierarea=if(elevation>1500 & subbasins@swim>9, 1, null())'
 
-$module subbasins=subbasins@swim accumulation=accumulation@swim \
+$module subbasin_id=subbasins@swim accumulation=accumulation@swim \
         landuse=landuse@PERMANENT soil=soil@PERMANENT \
         elevation=elevation \
         glacierarea=glacierarea \
-        strfilepath=project/input/blank_glaciers.str \
+        strfilepath=project/input/hydrotope_glaciers.csv \
         mswimhydrotopespath=$hydrotopemodule  # not required if m.swim.hydrotopes is installsed
 
 # without glacier module
 r.mapcalc exp='glaciers=if(elevation>800,elevation*1000,null())'
-$hydrotopemodule subbasins=subbasins@swim landuse=landuse@PERMANENT soil=soil@PERMANENT \
+$hydrotopemodule subbasin_id=subbasins@swim landuse=landuse@PERMANENT soil=soil@PERMANENT \
                  contours=200 elevation=elevation@PERMANENT \
-                 glaciers=glaciers \
-                 strfilepath=project/input/blank.str \
+                 glacier_thickness=glaciers \
+                 strfilepath=project/input/hydrotope_glacier_thickness.csv \
                  hydrotopes=hydrotopes_no_glaciers

@@ -49,7 +49,7 @@
 #%end
 #%Option
 #% guisection: Required
-#% key: subbasins
+#% key: subbasin_id
 #% type: string
 #% required: yes
 #% multiple: no
@@ -59,7 +59,7 @@
 #%end
 #%Option
 #% guisection: Required
-#% key: landuse
+#% key: landuse_id
 #% type: string
 #% required: yes
 #% multiple: no
@@ -69,7 +69,7 @@
 #%end
 #%Option
 #% guisection: Required
-#% key: soil
+#% key: soil_id
 #% type: string
 #% required: yes
 #% multiple: no
@@ -320,12 +320,12 @@
 #%end
 #%Option
 #% guisection: Hydrotopes
-#% key: management
+#% key: crop_management_id
 #% type: string
 #% required: no
 #% multiple: no
 #% key_desc: name
-#% description: Management raster name (if not given, column is filled with default)
+#% description: Crop anagement id raster name (if not given, column is filled with default)
 #% gisprompt: old,cell,raster
 #%end
 #%Option
@@ -837,7 +837,7 @@ class Main:
         self.sunhours_winter = self.sunhoursprefix + '_winter'
         self.avalanchearea_frac = self.avalanchearea + '__frac'
         self.strcolumns = [self.gunits,
-                           self.subbasins,
+                           self.subbasin_id,
                            self.hydrotope_address,
                            self.downstreamgunits,
                            0,  # initial glacier thickness must be 0
@@ -863,7 +863,7 @@ class Main:
 
     def process(self):
         gm('Cleaning and zooming to glacier area...')
-        gm('''Resolution of subbasins raster is used for all output with
+        gm('''Resolution of subbasin_id raster is used for all output with
            minimal non-null extent of glacierarea raster.''')
 
         if not self.s:
@@ -905,7 +905,7 @@ class Main:
 
     def create_garea(self):
         # mask entire catchment
-        self.mask(self.subbasins)
+        self.mask(self.subbasin_id)
         # clean small bits from garea
         garea_clean = self.gunitsglacierarea + '__clean'
         cleanRast(self.glacierarea, garea_clean, self.minarea, fill=False)
@@ -960,7 +960,7 @@ class Main:
         cleanRast(aspect_slopes, self.slopeaspect, self.minarea)
 
         # make raw glacier units
-        gunits_maps = [self.subbasins, self.glaciercontours, self.slopeaspect]
+        gunits_maps = [self.subbasin_id, self.glaciercontours, self.slopeaspect]
         gunits_raw = self.gunits + '__raw'
         grun('r.cross', input=','.join(gunits_maps), output=gunits_raw)
         # spatially explicit
@@ -970,7 +970,7 @@ class Main:
         # clean gunits and make spatially explicit
         # then clean each subbasin individually to fill each subbasin
         gunits_clean = self.gunits + '__clean'
-        cleanGunits(gunits_clumped, self.subbasins, gunits_clean, self.minarea)
+        cleanGunits(gunits_clumped, self.subbasin_id, gunits_clean, self.minarea)
         # mask garea again (cleanGunits loses mask)
         self.mask(self.glacierarea_clean)
         # remove small overspilled units at glacierarea fringes and reduce
@@ -1006,7 +1006,7 @@ class Main:
         """
         # make glacier units part of hydrotope map and include contours outside
         # of glacier area
-        self.mask(self.subbasins)
+        self.mask(self.subbasin_id)
 
         # create contours with glacier units
         exp = 'if(isnull($gunits),int($elevation/$interval),$gunits)'
@@ -1016,7 +1016,7 @@ class Main:
         # Prepare hydrotope maps
         # map soils to gunits
         gunits_soil = self.gunits + '__soil'
-        self.map_gunits(self.soil, gunits_soil)
+        self.map_gunits(self.soil_id, gunits_soil)
 
         if self.a:  # add slope soilID
             # get valley/slope glacier units
@@ -1024,7 +1024,7 @@ class Main:
             gunits_valleys = self.gunits + '__valleys'
             self.map_gunits(self.valleys, gunits_valleys)
             # get next higher soil for slopes
-            ssid = int(grass.raster_info(self.soil)['max'])+1
+            ssid = int(grass.raster_info(self.soil_id)['max'])+1
             gm('Assigning soilID=%s to slopes inside glacier area.' % ssid)
             grass.mapcalc('$output=if($gvalleys,$gsoil,$slopesoil)',
                           output=gunits_soilslopes, gvalleys=gunits_valleys,
@@ -1033,29 +1033,29 @@ class Main:
 
         ex = '$output=if(isnull($garea),$soil,$gsoil)'
         grass.mapcalc(ex, output=self.gunitssoil, garea=self.gunitsglacierarea,
-                      soil=self.soil, gsoil=gunits_soil)
+                      soil=self.soil_id, gsoil=gunits_soil)
 
         # map landuse to gunits
         gunits_landuse = self.gunits + '__landuse'
-        self.map_gunits(self.landuse, gunits_landuse)
+        self.map_gunits(self.landuse_id, gunits_landuse)
         exp = 'if(!isnull($garea),int($glanduse),$landuse)'
         grass.mapcalc(self.gunitslanduse + '=' + exp,
                       garea=self.gunitsglacierarea,
-                      glanduse=gunits_landuse, landuse=self.landuse)
+                      glanduse=gunits_landuse, landuse=self.landuse_id)
 
         # make hydrotopes and write str file
         # all these are options of this module that are parsed on to
         # m.swim.hydrotopes if given
-        optionkeys = ['subbasins', 'elevation', 'hydrotopes', 'strfilepath',
-                      'wetland', 'managment']
+        optionkeys = ['subbasin_id', 'elevation', 'hydrotopes', 'strfilepath',
+                      'wetland', 'crop_management_id']
         options = {i: self.__dict__[i]
                    for i in optionkeys
                    if hasattr(self, i)}
         options.update(dict(
             flags='k',
             contours=self.contourrast,  # contains gunits
-            landuse=self.gunitslanduse,
-            soil=self.gunitssoil,
+            landuse_id=self.gunitslanduse,
+            soil_id=self.gunitssoil,
         ))
         gm('Running m.swim.hydrotopes...')
         if hasattr(self, "mswimhydrotopespath"):
@@ -1093,8 +1093,8 @@ class Main:
         """Prepare all input and write the glacier.str file."""
 
         # hydAddress needs to be for all subbasins
-        self.mask(self.subbasins)
-        hydAddressRast(self.hydrotopes, self.subbasins, self.hydrotope_address)
+        self.mask(self.subbasin_id)
+        hydAddressRast(self.hydrotopes, self.subbasin_id, self.hydrotope_address)
 
         self.mask(self.gunitsglacierarea)
         self.create_avalanche()
