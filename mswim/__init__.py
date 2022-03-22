@@ -3,3 +3,4 @@
 __version__ = '1.5'
 
 from . import utils
+from . import io
