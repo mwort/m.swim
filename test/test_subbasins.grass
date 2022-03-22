@@ -25,4 +25,3 @@ mkdir -p project/input
 
 # write ancillary files
 v.db.select stations_snapped col=subbasinID,NAME sep=space > project/input/gauges.output
-v.db.select subbasins col=subbasinID,catchmentID,catchmentID sep=space > project/input/subcatch.def

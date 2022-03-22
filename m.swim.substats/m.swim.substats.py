@@ -41,6 +41,18 @@
 
 #%Option
 #% guisection: Subbasin
+#% key: catchment_id
+#% type: string
+#% required: no
+#% multiple: no
+#% key_desc: raster
+#% description: Catchment id of the subbasins.
+#% gisprompt: old,raster,raster
+#% answer: catchments
+#%end
+
+#%Option
+#% guisection: Subbasin
 #% key: elev0
 #% type: string
 #% required: no
@@ -157,7 +169,7 @@
 #% multiple: no
 #% key_desc: order
 #% description: Order of values in .sub file (variables as given as arguments)
-#% answer: sl,stp,lat,elev0
+#% answer: catchment_id,sl,stp,lat,elev0
 #%end
 
 #%Option
@@ -774,14 +786,14 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
 
         return rasterout
 
-    def writeSubFiles(self,data):
+    def write_csv_output(self,data):
         '''Creates or overwrites files in the subpath with the
         .sub, .rte and .gw files from the data given and the structure given in parameters'''
         tbl = np.column_stack([np.arange(1, self.nsubbasins+1)] +
-                               [data[c] for p in sorted(self.orders) for c in self.orders[p]])
-        cols = [s for p in sorted(self.orders) for s in self.orders[p]]
+                               [data[c] for p in sorted(self.orders)[::-1] for c in self.orders[p]])
+        cols = [s for p in sorted(self.orders)[::-1] for s in self.orders[p]]
         mswim.io.write_csv(self.output, tbl, ['subasin_id'] + cols, float_precision=5,
-                           float_columns=cols)
+                           float_columns=set(cols)-set(["catchment_id"]))
         grass.message('Wrote %s' %self.output)
         return
 
@@ -851,7 +863,7 @@ if __name__=='__main__':
     data = main.subbasinStats()
 
     # Write to subbasin.csv file
-    main.writeSubFiles(data)
+    main.write_csv_output(data)
 
     # clean
     grun('r.mask',flags='r')
