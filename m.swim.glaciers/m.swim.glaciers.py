@@ -341,7 +341,7 @@
 
 #%Option
 #% guisection: Optional
-#% key: strfilepath
+#% key: output
 #% type: string
 #% multiple: no
 #% key_desc: path
@@ -388,13 +388,20 @@
 
 from __future__ import print_function
 import os
+import sys
 import datetime as dt
 import numpy as np
-
 
 import grass.script as grass
 import grass.script.core as gcore
 gm = grass.message
+
+path = grass.utils.get_lib_path(modname='m.swim', libname='mswim')
+if path:
+    sys.path.extend(path.split(':'))
+    import mswim
+else:
+    grass.warning('Unable to find the mswim python library.')
 
 
 def grun(*args, **kwargs):
@@ -738,12 +745,8 @@ def writeStr(outname, unitmap, subbasins, hydAddress, nextID, *othercols):
                                          [int] + len(othercols) * [float])))
 #    # dont take those that are outflows
 #    data = data[nxt['id']!=nxt[nextID]]
-    # save to txt file
-    f = open(outname, 'w')
-    f.write((4 * '%-10s ' + len(othercols) * '%-14s ' + '\n') %
-            tuple(columnnames))
-    np.savetxt(f, data, fmt=4 * '%10i ' + len(othercols) * '%16.6f ')
-    f.close()
+    # save to csv file
+    mswim.io.write_csv(outname, data, columnnames, float_columns=othercols, float_precision=6)
     gm('Wrote %s' % outname)
     return data
 
@@ -847,9 +850,9 @@ class Main:
                            self.sunhours_winter,
                            self.initialdebris,
                            0]  # initial snow
-        if hasattr(self, 'strfilepath'):
+        if hasattr(self, 'output'):
             self.glacier_structure_file = os.path.join(
-                            os.path.dirname(self.strfilepath), 'glaciers.str')
+                            os.path.dirname(self.output), 'glaciers.csv')
         return
 
     def _raster_exists(self, name):
@@ -885,7 +888,7 @@ class Main:
             gm('Creating hydrotopes...')
             self.create_hydrotopes()
 
-        if hasattr(self, 'strfilepath'):
+        if hasattr(self, 'output'):
             gm('Wrting glacier structure file...')
             self.glacier_structure()
 
@@ -1046,7 +1049,7 @@ class Main:
         # make hydrotopes and write str file
         # all these are options of this module that are parsed on to
         # m.swim.hydrotopes if given
-        optionkeys = ['subbasin_id', 'elevation', 'hydrotopes', 'strfilepath',
+        optionkeys = ['subbasin_id', 'elevation', 'hydrotopes', 'output',
                       'wetland', 'crop_management_id']
         options = {i: self.__dict__[i]
                    for i in optionkeys

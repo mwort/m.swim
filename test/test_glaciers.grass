@@ -29,7 +29,7 @@ $module subbasin_id=subbasins@swim accumulation=accumulation@swim \
         landuse=landuse@PERMANENT soil=soil@PERMANENT \
         elevation=elevation \
         glacierarea=glacierarea \
-        strfilepath=project/input/hydrotope_glaciers.csv \
+        output=project/input/hydrotope_glaciers.csv \
         mswimhydrotopespath=$hydrotopemodule  # not required if m.swim.hydrotopes is installsed
 
 # without glacier module
@@ -37,5 +37,5 @@ r.mapcalc exp='glaciers=if(elevation>800,elevation*1000,null())'
 $hydrotopemodule subbasin_id=subbasins@swim landuse=landuse@PERMANENT soil=soil@PERMANENT \
                  contours=200 elevation=elevation@PERMANENT \
                  glacier_thickness=glaciers \
-                 strfilepath=project/input/hydrotope_glacier_thickness.csv \
+                 output=project/input/hydrotope_glacier_thickness.csv \
                  hydrotopes=hydrotopes_no_glaciers
