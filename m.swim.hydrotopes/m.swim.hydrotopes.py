@@ -18,7 +18,7 @@
 #%End
 #%Option
 #% guisection: Required
-#% key: subbasins
+#% key: subbasin_id
 #% type: string
 #% required: yes
 #% multiple: no
@@ -28,7 +28,7 @@
 #%end
 #%Option
 #% guisection: Required
-#% key: landuse
+#% key: landuse_id
 #% type: string
 #% required: yes
 #% multiple: no
@@ -38,7 +38,7 @@
 #%end
 #%Option
 #% guisection: Required
-#% key: soil
+#% key: soil_id
 #% type: string
 #% required: yes
 #% multiple: no
@@ -102,12 +102,12 @@
 #%end
 #%Option
 #% guisection: Optional
-#% key: management
+#% key: crop_management_id
 #% type: string
 #% required: no
 #% multiple: no
 #% key_desc: name
-#% description: Raster name (if not given, column is filled with default)
+#% description: Raster name
 #% gisprompt: old,cell,raster
 #%end
 #%Option
@@ -117,17 +117,17 @@
 #% required: no
 #% multiple: no
 #% key_desc: name
-#% description: Raster name (if not given, column is filled with default)
+#% description: Raster name of 1/0 wetland mask
 #% gisprompt: old,cell,raster
 #%end
 #%Option
 #% guisection: Optional
-#% key: glaciers
+#% key: glacier_thickness
 #% type: string
 #% required: no
 #% multiple: no
 #% key_desc: name
-#% description: Raster name (if not given, column is filled with default)
+#% description: Raster name
 #% gisprompt: old,cell,raster
 #%end
 #%Option
@@ -152,7 +152,8 @@
 #%end
 
 
-import os,sys,collections
+import os,sys
+from collections import OrderedDict
 import grass.script as grass
 g_run=grass.run_command
 gm   =grass.message
@@ -174,11 +175,6 @@ except Exception as e:
 
 class main:
 
-    DEFAULTS = {'management': 1,
-                'wetland':    0,
-                'glaciers':   0,
-                'contours':   0}
-
     def __init__(self,**optionsandflags):
         '''Process all arguments and prepare processing'''
         # add all options and flags as attributes (only nonempty ones)
@@ -191,13 +187,13 @@ class main:
         self.floatmaps = {}
 
         # default columns
-        self.strcolumns = [self.subbasins,self.landuse, self.soil]
+        self.strcolumns = OrderedDict([(i, getattr(self, i)) for i in ('subbasin_id', 'landuse_id', 'soil_id')])
 
         # managment and wetland
-        for r in ['management','wetland']:
-            self.__dict__[r] = self._maskOrBlank(r)
-            self.strcolumns += [self.__dict__[r]]
-
+        for r in ['crop_management_id','wetland']:
+            self.__dict__[r] = self._maskOrFalse(r)
+            if self.__dict__[r] != False:
+                self.strcolumns[r] = self.__dict__[r]
 
         # check contours and create raster if needed
         if 'contours' in self.options:
@@ -210,33 +206,32 @@ class main:
             else:
                 # create contourrast
                 self.mkContours()
-        else:
-            self.contourrast = self._maskOrBlank('contours')
-        # add to columns
-        self.strcolumns += [self.contourrast]
-        self.floatmaps[self.contourrast] = self.elevation
+            # add to columns
+            self.strcolumns['elevation'] = self.contourrast
+            self.floatmaps[self.contourrast] = self.elevation
 
         # glaciers
-        self.glaciers = self._maskOrBlank('glaciers')
-        self.strcolumns += [self.glaciers]
+        self.glacier_thickness = self._maskOrFalse('glacier_thickness')
+        if self.glacier_thickness != False:
+            self.strcolumns['glacier_thickness']= self.glacier_thickness
 
         # other raster to include?
         if 'more' in self.options:
             self.more = self.more.split(',')
-            self.strcolumns += self.more
+            self.strcolumns.update({k: k for k in self.more})
 
         # check if all input maps are int/CELL maps
         gm('Check if all input are integer raster...')
-        for m in self.strcolumns:
+        for m in self.strcolumns.values():
             if grass.raster_info(m)['datatype']!='CELL':
                 grass.fatal('%s is not an integer/CELL raster, convert using int() in r.mapcalc' %m)
 
         # check that all input maps have no NULLs in catchment over subbasins area
-        g_run('r.mask',raster=self.subbasins,overwrite=True)
+        g_run('r.mask', raster=self.subbasin_id, overwrite=True)
 
         gm('Checking for NULLs in input maps...')
         pow2 = 2**np.arange(len(self.strcolumns))
-        ifnull = ' + '.join(['isnull(%s)*%s' %(m,i) for m,i in zip(self.strcolumns,pow2)])
+        ifnull = ' + '.join(['isnull(%s)*%s' %(m,i) for m,i in zip(self.strcolumns.values(), pow2)])
         grass.mapcalc('null__areas=%s' %ifnull, overwrite=True)
         g_run('r.null',map='null__areas',setnull=0,quiet=True)
         null = grass.parse_command('r.stats',input='null__areas',flags='aN',separator='=')
@@ -244,7 +239,7 @@ class main:
         if len(null)>0:
             gm("In any of the input maps are NULL/no data values over the subbasins area.")
             gm(" See the null__area raster with this legend including their combinations.")
-            for m,i in zip(self.strcolumns,pow2): gm("%s = %s" %(i,m))
+            for m,i in zip(self.strcolumns.values(), pow2): gm("%s = %s" %(i,m))
             gm('null__area   area [km2]')
             for m in sorted(null.keys()): gm("%s        %s" %(m,float(null[m])*10**-6))
             gm("How should they appear in the .str file?")
@@ -254,9 +249,9 @@ class main:
 
         return
 
-    def _maskOrBlank(self, name):
+    def _maskOrFalse(self, name):
         '''Check if name option is given, if yes make a mask,
-        if not make a blank map out of the default value.'''
+        if not return False.'''
         # if given, then it must be a raster, if not just make blank
         argv = getattr(self, name, None)
         if argv:
@@ -269,9 +264,7 @@ class main:
                 # CELL is just passed on
                 outname = self.__dict__[name]
         else:
-            # not given, make default blank map
-            outname = '%s__default'%name
-            grass.mapcalc(exp=outname+'=%s'%self.DEFAULTS[name])
+            return False
 
         return outname
 
@@ -297,7 +290,7 @@ class main:
         for b in breaks: exp+='+ if(%s>=%s,1)' %(self.elevation,b) # for all greater eq than
         grass.mapcalc(exp, overwrite=True)
 
-        grass.message(('Calculated contourmap: %s' %self.contourrast))
+        grass.message(('Created contourmap: %s' %self.contourrast))
 
         return
 
@@ -306,16 +299,22 @@ class main:
         and writes a structure file with category values of the maps in the same
         order plus an area and cell column
         """
-        g_run('r.mask',raster=self.subbasins,overwrite=True)
+        g_run('r.mask',raster=self.subbasin_id,overwrite=True)
 
         # maps list
-        ml=','.join(self.strcolumns)
+        ml=','.join(self.strcolumns.values())
         # take cross product of maps
         g_run('r.cross', overwrite=True, flags='z', input=ml,
               output='hydrotopes__rcross')
+        # start hydrotope count at 1 instead of 0
+        grass.mapcalc('$output=$input+1', output=self.hydrotopes,
+                      input='hydrotopes__rcross')
+        self.strcolumns['hydrotope_id'] = self.hydrotopes
+        self.strcolumns.move_to_end('hydrotope_id', last=False)
 
         # read basic structure file info from hydrotope map
-        struct = readinStr(self.strcolumns)
+        struct = readinStr(self.strcolumns.values())
+        self.strcolumns['area'] = ''
 
         # replace all float maps with float values
         for intmap,floatmap in self.floatmaps.items():
@@ -328,43 +327,44 @@ class main:
         self.writeStr(struct)
 
         # report hydrotope count and check max number of hydrotopes in subbasins
-        nmax = np.max(np.bincount(struct[self.subbasins].astype(int)))
+        nmax = np.max(np.bincount(struct[self.subbasin_id].astype(int)))
         grass.message('''%s hydrotopes created, %5.2f per subbasin on average, max.
 number of hydrotopes per subbasin %i
-                      ''' %(len(struct),len(struct)/len(np.unique(struct[self.subbasins])),nmax))
-        # start hydrotope count at 1 instead of 0
-        grass.mapcalc('$output=$input+1', output=self.hydrotopes,
-                      input='hydrotopes__rcross')
+                      ''' %(len(struct),len(struct)/len(np.unique(struct[self.subbasin_id])),nmax))
         g_run('r.colors', map=self.hydrotopes, color="random", quiet=True)
         return struct
 
-    def writeStr(self, array):
-        """Write the array into the structure file path given in strname"""
+    def writeStr_no_mswim_lib(self, array):
+        """Deprecated in favour of using abstracted mswim.io.write_csv"""
         # formate for structure file
-        ncolumns=len(array[0])
-        colwidth=14
-        heacolfmt = ('%%-%ss '%colwidth)*ncolumns
-        datcolfmt = ('%%%si '%colwidth)*ncolumns
-        colnames= tuple([c.split('@')[0] for c in self.strcolumns]) + ('area','cells')
+        colwidth = [max(i, 9) for i in map(len, self.strcolumns)]
+        heacolfmt = ['%%-%ss' % i for i in colwidth] 
+        datcolfmt = [('%%%s.3f' if c in self.floatmaps else '%%%si') % i
+                     for i, c in zip(colwidth, self.strcolumns.values())]
         # write out structure file
         with open(self.strfilepath, 'w') as strf:
             # header
-            strf.write((heacolfmt + '\n')%colnames)
+            strf.write((', '.join(heacolfmt) + '\n') % tuple(self.strcolumns.keys()))
             # data
-            np.savetxt(strf, array, fmt=datcolfmt)
-            # 0s as the last line
-            strf.write( datcolfmt%((0,)*ncolumns))
+            np.savetxt(strf, array, fmt=', '.join(datcolfmt))
         grass.message(('Wrote structure file %s' % self.strfilepath))
+        return
+
+    def writeStr(self, array):
+        """Write the array into the structure file path given in strname"""
+        floatcols = [k for k, v in self.strcolumns.items() if v in self.floatmaps]
+        mswim.io.write_csv(self.strfilepath, array, self.strcolumns.keys(),
+                           float_columns=floatcols)
+        grass.message(('Wrote hydrotope file %s' % self.strfilepath))
         return
 
 def readinStr(strcolumns):
     """ Return subbasinID, landuseID, soilID, ..., area, cellcount from
     hydrotope map as an numpy array"""
     # get all values with area and cell, [:-1] as last line hast line break
-    tbl = grass.read_command('r.stats',input=','.join(strcolumns),flags='acn').split('\n')[:-1]
+    tbl = grass.read_command('r.stats', input=','.join(strcolumns), flags='an').split('\n')[:-1]
     tbl = [tuple(l.split()) for l in tbl]
-    tbl = np.array(tbl, dtype=list(zip(strcolumns+['area','cells'],
-                                  [np.int64]*len(strcolumns) + [np.float,np.int64])))
+    tbl = np.array(tbl, dtype=list(zip(list(strcolumns)+['area'], [float]*(len(strcolumns) + 1))))
 
     return tbl
 
