@@ -65,10 +65,10 @@ explicitly):<br>
 with all default input (mainstreams, drainage, accumulation,&nbsp; stp
 and sl also have default values but included here to emphasise that
 they are needed as input):<br>
-<pre>m.swim.substats subbasins=subbasins projectname=mypro projectpath=. elevation=elevation@PERMANENT \<br>                mainstreams=mainstreams drainage=drainage accumulation=accumulation stp=slopesteepness sl=slopelength</pre>
+<pre>m.swim.substats subbasins=subbasins output=project/input/subbasin.csv elevation=elevation@PERMANENT \<br>                mainstreams=mainstreams drainage=drainage accumulation=accumulation stp=slopesteepness sl=slopelength</pre>
 
 When recalculating or changing parameters, the calculation can be accelerated by setting chl, chs, chd, chw explicitly:<br>
-<pre>m.swim.substats subbasins=subbasins projectname=mypro projectpath=. elevation=elevation@PERMANENT \<br>                delay=geology@PERMANENT chl=mainChannelLength chs=mainChannelSlope chd=channelDepth chw=channelWidth<br></pre>
+<pre>m.swim.substats subbasins=subbasins output=project/input/subbasin.csv elevation=elevation@PERMANENT \<br>                delay=geology@PERMANENT chl=mainChannelLength chs=mainChannelSlope chd=channelDepth chw=channelWidth<br></pre>
 
 
 <em></em>

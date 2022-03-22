@@ -72,6 +72,14 @@ All GRASS manuals come with a manual page as the last tab in the GUI or you can 
 ## Workflow and map dependencies
 ![m.swim module dependencies](img/m.swim_workflow.png)
 
+The `m.swim.*` modules produce the following SWIM input files:
+- subbasin.csv
+- hydrotope.csv
+- subbasin_routing.csv
+- subbasin_climate_grid.csv
+- glaciers.csv
+
+
 ## Setting up a SWIM project
 Create a new mapset and set region:
 ```
@@ -107,15 +115,15 @@ m.swim.subbasins elevation=elevation@PERMANENT stations=stations \
 
 Calculate hydrotopes with the subbasins, landuse and soil raster maps:
 ```
-m.swim.hydrotopes subbasins=subbasins landuse=landuse@PERMANENT \
-                  soil=soils@PERMANENT strfilepath=mypro.str hydrotopes=hydrotopes
+m.swim.hydrotopes subbasin_id=subbasins landuse_id=landuse@PERMANENT \
+                  soil_id=soils@PERMANENT output=project/input/hydrotope.csv hydrotopes=hydrotopes
 ```
 Alternatively, contours (either as interval or list of breaks through the `controus` argument; or as a raster map through the `contourrast` argument) and `more` maps can be used to further subdevide the hydrotopes:
 ```
-m.swim.hydrotopes subbasins=subbasins landuse=landuse@PERMANENT \
-                  soil=soils@PERMANENT more=geology@PERMANENT \
+m.swim.hydrotopes subbasin_id=subbasins landuse_id=landuse@PERMANENT \
+                  soil_id=soils@PERMANENT more=geology@PERMANENT \
                   -c contours=50 elevation=elevation@PERMANENT \
-                  strfilepath=Input/mypro.str
+                  output=project/input/hydrotope.csv
 ```
 This implicitly creates a raster called contours and one called hydrotopes (as default names given for the `hydrotopes` and `contourrast` arguments).
 
@@ -131,50 +139,30 @@ m.swim.routing -c subbasins=subbasins accumulation=accumulation
 ```
 Check routing structure and write SWIM routing file (the `--o` overwrite is necessary as the mainstreams are recreated):
 ```
-m.swim.routing -r subbasins=subbasins figpath=mypro.fig --o
+m.swim.routing -r subbasins=subbasins output=project/input/subbasin_routing.csv --o
 ```
 Both these steps can also be executed at once (but may result in an error if the there are too many outlets):
 ```
 m.swim.routing subbasins=subbasins accumulation=accumulation \
-               figpath=Input/mypro.fig
+               output=project/input/subbasin_routing.csv
 ```
 
 ### Subbasin statistics
 
 Create the subbasin statistics files in a Sub folder and the file.cio in the `projectpath` with all default input (`mainstreams, drainage, accumulation,  stp and sl` also have default values but included here to emphasise that they are needed as input):
 ```
-m.swim.substats subbasins=subbasins projectname=mypro projectpath=. \
+m.swim.substats subbasins=subbasins output=project/input/subbasin.csv \
                 elevation=elevation@PERMANENT mainstreams=mainstreams \
                 drainage=drainage accumulation=accumulation \
                 stp=slopesteepness sl=slopelength
 ```
 When recalculating or changing parameters, the calculation can be accelerated by setting `chl, chs, chd, chw` explicitly:
 ```
-m.swim.substats subbasins=subbasins projectname=mypro projectpath=. \
+m.swim.substats subbasins=subbasins output=project/input/subbasin.csv \
                 elevation=elevation@PERMANENT delay=geology@PERMANENT \
                 chl=mainChannelLength chs=mainChannelSlope \
                 chd=channelDepth chw=channelWidth
 ```
-
-### Additional files
-
-The following files/folders are not written by any of the modules and will have to be copied into the `projdir` from elsewhere:
-* input/
-  * climate/clim1.dat
-  * climate/clim2.dat
-  * mypro.bsn
-  * mypro.cod
-  * runoff.dat
-  * wstor.dat
-  * crop.dat
-  * cntab.dat
-  * Soil/soil\*.dat
-  * soil.cio
-  * wgen.dat
-* output/
-  * Res/
-  * GIS/
-  * Flo/
 
 
 ## GRASS best practice

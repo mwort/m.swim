@@ -1,19 +1,8 @@
 
 <h2>DESCRIPTION<span style="font-style: italic;"></span></h2>The <span style="font-weight: bold;">m.swim.hydrotopes</span> module computes the hydrotopes (or Hydrological Response Units/HRU) and writes this information to the SWIM structure file.<br>
-<h3>Structure file (.str)</h3>
-The full path to the structure file should be given to the <span style="font-weight: bold;">strfilepath</span>.
-As the different versions of SWIM require different columns in the .str
-file, the output file may have to be adapted to each project. The
-standard columns are:<br>
-<br>
-<em>subbasinID&nbsp; landuseID&nbsp; soilID&nbsp; [elevation]&nbsp; [more,more,...]&nbsp; area&nbsp; cells</em><br>
-...<br>
-0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-...&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0<br>
-<br>
+
+This module creates all hydrotope level input variables in the form of the hydrotope.csv file.
+
 The <span style="font-weight: bold;">elevation</span> is only included if any of the contours options are set (see below) and the more column(s) are those raster maps set in the <span style="font-weight: bold;">more</span> argument. The last line of the .str file is filled with nills.<br>
 
 <br>
@@ -51,14 +40,15 @@ slopesteepness and slopelength rasters (as needed by the subsequent
 m.swim.* modules) by default.<br>
 <h3>Hydrotopes</h3>
 Calculate hydrotopes with the subbasins, landuse and soil raster maps:<br>
-<pre>m.swim.hydrotopes subbasins=subbasins landuse=landuse@PERMANENT soil=soils@PERMANENT strfilepath=mypro.str hydrotopes=hydrotopes</pre>
+<pre>m.swim.hydrotopes subbasin_id=subbasins landuse_id=landuse@PERMANENT soil_id=soils@PERMANENT output=project/input/hydrotope.csv hydrotopes=hydrotopes</pre>
 Alternatively, contours (either as interval or list of breaks through
 the <span style="font-weight: bold;">controus</span> argument; or as a raster map through the
 
 
 <span style="font-weight: bold;">contourrast</span>
 argument) and <span style="font-weight: bold;">more</span> maps can be used to further subdevide the hydrotopes:<br>
-<pre>m.swim.hydrotopes subbasins=subbasins landuse=landuse@PERMANENT soil=soils@PERMANENT -c contours=50 \<br>                 &nbsp;elevation=elevation@PERMANENT more=geology@PERMANENT strfilepath=mypro.str</pre>
+<pre>m.swim.hydrotopes subbasin_id=subbasins landuse_id=landuse@PERMANENT soil_id=soils@PERMANENT -c contours=50 \
+<br>                 &nbsp;elevation=elevation@PERMANENT more=geology@PERMANENT output=project/input/hydrotope.csv</pre>
 
 This implicitly creates a raster called contours and one called hydrotopes (as default names given for the <span style="font-weight: bold;">hydrotopes</span> and <span style="font-weight: bold;">contourrast</span> arguments).<br>
 <em></em>

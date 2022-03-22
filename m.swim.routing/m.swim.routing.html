@@ -74,10 +74,10 @@ Or set the -c flag to include the centroids in the routing network:<br>
 
 Check routing structure and write SWIM routing file (the --o overwrite
 is necessary as the mainstreams are recreated):<br>
-<pre>m.swim.routing -r subbasins=subbasins figpath=mypro.fig --o<br></pre>
+<pre>m.swim.routing -r subbasins=subbasins output=project/input/subbasin_routing.csv --o<br></pre>
 Both these steps can also be executed at once (but may result in an
 error if the there are too many outlets):<br>
-<pre>m.swim.routing subbasins=subbasins accumulation=accumulation figpath=mypro.fig</pre>
+<pre>m.swim.routing subbasins=subbasins accumulation=accumulation output=project/input/subbasin_routing.csv</pre>
 <em></em>
 <h2>SEE ALSO</h2>
 <a href="m.swim.subbasins.html">m.swim.subbasins</a>, <a href="r.watershed.html">r.watershed</a>, <a href="m.swim.substats.html">m.swim.substats</a><br>
