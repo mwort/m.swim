@@ -6,7 +6,7 @@ URL = ~/www/m.swim
 MD_SRC = home.md developing_debugging.md
 
 help_pages:
-	GRASS_BATCH_JOB=./build_help_pages.grass $(GRASS) $(GRASSTESTLOC)/PERMANENT
+	$(GRASS) $(GRASSTESTLOC)/PERMANENT --exec bash build_help_pages.grass.sh
 
 
 html: help_pages

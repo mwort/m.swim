@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 
 for f in ../m.swim.*/m.swim.*.html; do
   ${f%.*}.py --html-description > tmp_description
