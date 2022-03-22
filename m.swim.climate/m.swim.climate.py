@@ -73,6 +73,17 @@
 #%end
 
 #%Option
+#% guisection: Grid
+#% key: lonlat_precision
+#% type: integer
+#% multiple: no
+#% required: no
+#% key_desc: name
+#% answer: 3
+#% label: Floating point precision of longitude and latitude.
+#%end
+
+#%Option
 #% guisection: Output
 #% key: gridfilepath
 #% type: string
@@ -234,7 +245,7 @@ class Grid:
         # make out array
         outtbl = np.column_stack((tbl['subbasinID'],lons,lats,props))
         # write out
-        fmt = '%12i %12.3f %12.3f %12.6f'
+        fmt = '%12i %12.{0}f %12.{0}f %12.6f'.format(self.lonlat_precision)
         head= '%10s '%'subbasinID' + '%12s %12s %12s'%('lon','lat','weight')
         np.savetxt(self.gridfilepath,outtbl,fmt=fmt,header=head)
         grass.message('Wrote %s lines and %s columns to %s'%(outtbl.shape+(self.gridfilepath,)))
