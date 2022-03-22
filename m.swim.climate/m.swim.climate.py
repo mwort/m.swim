@@ -226,7 +226,7 @@ class Grid:
 
         return tbl
 
-    def writeNCInfo(self,tbl):
+    def write_grid_file(self,tbl):
 
         # get lon,lats (ditionary with cell ids as keys and [lon,lat] as entry
         cols = "%s,%s" % (self.lon_column, self.lat_column)
@@ -245,9 +245,9 @@ class Grid:
         # make out array
         outtbl = np.column_stack((tbl['subbasinID'],lons,lats,props))
         # write out
-        fmt = '%12i %12.{0}f %12.{0}f %12.6f'.format(self.lonlat_precision)
-        head= '%10s '%'subbasinID' + '%12s %12s %12s'%('lon','lat','weight')
-        np.savetxt(self.gridfilepath,outtbl,fmt=fmt,header=head)
+        fmts = '%12i %12.{0}f %12.{0}f %12.6f'.format(self.lonlat_precision).split()
+        cols = ['subbasin_id', 'lon','lat','weight']
+        mswim.io.write_csv(self.gridfilepath, outtbl,cols, min_width=12, column_formats=fmts)
         grass.message('Wrote %s lines and %s columns to %s'%(outtbl.shape+(self.gridfilepath,)))
         return 0
 
@@ -273,7 +273,7 @@ if __name__=='__main__':
     tbl = main.getSubbasinGridProportions()
 
     if 'ncinfopath' in main.options or 'gridfilepath' in main.options:
-        main.writeNCInfo(tbl)
+        main.write_grid_file(tbl)
 
     # clean
     if not main.k:

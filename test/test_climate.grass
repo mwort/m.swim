@@ -1,4 +1,5 @@
 set -e
+export GRASS_OVERWRITE=1
 
 # create separate mapset
 g.mapset -c mapset=swim
@@ -17,10 +18,10 @@ fi
 mkdir -p project/input/climate
 
 # input for the ncdfclimate module
-$module subbasins=subbasins grid=grid_half_dg res=0.5 gridfilepath=project/input/climate/ncgrid.dat
+$module subbasins=subbasins grid=grid_half_dg res=0.5 gridfilepath=project/input/subbasin_climate_grid.csv
 
 # point-based grid definition (e.g. rotated grid)
 v.to.points input=grid_half_dg output=grid_half_dg_points type=centroid
 g.region vect=grid_half_dg_points,subbasins
-$module subbasins=subbasins -d grid=grid_half_dg_points gridfilepath=project/input/climate/ncgrid_from_points.dat -k
+$module subbasins=subbasins -d grid=grid_half_dg_points gridfilepath=project/input/subbasin_climate_grid_from_points.csv -k
 g.region -d
