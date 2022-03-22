@@ -48,7 +48,7 @@
 #%end
 #%Option
 #% guisection: Required
-#% key: strfilepath
+#% key: output
 #% type: string
 #% required: yes
 #% multiple: no
@@ -342,20 +342,20 @@ number of hydrotopes per subbasin %i
         datcolfmt = [('%%%s.3f' if c in self.floatmaps else '%%%si') % i
                      for i, c in zip(colwidth, self.strcolumns.values())]
         # write out structure file
-        with open(self.strfilepath, 'w') as strf:
+        with open(self.output, 'w') as strf:
             # header
             strf.write((', '.join(heacolfmt) + '\n') % tuple(self.strcolumns.keys()))
             # data
             np.savetxt(strf, array, fmt=', '.join(datcolfmt))
-        grass.message(('Wrote structure file %s' % self.strfilepath))
+        grass.message(('Wrote structure file %s' % self.output))
         return
 
     def writeStr(self, array):
         """Write the array into the structure file path given in strname"""
         floatcols = [k for k, v in self.strcolumns.items() if v in self.floatmaps]
-        mswim.io.write_csv(self.strfilepath, array, self.strcolumns.keys(),
+        mswim.io.write_csv(self.output, array, self.strcolumns.keys(),
                            float_columns=floatcols)
-        grass.message(('Wrote hydrotope file %s' % self.strfilepath))
+        grass.message(('Wrote hydrotope file %s' % self.output))
         return
 
 def readinStr(strcolumns):

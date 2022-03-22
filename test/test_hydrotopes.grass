@@ -20,9 +20,9 @@ mkdir -p project/input
 # default
 $module subbasin_id=subbasins landuse_id=landuse@PERMANENT soil_id=soil@PERMANENT \
         contours=200 elevation=elevation@PERMANENT \
-        strfilepath=project/input/hydrotope.csv hydrotopes=hydrotopes
+        output=project/input/hydrotope.csv hydrotopes=hydrotopes
 
 # with management and wetland, no contours
 $module subbasin_id=subbasins landuse_id=landuse@PERMANENT soil_id=soil@PERMANENT \
         wetland=drainage crop_management_id=catchments elevation=elevation@PERMANENT \
-        strfilepath=project/input/hydrotope_no_contours.csv hydrotopes=hydrotopes
+        output=project/input/hydrotope_no_contours.csv hydrotopes=hydrotopes
