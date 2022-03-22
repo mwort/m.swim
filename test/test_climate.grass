@@ -14,9 +14,6 @@ if [ $? -eq 1 ] ; then
 	./test_subbasins.grass
 fi
 
-# make project dir
-mkdir -p project/input/climate
-
 # input for the ncdfclimate module
 $module subbasins=subbasins grid=grid_half_dg res=0.5 gridfilepath=project/input/subbasin_climate_grid.csv
 
