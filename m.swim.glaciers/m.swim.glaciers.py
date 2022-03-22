@@ -2,7 +2,7 @@
 #
 ############################################################################
 #
-# MODULE:      m.swim.glaciers v1.6
+# MODULE:      m.swim.glaciers v2.0
 # AUTHOR(S):   Michel Wortmann, wortmann@pik-potsdam.de
 # PURPOSE:     Preprocessing suit for the Soil and Water Integrated Model
 #              Glacier dynamics (SWIM-G)

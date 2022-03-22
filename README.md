@@ -9,10 +9,23 @@ http://www.pik-potsdam.de/~wortmann/m.swim/
 
 ## Version history
 
-*upcoming release*
-- version 2.0 to support SWIM redesign input files
+*Version v2.0* - 2022-03-22
+- first version to support SWIM redesign csv input files
+- a long-term support version for the old input file formats is available on the `v1_lts` branch
+- several argument name changes to be more consistent with common grass modules and the corresponding SWIM variable names (see below).
+- relies on the `mswim` library for the first time
+- `m.swim.hydrotopes`:
+  - `subbasins, landuse, soil, management` arguments renamed to `subbasin_id, landuse_id, soil_id, crop_management_id` in-line with new column names of the `hydrotope.csv` file
+  - `strfilepath` renamed to `output`
+  - optional columns with default values (e.g. wetland, crop_management_id etc.) are no longer written to file unless a map is given to populate them
+- `m.swim.routing`:
+  - `figpath` argument renamed to `output`
+- `m.swim.substats`:
+  - `projectpath` renamed to `output` for the `subbasin.csv` file
+  - optional columns with default values are no longer written to file unless a map is given to populate them. If no-standard columns are needed, they will need to be added to the `gworder, suborder, routeorder` arguments.
 
-*Version v1.6 - 2022-01-19*
+
+*Version v1.6* - 2022-01-19
 - last version supporting legacy SWIM input
 - added the `m.swim.glaciers` module to create SWIM-G input files
 - `m.swim.hydrotopes`

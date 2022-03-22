@@ -2,7 +2,7 @@
 #
 ############################################################################
 #
-# MODULE:      m.swim.routing v1.6
+# MODULE:      m.swim.routing v2.0
 # AUTHOR(S):   Michel Wortmann, wortmann@pik-potsdam.de
 # PURPOSE:     Preprocessing suit for the Soil and Water Integrated Model (SWIM)
 # COPYRIGHT:   (C) 2012-2022 by Wortmann/PIK
