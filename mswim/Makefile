@@ -5,7 +5,7 @@ include $(MODULE_TOPDIR)/include/Make/Python.make
 
 PKG = mswim
 TOOLBOX = m.swim
-MODULES = __init__ utils
+MODULES = __init__ utils io
 
 ETCDIR = $(ETC)/$(TOOLBOX)/$(PKG)
 ETCINSTALLDIR = $(INST_DIR)/etc/$(TOOLBOX)

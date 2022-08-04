@@ -117,7 +117,7 @@ Checking the diff of the output.sha1 file will indicate output files that have c
 
 
 ## Releasing
-- change version in `README.md` and in header of all module files.
+- change version in `README.md`, in header of all module files and in `mswim/__init__.py`.
 - add change log in `README.md`
 - `git commit -a -m 'Bump version to vX.X.'`
 - `git tag vX.X`
