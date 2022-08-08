@@ -792,7 +792,7 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
         tbl = np.column_stack([np.arange(1, self.nsubbasins+1)] +
                                [data[c] for p in sorted(self.orders)[::-1] for c in self.orders[p]])
         cols = [s for p in sorted(self.orders)[::-1] for s in self.orders[p]]
-        mswim.io.write_csv(self.output, tbl, ['subbasin_id'] + cols, float_precision=5,
+        mswim.inout.write_csv(self.output, tbl, ['subbasin_id'] + cols, float_precision=5,
                            float_columns=set(cols)-set(["catchment_id"]))
         grass.message('Wrote %s' %self.output)
         return

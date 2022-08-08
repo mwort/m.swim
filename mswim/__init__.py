@@ -3,4 +3,4 @@
 __version__ = '2.0'
 
 from . import utils
-from . import io
+from . import inout

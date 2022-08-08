@@ -247,7 +247,7 @@ class Grid:
         # write out
         fmts = '%12i %12.{0}f %12.{0}f %12.6f'.format(self.lonlat_precision).split()
         cols = ['subbasin_id', 'lon','lat','weight']
-        mswim.io.write_csv(self.gridfilepath, outtbl,cols, min_width=12, column_formats=fmts)
+        mswim.inout.write_csv(self.gridfilepath, outtbl,cols, min_width=12, column_formats=fmts)
         grass.message('Wrote %s lines and %s columns to %s'%(outtbl.shape+(self.gridfilepath,)))
         return 0
 
