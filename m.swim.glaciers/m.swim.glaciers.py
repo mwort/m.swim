@@ -752,7 +752,7 @@ def writeStr(outname, unitmap, subbasins, hydAddress, nextID, *othercols):
 #    # dont take those that are outflows
 #    data = data[nxt['id']!=nxt[nextID]]
     # save to csv file
-    mswim.io.write_csv(outname, data, columnnames, float_columns=othercols, float_precision=6)
+    mswim.inout.write_csv(outname, data, columnnames, float_columns=othercols, float_precision=6)
     gm('Wrote %s' % outname)
     return data
 

@@ -335,7 +335,7 @@ number of hydrotopes per subbasin %i
         return struct
 
     def writeStr_no_mswim_lib(self, array):
-        """Deprecated in favour of using abstracted mswim.io.write_csv"""
+        """Deprecated in favour of using abstracted mswim.inout.write_csv"""
         # formate for structure file
         colwidth = [max(i, 9) for i in map(len, self.strcolumns)]
         heacolfmt = ['%%-%ss' % i for i in colwidth] 
@@ -353,7 +353,7 @@ number of hydrotopes per subbasin %i
     def writeStr(self, array):
         """Write the array into the structure file path given in strname"""
         floatcols = [k for k, v in self.strcolumns.items() if v in self.floatmaps]
-        mswim.io.write_csv(self.output, array, self.strcolumns.keys(),
+        mswim.inout.write_csv(self.output, array, self.strcolumns.keys(),
                            float_columns=floatcols)
         grass.message(('Wrote hydrotope file %s' % self.output))
         return
