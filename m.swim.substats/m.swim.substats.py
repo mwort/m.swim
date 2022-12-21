@@ -737,14 +737,14 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
         srast=sloperast+'__mainstreams'
         grun('r.stats.zonal',base=self.mainstreamrast,cover=sloperast,
              method='average',output=srast,overwrite=True,quiet=True)
-        # convert degrees to m/m and minimum slope=0.0001 degrees
-        grass.mapcalc(exp='%s=tan(max(%s,0.0001))' %('mainstream__slope__tan',srast),
+        # convert degrees to m/m and minimum slope=0.01 degrees
+        grass.mapcalc(exp='%s=tan(max(%s,0.01))' %('mainstream__slope__tan',srast),
                       overwrite=True)
 
         # mean over subbasins
         sloperastsubbasins = self.meanSubbasin('mainstream__slope__tan')
         # fill no data subbasins with minumum value
-        exp='{0}=if(isnull({1}) & ~isnull({2}),0.0001,{1})'.format(rasterout,
+        exp='{0}=if(isnull({1}) & ~isnull({2}),0.01,{1})'.format(rasterout,
              sloperastsubbasins,self.subbasinrast)
         grass.mapcalc(exp,overwrite=True)
 
