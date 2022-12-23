@@ -661,12 +661,13 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
         grass.message('Calculating main channel length...')
 
         # make drainage direction weighted cell length
+        grass.mapcalc("drainage__abs=abs({d})".format(d=self.drainage), overwrite=True)
         streaminfo = rinfo(self.mainstreamrast)
         ewres, nsres = streaminfo['ewres'],streaminfo['nsres']
         exp = "'cell__len'=if(isnull('{streams}'),null(),"
         exp+= "if('{d}'==4 || '{d}'==8, {ew},0)+if('{d}' == 2 || '{d}' == 6,{ns},0)"
         exp+= "+if(%s,{dia},0))"%(" || ".join(["'{d}' == %s" %i for i in [1,3,5,7]]))
-        exp = exp.format(d=self.drainage,streams=self.mainstreamrast,ew=ewres,ns=nsres,
+        exp = exp.format(d='drainage__abs',streams=self.mainstreamrast,ew=ewres,ns=nsres,
                          dia=np.sqrt(float(ewres)**2+float(nsres)**2))
         grass.mapcalc(exp, overwrite=True)
 
