@@ -725,7 +725,7 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
         tbl=getTable(self.subbasins,dtype=[int,float],columns='subbasinID,%s' %self.chl)
         return tbl[self.chl]
 
-    def mainChannelSlope(self,rasterout='mainChannelSlope'):
+    def mainChannelSlope(self, rasterout='mainChannelSlope', min_slope=0.01):
         '''Calculate main channel slope from the DEM and the streams'''
         grass.message('Calculating main channel slope...')
 
@@ -739,14 +739,14 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
         grun('r.stats.zonal',base=self.mainstreamrast,cover=sloperast,
              method='average',output=srast,overwrite=True,quiet=True)
         # convert degrees to m/m and minimum slope=0.01 degrees
-        grass.mapcalc(exp='%s=tan(max(%s,0.01))' %('mainstream__slope__tan',srast),
+        grass.mapcalc(exp='%s=tan(max(%s, %s))' %('mainstream__slope__tan', srast, min_slope),
                       overwrite=True)
 
         # mean over subbasins
         sloperastsubbasins = self.meanSubbasin('mainstream__slope__tan')
         # fill no data subbasins with minumum value
-        exp='{0}=if(isnull({1}) & ~isnull({2}),0.01,{1})'.format(rasterout,
-             sloperastsubbasins,self.subbasinrast)
+        exp='{0}=if(isnull({1}) & ~isnull({2}), tan({3}), {1})'.format(rasterout,
+             sloperastsubbasins, self.subbasinrast, min_slope)
         grass.mapcalc(exp,overwrite=True)
 
         return rasterout
