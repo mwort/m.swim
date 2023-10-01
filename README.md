@@ -9,6 +9,11 @@ http://www.pik-potsdam.de/~wortmann/m.swim/
 
 ## Version history
 
+*upcoming*
+- `m.swim.subbasins`:
+  - added `include_area` input parameter to create subbasins outside the station catchments, e.g. this is useful for
+    coastal areas that will never be included in station catchments
+
 *Version v2.0* - 2022-03-22
 - first version to support SWIM redesign csv input files
 - a long-term support version for the old input file formats is available on the `v1_lts` branch

@@ -227,6 +227,17 @@
 
 #%Option
 #% guisection: Optional
+#% key: include_area
+#% type: string
+#% required: no
+#% multiple: no
+#% key_desc: string
+#% description: Raster of areas outside of the station catchments that will be included in the subbasin map, e.g. coastal areas. All non-null cells.
+#% gisprompt: old,cell,raster
+#%end
+
+#%Option
+#% guisection: Optional
 #% key: rwatershedflags
 #% type: string
 #% required: no
@@ -275,7 +286,6 @@
 #% key: v
 #% label: Show version and change/install date of this module and grass.
 #%end
-
 
 import sys
 import numpy as np
@@ -704,7 +714,7 @@ class main:
                 gwarn('%s has no subbasins and will be omitted'
                       ' (station too close to others?)' % srast)
                 continue
-            lastmax = max(classes)
+            lastmax = max(map(int, classes))
             # report progress
             gprogress(i+1, len(self.subbasins_rasters), 1)
 
@@ -712,12 +722,26 @@ class main:
             gm('Including predefined subbasins %s...' % self.predefined)
             # avoid same numbers occur in subbasins
             predef = self.predefined.split('@')[0]+'__aboverange'
-            grass.mapcalc('$output=if(isnull($c), null(), $p+$m)', m=lastmax,
+            grass.mapcalc('$output=if(isnull($c), null(), int($p+$m))', m=lastmax,
                           output=predef, p=self.predefined, c=self.catchments)
+            # recalculate lastmax
+            classes = gread('r.stats', input=predef, quiet=True, flags='n').split()
+            lastmax = max(map(int, classes)) if classes else lastmax
             # add to beginning of subbasins_rasters
             self.subbasins_rasters = OrderedDict(
                 [('predefined', predef)] +
                 list(self.subbasins_rasters.items()))
+
+        # add subbasins for areas not covered by station catchments
+        if self.is_set("include_area"):
+            gm('Including areas outside of catchments in %s...' % self.include_area)
+            grass.mapcalc('$output=if(isnull($c) & ~isnull($inc), if(isnull($sb), 1, $sb), null())',
+                          output="include__area__unclumped", inc=self.include_area,
+                          sb=list(self.subbasinsdone.values())[0], c=self.catchments)
+            grun("r.clump", input="include__area__unclumped", output="include__area__clumped")
+            incsb = "include__area__subbasins"
+            grass.mapcalc("$out=include__area__clumped+$m", out=incsb, m=lastmax)
+            self.subbasins_rasters["include_area"] = incsb
 
         # PATCHING subbasins maps
         patch_basins(list(self.subbasins_rasters.values()), outname=self.subbasins)
@@ -922,6 +946,7 @@ class main:
         # subbasin sizes
         sbs = get_table(self.subbasins, dtype=(int, int, float),
                         columns='subbasinID,catchmentID,size')
+
         outletsb = rwhat([self.subbasins], self.stations_snapped_coor.values())
         gm('-----------------------------------------------------------------')
         print('''Catchment sizes :
@@ -944,10 +969,15 @@ ID  excl. upstream   incl. upstream  outlet subbasin  upstream stations''')
                           ])
         cols = np.unique(sbs['catchmentID'])
         for c in cols:
-            subs = sbs['size'][sbs['catchmentID'] == c]
+            if self.is_set("include_area") and np.isnan(c):
+                subs = sbs['size'][np.isnan(sbs['catchmentID'])]
+                stid = "  include"
+            else:
+                subs = sbs['size'][sbs['catchmentID'] == c]
+                stid = '%9i' % c
             if len(subs) == 0:
                 continue  # in case sb outside catchments
-            sub['stationID'] += ['%9i' % c]
+            sub['stationID'] += [stid]
             sub['count'] += ['%8i' % len(subs)]
             sub['min'] += ['%8.2f' % np.min(subs)]
             sub['mean'] += ['%8.2f' % np.mean(subs)]

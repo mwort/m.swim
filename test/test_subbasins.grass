@@ -20,8 +20,9 @@ $module elevation=elevation@PERMANENT stations=stations@PERMANENT \
 # $module elevation=elevation@PERMANENT stations=stations@PERMANENT \
 #         streamthresh=200 -l upthresh=1 lothresh=0.5 subbasins=subbasins
 
+# example with areas outside of catchments e.g. coastal areas
+# $module elevation=elevation@PERMANENT stations=stations@PERMANENT \
+#                  subbasins=subbasins include_area=soil
+
 # make project dir
 mkdir -p project/input
-
-# write ancillary files
-v.db.select stations_snapped col=subbasinID,NAME sep=space > project/input/gauges.output
