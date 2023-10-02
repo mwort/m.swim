@@ -792,9 +792,11 @@ Can only find/calculate %s values for %s, but there are %s subbasins.""" %(len(p
         .sub, .rte and .gw files from the data given and the structure given in parameters'''
         tbl = np.column_stack([np.arange(1, self.nsubbasins+1)] +
                                [data[c] for p in sorted(self.orders)[::-1] for c in self.orders[p]])
-        cols = [s for p in sorted(self.orders)[::-1] for s in self.orders[p]]
-        mswim.inout.write_csv(self.output, tbl, ['subbasin_id'] + cols, float_precision=5,
-                           float_columns=set(cols)-set(["catchment_id"]))
+        cols = ['subbasin_id'] + [s for p in sorted(self.orders)[::-1] for s in self.orders[p]]
+        nans = {c: np.isnan(tbl[:, i]).sum() for i, c in enumerate(cols)}
+        assert sum(nans.values()) == 0, "Found missing values: %r" % ({c: n for c, n in nans.items() if n})
+        mswim.inout.write_csv(self.output, tbl, cols, float_precision=5,
+                           float_columns=set(cols)-set(['subbasin_id', "catchment_id"]))
         grass.message('Wrote %s' %self.output)
         return
 
