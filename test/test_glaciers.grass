@@ -3,7 +3,7 @@ set -e
 export GRASS_OVERWRITE=1
 
 # make mswim importable for test runs
-export PYTHONPATH=..:/Users/wortmann/Desktop/source/swimpy/venv/lib/python3.8/site-packages/:$PYTHONPATH
+export PYTHONPATH=..:$PYTHONPATH
 export GRASS_OVERWRITE=1
 
 hydrotopemodule=../m.swim.hydrotopes/m.swim.hydrotopes.py
