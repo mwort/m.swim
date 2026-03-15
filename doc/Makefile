@@ -2,7 +2,7 @@
 # A Makefile to publish and convert the documentation
 include ../test/Makefile
 
-URL = ~/www/m.swim
+URL = swim.pik-potsdam.de:/webservice/swim.pik-potsdam.de/m.swim-docs
 MD_SRC = home.md developing_debugging.md
 
 help_pages:
