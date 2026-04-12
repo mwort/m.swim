@@ -627,8 +627,8 @@ def readSubNxtID(subbasinsvect,columns=('subbasinID','nextID','inletID')):
     assert columns[0] == 'subbasinID'
     tbl=list(grass.vector_db_select(subbasinsvect,columns=','.join(columns))['values'].values())
     # check if empty cells
-    tbl=np.array(tbl,dtype=np.compat.unicode)
-    empty = (tbl == u'').any(1)
+    tbl=np.array(tbl,dtype=str)
+    empty = (tbl == '').any(1)
     if empty.sum() > 0:
         outsb = tbl[empty, 0]  # assumes first column to be subbasinID
         tbl[empty, :] = outsb.repeat(len(columns)).reshape(-1, len(columns))

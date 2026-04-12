@@ -947,7 +947,7 @@ class main:
         sbs = get_table(self.subbasins, dtype=(int, int, float),
                         columns='subbasinID,catchmentID,size')
 
-        outletsb = rwhat([self.subbasins], self.stations_snapped_coor.values())
+        outletsb = rwhat([self.subbasins], self.stations_snapped_coor.values()).flatten()
         gm('-----------------------------------------------------------------')
         print('''Catchment sizes :
 ID  excl. upstream   incl. upstream  outlet subbasin  upstream stations''')
